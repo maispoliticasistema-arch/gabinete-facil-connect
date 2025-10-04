@@ -187,6 +187,62 @@ export const AddRoteiroDialog = ({
     setLoading(true);
 
     try {
+      // Geocodificar endereço de partida
+      let latitudePartida = null;
+      let longitudePartida = null;
+      if (data.endereco_partida) {
+        try {
+          const response = await fetch(
+            `https://nominatim.openstreetmap.org/search?` +
+            `q=${encodeURIComponent(data.endereco_partida)}` +
+            `&format=json&limit=1`,
+            {
+              headers: {
+                'User-Agent': 'GabineteApp/1.0'
+              }
+            }
+          );
+
+          if (response.ok) {
+            const geocodeData = await response.json();
+            if (geocodeData && geocodeData.length > 0) {
+              latitudePartida = parseFloat(geocodeData[0].lat);
+              longitudePartida = parseFloat(geocodeData[0].lon);
+            }
+          }
+        } catch (error) {
+          console.error('Erro ao geocodificar endereço de partida:', error);
+        }
+      }
+
+      // Geocodificar endereço final
+      let latitudeFinal = null;
+      let longitudeFinal = null;
+      if (data.endereco_final) {
+        try {
+          const response = await fetch(
+            `https://nominatim.openstreetmap.org/search?` +
+            `q=${encodeURIComponent(data.endereco_final)}` +
+            `&format=json&limit=1`,
+            {
+              headers: {
+                'User-Agent': 'GabineteApp/1.0'
+              }
+            }
+          );
+
+          if (response.ok) {
+            const geocodeData = await response.json();
+            if (geocodeData && geocodeData.length > 0) {
+              latitudeFinal = parseFloat(geocodeData[0].lat);
+              longitudeFinal = parseFloat(geocodeData[0].lon);
+            }
+          }
+        } catch (error) {
+          console.error('Erro ao geocodificar endereço final:', error);
+        }
+      }
+
       const { data: roteiro, error: roteiroError } = await supabase
         .from('roteiros')
         .insert({
@@ -197,6 +253,10 @@ export const AddRoteiroDialog = ({
           objetivo: data.objetivo || null,
           endereco_partida: data.endereco_partida || null,
           endereco_final: data.endereco_final || null,
+          latitude_partida: latitudePartida,
+          longitude_partida: longitudePartida,
+          latitude_final: latitudeFinal,
+          longitude_final: longitudeFinal,
           criado_por: user.id,
           status: 'planejado'
         })
