@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useGabinete } from '@/contexts/GabineteContext';
 import { useToast } from '@/hooks/use-toast';
+import { usePermissions } from '@/hooks/usePermissions';
+import { PermissionGuard, NoPermissionMessage } from '@/components/PermissionGuard';
 import { EleitoresTable } from '@/components/eleitores/EleitoresTable';
 import { AddEleitoresDialog } from '@/components/eleitores/AddEleitoresDialog';
 import { ImportEleitoresDialog } from '@/components/eleitores/ImportEleitoresDialog';
@@ -78,11 +80,17 @@ const Eleitores = () => {
   const [addEleitorOpen, setAddEleitorOpen] = useState(false);
   const { currentGabinete } = useGabinete();
   const { toast } = useToast();
+  const { hasPermission } = usePermissions();
 
   const ITEMS_PER_PAGE = 20;
   const totalPages = Math.ceil(totalCount / ITEMS_PER_PAGE);
 
   const hasActiveFilters = selectedBairro || selectedCidade || selectedTags.length > 0;
+
+  // Verificar permissão de visualização
+  if (!hasPermission('view_eleitores')) {
+    return <NoPermissionMessage />;
+  }
 
   const fetchEleitores = async () => {
     if (!currentGabinete) return;
@@ -239,13 +247,21 @@ const Eleitores = () => {
           </p>
         </div>
         <div className="flex gap-2">
-          <GeocodeAllDialog onComplete={fetchEleitores} />
-          <TagsDialog />
-          <ImportEleitoresDialog onEleitoresImported={fetchEleitores} />
-          <Button onClick={() => setAddEleitorOpen(true)}>
-            <UserPlus className="mr-2 h-4 w-4" />
-            Novo Eleitor
-          </Button>
+          <PermissionGuard permission="edit_eleitores">
+            <GeocodeAllDialog onComplete={fetchEleitores} />
+          </PermissionGuard>
+          <PermissionGuard permission="manage_settings">
+            <TagsDialog />
+          </PermissionGuard>
+          <PermissionGuard permission="create_eleitores">
+            <ImportEleitoresDialog onEleitoresImported={fetchEleitores} />
+          </PermissionGuard>
+          <PermissionGuard permission="create_eleitores">
+            <Button onClick={() => setAddEleitorOpen(true)}>
+              <UserPlus className="mr-2 h-4 w-4" />
+              Novo Eleitor
+            </Button>
+          </PermissionGuard>
         </div>
       </div>
 

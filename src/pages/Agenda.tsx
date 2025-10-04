@@ -8,6 +8,8 @@ import { Badge } from "@/components/ui/badge";
 import { Plus, Search, Filter } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useGabinete } from "@/contexts/GabineteContext";
+import { usePermissions } from "@/hooks/usePermissions";
+import { PermissionGuard, NoPermissionMessage } from "@/components/PermissionGuard";
 import { AddEventDialog } from "@/components/agenda/AddEventDialog";
 import { EventDetailsSheet } from "@/components/agenda/EventDetailsSheet";
 import { AgendaStats } from "@/components/agenda/AgendaStats";
@@ -47,6 +49,7 @@ const tipoLabels: Record<string, string> = {
 
 const Agenda = () => {
   const { currentGabinete } = useGabinete();
+  const { hasPermission } = usePermissions();
   const [eventos, setEventos] = useState<Evento[]>([]);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [viewMode, setViewMode] = useState<"month" | "week" | "list">("month");
@@ -55,6 +58,11 @@ const Agenda = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [selectedEvento, setSelectedEvento] = useState<Evento | null>(null);
+
+  // Verificar permissão de visualização
+  if (!hasPermission('view_agenda')) {
+    return <NoPermissionMessage />;
+  }
   const [detailsSheetOpen, setDetailsSheetOpen] = useState(false);
   const [editingEvento, setEditingEvento] = useState<any>(null);
 
@@ -205,10 +213,12 @@ const Agenda = () => {
             Organize compromissos, reuniões e eventos
           </p>
         </div>
-        <Button onClick={() => setAddDialogOpen(true)}>
-          <Plus className="h-4 w-4 mr-2" />
-          Novo Evento
-        </Button>
+        <PermissionGuard permission="create_agenda">
+          <Button onClick={() => setAddDialogOpen(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            Novo Evento
+          </Button>
+        </PermissionGuard>
       </div>
 
       <AgendaStats {...stats} />

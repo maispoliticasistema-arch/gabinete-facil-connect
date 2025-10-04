@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useGabinete } from '@/contexts/GabineteContext';
 import { useToast } from '@/hooks/use-toast';
+import { usePermissions } from '@/hooks/usePermissions';
+import { PermissionGuard, NoPermissionMessage } from '@/components/PermissionGuard';
 import { DemandasStats } from '@/components/demandas/DemandasStats';
 import { AddDemandaDialog } from '@/components/demandas/AddDemandaDialog';
 import { DemandaDetailsSheet } from '@/components/demandas/DemandaDetailsSheet';
@@ -60,8 +62,14 @@ const Demandas = () => {
   });
   const { currentGabinete } = useGabinete();
   const { toast } = useToast();
+  const { hasPermission } = usePermissions();
 
   const hasActiveFilters = selectedStatus || selectedPrioridade;
+
+  // Verificar permissão de visualização
+  if (!hasPermission('view_demandas')) {
+    return <NoPermissionMessage />;
+  }
 
   useEffect(() => {
     if (currentGabinete) {
@@ -185,10 +193,12 @@ const Demandas = () => {
             Gerencie todas as solicitações e atendimentos
           </p>
         </div>
-        <Button onClick={() => setAddDemandaOpen(true)}>
-          <Plus className="mr-2 h-4 w-4" />
-          Nova Demanda
-        </Button>
+        <PermissionGuard permission="create_demandas">
+          <Button onClick={() => setAddDemandaOpen(true)}>
+            <Plus className="mr-2 h-4 w-4" />
+            Nova Demanda
+          </Button>
+        </PermissionGuard>
       </div>
 
       <DemandasStats

@@ -1,5 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useGabinete } from '@/contexts/GabineteContext';
+import { usePermissions } from '@/hooks/usePermissions';
+import { PermissionGuard, NoPermissionMessage } from '@/components/PermissionGuard';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -61,6 +63,7 @@ const MapController = ({ center }: { center: [number, number] }) => {
 
 const Roteiros = () => {
   const { currentGabinete } = useGabinete();
+  const { hasPermission } = usePermissions();
   const [roteiros, setRoteiros] = useState<Roteiro[]>([]);
   const [selectedRoteiro, setSelectedRoteiro] = useState<string | null>(null);
   const [showAddDialog, setShowAddDialog] = useState(false);
@@ -69,6 +72,11 @@ const Roteiros = () => {
   const [selectedRoteiroForMap, setSelectedRoteiroForMap] = useState<string | null>(null);
   const [pontos, setPontos] = useState<Ponto[]>([]);
   const [selectedRoteiroData, setSelectedRoteiroData] = useState<Roteiro | null>(null);
+
+  // Verificar permissão de visualização
+  if (!hasPermission('view_roteiros')) {
+    return <NoPermissionMessage />;
+  }
   const [mapCenter, setMapCenter] = useState<[number, number]>([-30.0346, -51.2177]);
   const [routeGeometry, setRouteGeometry] = useState<[number, number][]>([]);
   const [locaisVisitados, setLocaisVisitados] = useState(0);
@@ -287,10 +295,12 @@ const Roteiros = () => {
             Planejamento de visitas em bairros e cidades
           </p>
         </div>
-        <Button onClick={() => setShowAddDialog(true)}>
-          <Plus className="mr-2 h-4 w-4" />
-          Novo Roteiro
-        </Button>
+        <PermissionGuard permission="create_roteiros">
+          <Button onClick={() => setShowAddDialog(true)}>
+            <Plus className="mr-2 h-4 w-4" />
+            Novo Roteiro
+          </Button>
+        </PermissionGuard>
       </div>
 
       <RoteirosStats {...stats} />

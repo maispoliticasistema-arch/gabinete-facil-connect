@@ -6,10 +6,13 @@ import { Integracoes } from "@/components/configuracoes/Integracoes";
 import { Notificacoes } from "@/components/configuracoes/Notificacoes";
 import { Seguranca } from "@/components/configuracoes/Seguranca";
 import { useGabinete } from "@/contexts/GabineteContext";
+import { usePermissions } from "@/hooks/usePermissions";
+import { NoPermissionMessage } from "@/components/PermissionGuard";
 import { Building2, Users, Plug, Bell, Shield } from "lucide-react";
 
 export default function Configuracoes() {
   const { currentGabinete } = useGabinete();
+  const { isAdmin } = usePermissions();
 
   if (!currentGabinete) {
     return (
@@ -17,6 +20,11 @@ export default function Configuracoes() {
         <p className="text-muted-foreground">Carregando...</p>
       </div>
     );
+  }
+
+  // Apenas admins e owners podem acessar configurações
+  if (!isAdmin) {
+    return <NoPermissionMessage />;
   }
 
   return (
