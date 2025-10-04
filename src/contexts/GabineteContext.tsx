@@ -21,6 +21,7 @@ interface GabineteContextType {
   currentGabinete: UserGabinete | null;
   setCurrentGabinete: (gabinete: UserGabinete) => void;
   loading: boolean;
+  refetchGabinetes: () => Promise<void>;
 }
 
 const GabineteContext = createContext<GabineteContextType>({
@@ -28,6 +29,7 @@ const GabineteContext = createContext<GabineteContextType>({
   currentGabinete: null,
   setCurrentGabinete: () => {},
   loading: true,
+  refetchGabinetes: async () => {},
 });
 
 export const useGabinete = () => useContext(GabineteContext);
@@ -38,7 +40,7 @@ export const GabineteProvider = ({ children }: { children: React.ReactNode }) =>
   const [currentGabinete, setCurrentGabinete] = useState<UserGabinete | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+  const fetchGabinetes = async () => {
     if (!user) {
       setGabinetes([]);
       setCurrentGabinete(null);
@@ -46,30 +48,30 @@ export const GabineteProvider = ({ children }: { children: React.ReactNode }) =>
       return;
     }
 
-    const fetchGabinetes = async () => {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from('user_gabinetes')
-        .select('gabinete_id, role, gabinetes(*)')
-        .eq('user_id', user.id)
-        .eq('ativo', true);
+    setLoading(true);
+    const { data, error } = await supabase
+      .from('user_gabinetes')
+      .select('gabinete_id, role, gabinetes(*)')
+      .eq('user_id', user.id)
+      .eq('ativo', true);
 
-      if (error) {
-        console.error('Erro ao buscar gabinetes:', error);
-        setLoading(false);
-        return;
-      }
-
-      setGabinetes(data || []);
-      
-      // Set first gabinete as current if none selected
-      if (data && data.length > 0 && !currentGabinete) {
-        setCurrentGabinete(data[0]);
-      }
-      
+    if (error) {
+      console.error('Erro ao buscar gabinetes:', error);
       setLoading(false);
-    };
+      return;
+    }
 
+    setGabinetes(data || []);
+    
+    // Set first gabinete as current if none selected
+    if (data && data.length > 0 && !currentGabinete) {
+      setCurrentGabinete(data[0]);
+    }
+    
+    setLoading(false);
+  };
+
+  useEffect(() => {
     fetchGabinetes();
   }, [user]);
 
@@ -79,7 +81,8 @@ export const GabineteProvider = ({ children }: { children: React.ReactNode }) =>
         gabinetes, 
         currentGabinete, 
         setCurrentGabinete, 
-        loading 
+        loading,
+        refetchGabinetes: fetchGabinetes
       }}
     >
       {children}

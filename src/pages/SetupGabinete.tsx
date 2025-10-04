@@ -9,11 +9,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { Building2, Loader2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useGabinete } from '@/contexts/GabineteContext';
 
 const SetupGabinete = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuth();
+  const { refetchGabinetes } = useGabinete();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     nomePolitico: '',
@@ -59,8 +61,9 @@ const SetupGabinete = () => {
         description: 'Você será redirecionado para o sistema.',
       });
 
-      // Recarregar a página para atualizar o contexto
-      window.location.href = '/';
+      // Atualizar o contexto e navegar
+      await refetchGabinetes();
+      navigate('/');
     } catch (error: any) {
       toast({
         title: 'Erro ao criar gabinete',
