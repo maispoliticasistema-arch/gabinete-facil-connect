@@ -44,7 +44,7 @@ export function usePermissions() {
       try {
         // Verificar se é owner ou admin
         const role = currentGabinete.role;
-        console.log('usePermissions: Role do usuário:', role);
+        console.log('usePermissions: Role do usuário:', role, 'User ID:', user.id, 'Gabinete ID:', currentGabinete.gabinete_id);
         
         if (role === 'owner' || role === 'admin') {
           // Owners e admins têm todas as permissões
@@ -74,7 +74,8 @@ export function usePermissions() {
           setIsAdmin(true);
         } else {
           // Buscar permissões específicas do assessor
-          const { data: userGabineteData } = await supabase
+          console.log('usePermissions: Buscando permissões para assessor');
+          const { data: userGabineteData, error: ugError } = await supabase
             .from('user_gabinetes')
             .select('id')
             .eq('user_id', user.id)
@@ -82,13 +83,22 @@ export function usePermissions() {
             .eq('ativo', true)
             .maybeSingle();
 
+          console.log('usePermissions: userGabineteData:', userGabineteData, 'error:', ugError);
+
           if (userGabineteData) {
-            const { data: permsData } = await supabase
+            const { data: permsData, error: permsError } = await supabase
               .from('user_permissions')
               .select('permission')
               .eq('user_gabinete_id', userGabineteData.id);
 
-            setPermissions((permsData || []).map(p => p.permission as Permission));
+            console.log('usePermissions: Permissões do assessor:', permsData, 'error:', permsError);
+
+            const loadedPermissions = (permsData || []).map(p => p.permission as Permission);
+            console.log('usePermissions: Permissões carregadas:', loadedPermissions);
+            setPermissions(loadedPermissions);
+          } else {
+            console.log('usePermissions: Nenhum user_gabinete encontrado para assessor');
+            setPermissions([]);
           }
           setIsAdmin(false);
         }
@@ -97,7 +107,7 @@ export function usePermissions() {
         setPermissions([]);
         setIsAdmin(false);
       } finally {
-        console.log('usePermissions: Finalizando, loading = false');
+        console.log('usePermissions: Finalizando, loading = false, total permissions:', permissions.length);
         setLoading(false);
       }
     };
