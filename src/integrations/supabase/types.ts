@@ -847,6 +847,14 @@ export type Database = {
         }
         Returns: boolean
       }
+      user_is_gabinete_admin: {
+        Args: { _gabinete_id: string; _user_id?: string }
+        Returns: boolean
+      }
+      user_is_gabinete_owner: {
+        Args: { _gabinete_id: string; _user_id?: string }
+        Returns: boolean
+      }
     }
     Enums: {
       audit_action:
