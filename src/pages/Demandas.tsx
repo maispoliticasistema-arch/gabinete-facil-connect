@@ -5,7 +5,7 @@ import { useToast } from '@/hooks/use-toast';
 import { DemandasStats } from '@/components/demandas/DemandasStats';
 import { AddDemandaDialog } from '@/components/demandas/AddDemandaDialog';
 import { DemandaDetailsSheet } from '@/components/demandas/DemandaDetailsSheet';
-import { Search, Filter, X, ClipboardList } from 'lucide-react';
+import { Search, Filter, X, ClipboardList, Plus } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -51,6 +51,7 @@ const Demandas = () => {
   const [selectedPrioridade, setSelectedPrioridade] = useState<string>('');
   const [selectedDemanda, setSelectedDemanda] = useState<Demanda | null>(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
+  const [addDemandaOpen, setAddDemandaOpen] = useState(false);
   const [stats, setStats] = useState({
     total: 0,
     concluidas: 0,
@@ -184,7 +185,10 @@ const Demandas = () => {
             Gerencie todas as solicitações e atendimentos
           </p>
         </div>
-        <AddDemandaDialog onDemandaAdded={fetchDemandas} />
+        <Button onClick={() => setAddDemandaOpen(true)}>
+          <Plus className="mr-2 h-4 w-4" />
+          Nova Demanda
+        </Button>
       </div>
 
       <DemandasStats
@@ -321,6 +325,12 @@ const Demandas = () => {
           </div>
         )}
       </Card>
+      
+      <AddDemandaDialog 
+        open={addDemandaOpen}
+        onOpenChange={setAddDemandaOpen}
+        onDemandaAdded={fetchDemandas}
+      />
     </div>
   );
 };

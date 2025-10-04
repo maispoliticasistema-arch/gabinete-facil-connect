@@ -7,7 +7,7 @@ import { AddEleitoresDialog } from '@/components/eleitores/AddEleitoresDialog';
 import { ImportEleitoresDialog } from '@/components/eleitores/ImportEleitoresDialog';
 import { TagsDialog } from '@/components/eleitores/TagsDialog';
 import { EleitoresDetailsSheet } from '@/components/eleitores/EleitoresDetailsSheet';
-import { Users, Search, Filter, X } from 'lucide-react';
+import { Users, Search, Filter, X, UserPlus } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -74,6 +74,7 @@ const Eleitores = () => {
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [selectedEleitor, setSelectedEleitor] = useState<Eleitor | null>(null);
   const [eleitorSheetOpen, setEleitorSheetOpen] = useState(false);
+  const [addEleitorOpen, setAddEleitorOpen] = useState(false);
   const { currentGabinete } = useGabinete();
   const { toast } = useToast();
 
@@ -239,7 +240,10 @@ const Eleitores = () => {
         <div className="flex gap-2">
           <TagsDialog />
           <ImportEleitoresDialog onEleitoresImported={fetchEleitores} />
-          <AddEleitoresDialog onEleitoresAdded={fetchEleitores} />
+          <Button onClick={() => setAddEleitorOpen(true)}>
+            <UserPlus className="mr-2 h-4 w-4" />
+            Novo Eleitor
+          </Button>
         </div>
       </div>
 
@@ -486,6 +490,12 @@ const Eleitores = () => {
         eleitor={selectedEleitor}
         open={eleitorSheetOpen}
         onOpenChange={setEleitorSheetOpen}
+      />
+      
+      <AddEleitoresDialog 
+        open={addEleitorOpen}
+        onOpenChange={setAddEleitorOpen}
+        onEleitoresAdded={fetchEleitores}
       />
     </div>
   );
