@@ -28,7 +28,6 @@ interface Ponto {
   id: string;
   ordem: number;
   eleitor_id: string | null;
-  nome_pessoa: string | null;
   endereco_manual: string | null;
   observacoes: string | null;
   visitado: boolean;

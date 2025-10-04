@@ -39,7 +39,6 @@ interface Ponto {
   ordem: number;
   latitude: number | null;
   longitude: number | null;
-  nome_pessoa: string | null;
   endereco_manual: string | null;
   eleitores: {
     nome_completo: string;
@@ -99,7 +98,7 @@ const Roteiros = () => {
   const fetchPontos = async (roteiroId: string) => {
     const { data, error } = await supabase
       .from('roteiro_pontos')
-      .select('id, ordem, latitude, longitude, nome_pessoa, endereco_manual, eleitores(nome_completo)')
+      .select('id, ordem, latitude, longitude, endereco_manual, eleitores(nome_completo)')
       .eq('roteiro_id', roteiroId)
       .order('ordem');
 
