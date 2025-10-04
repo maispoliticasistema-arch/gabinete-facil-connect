@@ -27,7 +27,7 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     // Process in parallel batches for speed
-    const PARALLEL_BATCH_SIZE = 5;
+    const PARALLEL_BATCH_SIZE = 10;
     const results = [];
     
     const processEleitor = async (eleitor: any) => {
@@ -111,9 +111,9 @@ serve(async (req) => {
       const batchResults = await Promise.all(batch.map(processEleitor));
       results.push(...batchResults);
       
-      // Smaller delay between batches (200ms instead of 1000ms per item)
+      // Smaller delay between batches (100ms instead of 1000ms per item)
       if (i + PARALLEL_BATCH_SIZE < eleitores.length) {
-        await new Promise(resolve => setTimeout(resolve, 200));
+        await new Promise(resolve => setTimeout(resolve, 100));
       }
     }
 
