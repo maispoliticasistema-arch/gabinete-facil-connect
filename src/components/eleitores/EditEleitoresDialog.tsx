@@ -233,7 +233,7 @@ export const EditEleitoresDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Editar Eleitor</DialogTitle>
           <DialogDescription>
@@ -241,7 +241,7 @@ export const EditEleitoresDialog = ({
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pb-4">
             <FormField
               control={form.control}
               name="nome_completo"
@@ -377,7 +377,7 @@ export const EditEleitoresDialog = ({
             {tags.length > 0 && (
               <div className="space-y-3">
                 <FormLabel>Tags</FormLabel>
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-2 max-h-[150px] overflow-y-auto p-2 border rounded-md">
                   {tags.map((tag) => (
                     <div key={tag.id} className="flex items-center gap-2">
                       <Checkbox
