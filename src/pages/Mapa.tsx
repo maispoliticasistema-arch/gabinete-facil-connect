@@ -114,22 +114,13 @@ const Mapa = () => {
   useEffect(() => {
     if (!mapContainerRef.current || mapRef.current) return;
 
-    // Wait for next frame to ensure container is rendered with dimensions
-    requestAnimationFrame(() => {
+    // Small delay to ensure DOM is ready
+    const timer = setTimeout(() => {
       if (!mapContainerRef.current) return;
 
       try {
         // Create map
-        const map = L.map(mapContainerRef.current, {
-          center: [-15.7939, -47.8828], // Brazil center
-          zoom: 4,
-          scrollWheelZoom: true,
-        });
-
-        // Force map to recognize container size
-        setTimeout(() => {
-          map.invalidateSize();
-        }, 100);
+        const map = L.map(mapContainerRef.current).setView([-15.7939, -47.8828], 4);
 
         // Add tile layer
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -141,12 +132,16 @@ const Mapa = () => {
         const markersLayer = L.layerGroup().addTo(map);
         markersLayerRef.current = markersLayer;
         mapRef.current = map;
+
+        // Force resize after initialization
+        setTimeout(() => map.invalidateSize(), 100);
       } catch (error) {
         console.error('Error initializing map:', error);
       }
-    });
+    }, 250);
 
     return () => {
+      clearTimeout(timer);
       if (mapRef.current) {
         mapRef.current.remove();
         mapRef.current = null;
@@ -552,7 +547,6 @@ const Mapa = () => {
       <div 
         ref={mapContainerRef} 
         className="absolute inset-0"
-        style={{ width: '100%', height: '100%', background: '#f0f0f0' }}
       />
     </div>
   );
