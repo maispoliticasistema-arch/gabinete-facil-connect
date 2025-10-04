@@ -50,6 +50,19 @@ interface Demanda {
   responsavel_id: string | null;
 }
 
+interface Roteiro {
+  id: string;
+  nome: string;
+  data: string;
+  status: string;
+  objetivo: string | null;
+  roteiro_pontos: Array<{
+    ordem: number;
+    visitado: boolean;
+    visitado_em: string | null;
+  }>;
+}
+
 interface EleitoresDetailsSheetProps {
   eleitor: Eleitor | null;
   open: boolean;
@@ -62,7 +75,9 @@ export const EleitoresDetailsSheet = ({
   onOpenChange,
 }: EleitoresDetailsSheetProps) => {
   const [demandas, setDemandas] = useState<Demanda[]>([]);
+  const [roteiros, setRoteiros] = useState<Roteiro[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadingRoteiros, setLoadingRoteiros] = useState(false);
   const [selectedDemanda, setSelectedDemanda] = useState<Demanda | null>(null);
   const [demandaSheetOpen, setDemandaSheetOpen] = useState(false);
   const { toast } = useToast();
@@ -70,6 +85,7 @@ export const EleitoresDetailsSheet = ({
   useEffect(() => {
     if (open && eleitor) {
       fetchDemandas();
+      fetchRoteiros();
     }
   }, [open, eleitor]);
 
@@ -94,6 +110,59 @@ export const EleitoresDetailsSheet = ({
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchRoteiros = async () => {
+    if (!eleitor) return;
+
+    setLoadingRoteiros(true);
+    try {
+      const { data, error } = await supabase
+        .from('roteiro_pontos')
+        .select(`
+          ordem,
+          visitado,
+          visitado_em,
+          roteiros!inner(
+            id,
+            nome,
+            data,
+            status,
+            objetivo
+          )
+        `)
+        .eq('eleitor_id', eleitor.id)
+        .order('roteiros(data)', { ascending: false });
+
+      if (error) throw error;
+      
+      // Transformar os dados para agrupar por roteiro
+      const roteirosMap = new Map();
+      (data || []).forEach((item: any) => {
+        const roteiro = item.roteiros;
+        if (!roteirosMap.has(roteiro.id)) {
+          roteirosMap.set(roteiro.id, {
+            ...roteiro,
+            roteiro_pontos: []
+          });
+        }
+        roteirosMap.get(roteiro.id).roteiro_pontos.push({
+          ordem: item.ordem,
+          visitado: item.visitado,
+          visitado_em: item.visitado_em
+        });
+      });
+
+      setRoteiros(Array.from(roteirosMap.values()));
+    } catch (error: any) {
+      toast({
+        title: 'Erro ao carregar roteiros',
+        description: error.message,
+        variant: 'destructive',
+      });
+    } finally {
+      setLoadingRoteiros(false);
     }
   };
 
@@ -134,6 +203,16 @@ export const EleitoresDetailsSheet = ({
       urgente: 'bg-red-100 text-red-800',
     };
     return colors[prioridade] || 'bg-gray-100 text-gray-800';
+  };
+
+  const getStatusRoteiroColor = (status: string) => {
+    const colors: Record<string, string> = {
+      planejado: 'bg-blue-100 text-blue-800',
+      em_andamento: 'bg-yellow-100 text-yellow-800',
+      concluido: 'bg-green-100 text-green-800',
+      cancelado: 'bg-gray-100 text-gray-800',
+    };
+    return colors[status] || 'bg-gray-100 text-gray-800';
   };
 
   if (!eleitor) return null;
@@ -256,6 +335,65 @@ export const EleitoresDetailsSheet = ({
                 </div>
               </>
             )}
+
+            <Separator />
+
+            {/* Histórico de Roteiros e Visitas */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-semibold">Roteiros e Visitas</h3>
+                <Badge variant="secondary">{roteiros.length}</Badge>
+              </div>
+
+              {loadingRoteiros ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="h-6 w-6 animate-spin rounded-full border-b-2 border-primary"></div>
+                </div>
+              ) : roteiros.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-6">
+                  Nenhum roteiro registrado ainda
+                </p>
+              ) : (
+                <div className="space-y-3">
+                  {roteiros.map((roteiro) => {
+                    const ponto = roteiro.roteiro_pontos[0];
+                    return (
+                      <div
+                        key={roteiro.id}
+                        className="p-3 border rounded-lg"
+                      >
+                        <div className="space-y-2">
+                          <div className="flex items-start justify-between gap-2">
+                            <h4 className="text-sm font-medium line-clamp-1">{roteiro.nome}</h4>
+                            <Badge className={getStatusRoteiroColor(roteiro.status)} variant="secondary">
+                              {roteiro.status === 'planejado' ? 'Planejado' :
+                               roteiro.status === 'em_andamento' ? 'Em Andamento' :
+                               roteiro.status === 'concluido' ? 'Concluído' : 'Cancelado'}
+                            </Badge>
+                          </div>
+                          {roteiro.objetivo && (
+                            <p className="text-xs text-muted-foreground line-clamp-2">
+                              {roteiro.objetivo}
+                            </p>
+                          )}
+                          <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                            <div className="flex items-center gap-1">
+                              <Calendar className="h-3 w-3" />
+                              {formatDate(roteiro.data)}
+                            </div>
+                            {ponto.visitado && (
+                              <Badge className="bg-green-100 text-green-800" variant="secondary">
+                                ✓ Visitado
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
 
             <Separator />
 
