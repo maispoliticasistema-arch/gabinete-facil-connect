@@ -116,7 +116,10 @@ export function ImportEleitoresDialog({ onEleitoresImported }: ImportEleitoresDi
   };
 
   const handleImport = async () => {
-    if (!file || !currentGabinete) return;
+    if (!file || !currentGabinete) {
+      console.log('Missing file or gabinete:', { file: !!file, gabinete: !!currentGabinete });
+      return;
+    }
 
     // Validar que ao menos nome_completo foi mapeado
     const hasNomeCompleto = Object.values(columnMapping).includes('nome_completo');
@@ -130,65 +133,104 @@ export function ImportEleitoresDialog({ onEleitoresImported }: ImportEleitoresDi
     }
 
     setImporting(true);
+    console.log('Starting import...');
 
     try {
       const reader = new FileReader();
+      
+      reader.onerror = () => {
+        console.error('FileReader error');
+        toast({
+          title: 'Erro ao ler arquivo',
+          description: 'Não foi possível ler o arquivo',
+          variant: 'destructive',
+        });
+        setImporting(false);
+      };
+
       reader.onload = async (e) => {
-        const data = e.target?.result;
-        const workbook = XLSX.read(data, { type: 'binary' });
-        const sheetName = workbook.SheetNames[0];
-        const worksheet = workbook.Sheets[sheetName];
-        const jsonData = XLSX.utils.sheet_to_json(worksheet);
+        try {
+          const data = e.target?.result;
+          console.log('File loaded, parsing...');
+          
+          const workbook = XLSX.read(data, { type: 'binary' });
+          const sheetName = workbook.SheetNames[0];
+          const worksheet = workbook.Sheets[sheetName];
+          const jsonData = XLSX.utils.sheet_to_json(worksheet);
 
-        const eleitores = jsonData.map((row: any) => {
-          const eleitor: any = {
-            gabinete_id: currentGabinete.gabinete_id,
-          };
+          console.log('Parsed rows:', jsonData.length);
 
-          headers.forEach((header) => {
-            const campo = columnMapping[header];
-            if (campo && campo !== 'ignore' && row[header]) {
-              eleitor[campo] = String(row[header]).trim();
-            }
+          const eleitores = jsonData.map((row: any) => {
+            const eleitor: any = {
+              gabinete_id: currentGabinete.gabinete_id,
+            };
+
+            headers.forEach((header) => {
+              const campo = columnMapping[header];
+              if (campo && campo !== 'ignore' && row[header]) {
+                eleitor[campo] = String(row[header]).trim();
+              }
+            });
+
+            return eleitor;
+          }).filter((e: any) => e.nome_completo); // Apenas registros com nome
+
+          console.log('Eleitores to import:', eleitores.length);
+
+          if (eleitores.length === 0) {
+            toast({
+              title: 'Nenhum eleitor para importar',
+              description: 'Não foram encontrados registros válidos',
+              variant: 'destructive',
+            });
+            setImporting(false);
+            return;
+          }
+
+          console.log('Inserting into database...');
+          const { data: insertedData, error } = await supabase
+            .from('eleitores')
+            .insert(eleitores)
+            .select();
+
+          if (error) {
+            console.error('Database error:', error);
+            throw error;
+          }
+
+          console.log('Import successful:', insertedData?.length);
+
+          toast({
+            title: 'Importação concluída',
+            description: `${eleitores.length} eleitor(es) importado(s) com sucesso`,
           });
 
-          return eleitor;
-        }).filter((e: any) => e.nome_completo); // Apenas registros com nome
-
-        if (eleitores.length === 0) {
+          setOpen(false);
+          setFile(null);
+          setPreviewData([]);
+          setHeaders([]);
+          setColumnMapping({});
+          setImporting(false);
+          onEleitoresImported();
+        } catch (error: any) {
+          console.error('Error in onload:', error);
           toast({
-            title: 'Nenhum eleitor para importar',
-            description: 'Não foram encontrados registros válidos',
+            title: 'Erro ao importar',
+            description: error.message || 'Erro desconhecido',
             variant: 'destructive',
           });
           setImporting(false);
-          return;
         }
-
-        const { error } = await supabase.from('eleitores').insert(eleitores);
-
-        if (error) throw error;
-
-        toast({
-          title: 'Importação concluída',
-          description: `${eleitores.length} eleitor(es) importado(s) com sucesso`,
-        });
-
-        setOpen(false);
-        setFile(null);
-        setPreviewData([]);
-        setHeaders([]);
-        setColumnMapping({});
-        onEleitoresImported();
       };
+      
       reader.readAsBinaryString(file);
     } catch (error: any) {
+      console.error('Error in handleImport:', error);
       toast({
         title: 'Erro ao importar',
-        description: error.message,
+        description: error.message || 'Erro desconhecido',
         variant: 'destructive',
       });
-    } finally {
       setImporting(false);
     }
   };
