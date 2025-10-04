@@ -1,20 +1,13 @@
 import { useState, useEffect } from 'react';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Tag, Plus, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useGabinete } from '@/contexts/GabineteContext';
+import { Tag, Plus, Trash2 } from 'lucide-react';
 
 interface TagType {
   id: string;
@@ -28,8 +21,8 @@ export const TagsDialog = () => {
   const [newTagName, setNewTagName] = useState('');
   const [newTagColor, setNewTagColor] = useState('#6366f1');
   const [loading, setLoading] = useState(false);
-  const { toast } = useToast();
   const { currentGabinete } = useGabinete();
+  const { toast } = useToast();
 
   const fetchTags = async () => {
     if (!currentGabinete) return;
@@ -58,16 +51,15 @@ export const TagsDialog = () => {
     }
   }, [open, currentGabinete]);
 
-  const handleCreateTag = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleCreateTag = async () => {
     if (!currentGabinete || !newTagName.trim()) return;
 
     setLoading(true);
     try {
       const { error } = await supabase.from('tags').insert({
-        gabinete_id: currentGabinete.gabinete_id,
         nome: newTagName.trim(),
         cor: newTagColor,
+        gabinete_id: currentGabinete.gabinete_id,
       });
 
       if (error) throw error;
@@ -93,23 +85,23 @@ export const TagsDialog = () => {
 
   const handleDeleteTag = async (tagId: string) => {
     try {
-      // Delete tag relationships first
+      // Primeiro deletar as relações
       await supabase.from('eleitor_tags').delete().eq('tag_id', tagId);
 
-      // Then delete the tag
+      // Depois deletar a tag
       const { error } = await supabase.from('tags').delete().eq('id', tagId);
 
       if (error) throw error;
 
       toast({
-        title: 'Tag excluída!',
+        title: 'Tag deletada!',
         description: 'A tag foi removida com sucesso.',
       });
 
       fetchTags();
     } catch (error: any) {
       toast({
-        title: 'Erro ao excluir tag',
+        title: 'Erro ao deletar tag',
         description: error.message,
         variant: 'destructive',
       });
@@ -132,59 +124,73 @@ export const TagsDialog = () => {
         </DialogHeader>
 
         <div className="space-y-6">
-          <form onSubmit={handleCreateTag} className="space-y-4">
-            <div className="flex gap-3">
+          {/* Criar nova tag */}
+          <div className="space-y-4 border-b pb-4">
+            <h3 className="text-sm font-semibold">Nova Tag</h3>
+            <div className="flex gap-2">
               <div className="flex-1">
-                <Label htmlFor="tag-name">Nome da Tag</Label>
+                <Label htmlFor="tag-name">Nome</Label>
                 <Input
                   id="tag-name"
+                  placeholder="Ex: Apoiador"
                   value={newTagName}
                   onChange={(e) => setNewTagName(e.target.value)}
-                  placeholder="Ex: VIP, Liderança, etc."
-                  required
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      handleCreateTag();
+                    }
+                  }}
                 />
               </div>
-              <div>
+              <div className="w-24">
                 <Label htmlFor="tag-color">Cor</Label>
                 <Input
                   id="tag-color"
                   type="color"
                   value={newTagColor}
                   onChange={(e) => setNewTagColor(e.target.value)}
-                  className="w-20 h-10"
+                  className="h-10 p-1 cursor-pointer"
                 />
               </div>
             </div>
-            <Button type="submit" disabled={loading} className="w-full">
+            <Button onClick={handleCreateTag} disabled={loading || !newTagName.trim()} className="w-full">
               <Plus className="h-4 w-4 mr-2" />
               Criar Tag
             </Button>
-          </form>
+          </div>
 
+          {/* Lista de tags */}
           <div className="space-y-3">
-            <Label>Tags Existentes</Label>
+            <h3 className="text-sm font-semibold">Tags Existentes</h3>
             {tags.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-8">
+              <p className="text-sm text-muted-foreground text-center py-4">
                 Nenhuma tag criada ainda
               </p>
             ) : (
-              <div className="flex flex-wrap gap-2">
+              <div className="space-y-2 max-h-[300px] overflow-y-auto">
                 {tags.map((tag) => (
-                  <Badge
+                  <div
                     key={tag.id}
-                    style={{ backgroundColor: tag.cor }}
-                    className="pl-3 pr-2 py-1.5 text-white"
+                    className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-accent/50 transition-colors"
                   >
-                    {tag.nome}
+                    <Badge
+                      style={{
+                        backgroundColor: tag.cor,
+                        color: '#fff',
+                      }}
+                      className="font-medium"
+                    >
+                      {tag.nome}
+                    </Badge>
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-4 w-4 ml-2 p-0 hover:bg-transparent"
+                      className="h-8 w-8 text-destructive hover:text-destructive"
                       onClick={() => handleDeleteTag(tag.id)}
                     >
-                      <X className="h-3 w-3" />
+                      <Trash2 className="h-4 w-4" />
                     </Button>
-                  </Badge>
+                  </div>
                 ))}
               </div>
             )}
