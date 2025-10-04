@@ -116,7 +116,7 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter className="border-t border-sidebar-border p-4">
+      <SidebarFooter className={`border-t border-sidebar-border ${collapsed ? 'p-2' : 'p-4'}`}>
         {!collapsed && gabinetes.length > 1 && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -150,12 +150,12 @@ export function AppSidebar() {
           </DropdownMenu>
         )}
 
-        <div className={`flex ${collapsed ? 'flex-col' : ''} gap-2`}>
+        <div className={`flex ${collapsed ? 'flex-col gap-1' : 'gap-2'}`}>
           <Button
             variant="ghost"
             size="icon"
             onClick={toggleTheme}
-            className={`${!collapsed ? 'flex-1' : ''} bg-sidebar-accent text-sidebar-accent-foreground hover:bg-sidebar-accent/80`}
+            className={`${!collapsed ? 'flex-1' : 'w-10 h-10'} bg-sidebar-accent text-sidebar-accent-foreground hover:bg-sidebar-accent/80`}
           >
             {theme === 'light' ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
           </Button>
@@ -163,7 +163,7 @@ export function AppSidebar() {
             variant="ghost"
             size="icon"
             onClick={signOut}
-            className={`${!collapsed ? 'flex-1' : ''} bg-sidebar-accent text-sidebar-accent-foreground hover:bg-sidebar-accent/80`}
+            className={`${!collapsed ? 'flex-1' : 'w-10 h-10'} bg-sidebar-accent text-sidebar-accent-foreground hover:bg-sidebar-accent/80`}
           >
             <LogOut className="h-4 w-4" />
           </Button>
