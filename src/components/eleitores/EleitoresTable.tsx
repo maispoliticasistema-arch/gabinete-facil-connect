@@ -14,6 +14,7 @@ import { ptBR } from 'date-fns/locale';
 import { Mail, Phone, MapPin, Calendar, Pencil, Trash2 } from 'lucide-react';
 import { EditEleitoresDialog } from './EditEleitoresDialog';
 import { DeleteEleitoresDialog } from './DeleteEleitoresDialog';
+import { EleitoresTagsSelect } from './EleitoresTagsSelect';
 
 interface Eleitor {
   id: string;
@@ -83,6 +84,7 @@ export const EleitoresTable = ({ eleitores, onEleitoresUpdated }: EleitoresTable
             <TableRow>
               <TableHead className="min-w-[180px]">Eleitor</TableHead>
               <TableHead className="min-w-[150px]">Contato</TableHead>
+              <TableHead className="min-w-[150px] hidden lg:table-cell">Tags</TableHead>
               <TableHead className="min-w-[150px] hidden md:table-cell">Localização</TableHead>
               <TableHead className="min-w-[120px] hidden lg:table-cell">Data Nasc.</TableHead>
               <TableHead className="min-w-[100px] hidden xl:table-cell">Cadastro</TableHead>
@@ -92,7 +94,7 @@ export const EleitoresTable = ({ eleitores, onEleitoresUpdated }: EleitoresTable
           <TableBody>
             {eleitores.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
                   Nenhum eleitor cadastrado ainda
                 </TableCell>
               </TableRow>
@@ -129,6 +131,12 @@ export const EleitoresTable = ({ eleitores, onEleitoresUpdated }: EleitoresTable
                       <span className="text-muted-foreground text-xs">-</span>
                     )}
                   </div>
+                </TableCell>
+                <TableCell className="hidden lg:table-cell">
+                  <EleitoresTagsSelect 
+                    eleitorId={eleitor.id} 
+                    onTagsChange={onEleitoresUpdated}
+                  />
                 </TableCell>
                 <TableCell className="hidden md:table-cell">
                   {eleitor.cidade || eleitor.estado ? (

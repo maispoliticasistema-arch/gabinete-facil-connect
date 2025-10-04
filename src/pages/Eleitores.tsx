@@ -5,6 +5,7 @@ import { useToast } from '@/hooks/use-toast';
 import { EleitoresTable } from '@/components/eleitores/EleitoresTable';
 import { AddEleitoresDialog } from '@/components/eleitores/AddEleitoresDialog';
 import { ImportEleitoresDialog } from '@/components/eleitores/ImportEleitoresDialog';
+import { TagsDialog } from '@/components/eleitores/TagsDialog';
 import { Users, Search } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -106,6 +107,7 @@ const Eleitores = () => {
           </p>
         </div>
         <div className="flex gap-2">
+          <TagsDialog />
           <ImportEleitoresDialog onEleitoresImported={fetchEleitores} />
           <AddEleitoresDialog onEleitoresAdded={fetchEleitores} />
         </div>

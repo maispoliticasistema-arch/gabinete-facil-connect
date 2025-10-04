@@ -155,6 +155,27 @@ export type Database = {
           },
         ]
       }
+      eleitor_tags: {
+        Row: {
+          created_at: string
+          eleitor_id: string
+          id: string
+          tag_id: string
+        }
+        Insert: {
+          created_at?: string
+          eleitor_id: string
+          id?: string
+          tag_id: string
+        }
+        Update: {
+          created_at?: string
+          eleitor_id?: string
+          id?: string
+          tag_id?: string
+        }
+        Relationships: []
+      }
       eleitores: {
         Row: {
           bairro: string | null
@@ -296,6 +317,33 @@ export type Database = {
           nome_completo?: string
           telefone?: string | null
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      tags: {
+        Row: {
+          cor: string
+          created_at: string
+          gabinete_id: string
+          id: string
+          nome: string
+          updated_at: string
+        }
+        Insert: {
+          cor?: string
+          created_at?: string
+          gabinete_id: string
+          id?: string
+          nome: string
+          updated_at?: string
+        }
+        Update: {
+          cor?: string
+          created_at?: string
+          gabinete_id?: string
+          id?: string
+          nome?: string
+          updated_at?: string
         }
         Relationships: []
       }
