@@ -326,6 +326,58 @@ export const AddRoteiroDialog = ({
 
       if (pontosError) throw pontosError;
 
+      // Calcular rota completa e distância usando OSRM
+      if (todosPontos.length > 0) {
+        try {
+          // Criar array de coordenadas: partida -> pontos -> final
+          const coordinates = [];
+          
+          if (latitudePartida && longitudePartida) {
+            coordinates.push(`${longitudePartida},${latitudePartida}`);
+          }
+          
+          todosPontos
+            .sort((a, b) => a.ordem - b.ordem)
+            .forEach(ponto => {
+              if (ponto.latitude && ponto.longitude) {
+                coordinates.push(`${ponto.longitude},${ponto.latitude}`);
+              }
+            });
+          
+          if (latitudeFinal && longitudeFinal) {
+            coordinates.push(`${longitudeFinal},${latitudeFinal}`);
+          }
+
+          if (coordinates.length >= 2) {
+            const osrmUrl = `https://router.project-osrm.org/route/v1/driving/${coordinates.join(';')}?overview=full&geometries=geojson`;
+            
+            const routeResponse = await fetch(osrmUrl);
+            
+            if (routeResponse.ok) {
+              const routeData = await routeResponse.json();
+              
+              if (routeData.code === 'Ok' && routeData.routes && routeData.routes.length > 0) {
+                const route = routeData.routes[0];
+                const distanciaKm = (route.distance / 1000).toFixed(2);
+                const tempoMinutos = Math.round(route.duration / 60);
+                
+                // Atualizar roteiro com distância e tempo
+                await supabase
+                  .from('roteiros')
+                  .update({
+                    distancia_total: parseFloat(distanciaKm),
+                    tempo_estimado: tempoMinutos
+                  })
+                  .eq('id', roteiro.id);
+              }
+            }
+          }
+        } catch (error) {
+          console.error('Erro ao calcular rota:', error);
+          // Não falha o processo se a rota não puder ser calculada
+        }
+      }
+
       toast({
         title: 'Sucesso',
         description: 'Roteiro criado com sucesso!'

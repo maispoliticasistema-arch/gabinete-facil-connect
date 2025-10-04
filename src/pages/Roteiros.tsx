@@ -70,6 +70,7 @@ const Roteiros = () => {
   const [pontos, setPontos] = useState<Ponto[]>([]);
   const [selectedRoteiroData, setSelectedRoteiroData] = useState<Roteiro | null>(null);
   const [mapCenter, setMapCenter] = useState<[number, number]>([-30.0346, -51.2177]);
+  const [routeGeometry, setRouteGeometry] = useState<[number, number][]>([]);
 
   useEffect(() => {
     if (currentGabinete) {
@@ -82,9 +83,15 @@ const Roteiros = () => {
       fetchPontos(selectedRoteiroForMap);
       const roteiro = roteiros.find(r => r.id === selectedRoteiroForMap);
       setSelectedRoteiroData(roteiro || null);
+      
+      // Calcular rota quando selecionar um roteiro
+      if (roteiro) {
+        calculateRoute(roteiro);
+      }
     } else {
       setPontos([]);
       setSelectedRoteiroData(null);
+      setRouteGeometry([]);
     }
   }, [selectedRoteiroForMap, roteiros]);
 
@@ -122,6 +129,61 @@ const Roteiros = () => {
     
     if (validPontos.length > 0 && validPontos[0].latitude && validPontos[0].longitude) {
       setMapCenter([validPontos[0].latitude, validPontos[0].longitude]);
+    }
+  };
+
+  const calculateRoute = async (roteiro: Roteiro) => {
+    try {
+      // Buscar pontos do roteiro
+      const { data: pontosData } = await supabase
+        .from('roteiro_pontos')
+        .select('latitude, longitude, ordem')
+        .eq('roteiro_id', roteiro.id)
+        .order('ordem');
+
+      if (!pontosData || pontosData.length === 0) {
+        setRouteGeometry([]);
+        return;
+      }
+
+      // Criar array de coordenadas: partida -> pontos -> final
+      const coordinates = [];
+      
+      if (roteiro.latitude_partida && roteiro.longitude_partida) {
+        coordinates.push(`${roteiro.longitude_partida},${roteiro.latitude_partida}`);
+      }
+      
+      pontosData.forEach(ponto => {
+        if (ponto.latitude && ponto.longitude) {
+          coordinates.push(`${ponto.longitude},${ponto.latitude}`);
+        }
+      });
+      
+      if (roteiro.latitude_final && roteiro.longitude_final) {
+        coordinates.push(`${roteiro.longitude_final},${roteiro.latitude_final}`);
+      }
+
+      if (coordinates.length >= 2) {
+        const osrmUrl = `https://router.project-osrm.org/route/v1/driving/${coordinates.join(';')}?overview=full&geometries=geojson`;
+        
+        const routeResponse = await fetch(osrmUrl);
+        
+        if (routeResponse.ok) {
+          const routeData = await routeResponse.json();
+          
+          if (routeData.code === 'Ok' && routeData.routes && routeData.routes.length > 0) {
+            const route = routeData.routes[0];
+            // Converter coordenadas de [lng, lat] para [lat, lng]
+            const geometry = route.geometry.coordinates.map((coord: number[]) => [coord[1], coord[0]] as [number, number]);
+            setRouteGeometry(geometry);
+          }
+        }
+      } else {
+        setRouteGeometry([]);
+      }
+    } catch (error) {
+      console.error('Erro ao calcular rota:', error);
+      setRouteGeometry([]);
     }
   };
 
@@ -329,41 +391,13 @@ const Roteiros = () => {
                 </Marker>
               )}
 
-              {/* Linha do ponto de partida até primeira parada */}
-              {selectedRoteiroData && selectedRoteiroData.latitude_partida && selectedRoteiroData.longitude_partida && pontos.length > 0 && pontos[0].latitude && pontos[0].longitude && (
+              {/* Rota completa calculada pelo OSRM */}
+              {routeGeometry.length > 0 && (
                 <Polyline
-                  positions={[
-                    [selectedRoteiroData.latitude_partida, selectedRoteiroData.longitude_partida],
-                    [pontos[0].latitude, pontos[0].longitude]
-                  ]}
-                  color="#22c55e"
-                  weight={3}
-                  opacity={0.7}
-                  dashArray="10, 10"
-                />
-              )}
-
-              {/* Linha das paradas */}
-              {pontos.length > 0 && (
-                <Polyline
-                  positions={pontos.map(p => [p.latitude, p.longitude] as [number, number])}
+                  positions={routeGeometry}
                   color="#3b82f6"
-                  weight={3}
-                  opacity={0.7}
-                />
-              )}
-
-              {/* Linha da última parada até ponto final */}
-              {selectedRoteiroData && selectedRoteiroData.latitude_final && selectedRoteiroData.longitude_final && pontos.length > 0 && pontos[pontos.length - 1].latitude && pontos[pontos.length - 1].longitude && (
-                <Polyline
-                  positions={[
-                    [pontos[pontos.length - 1].latitude, pontos[pontos.length - 1].longitude],
-                    [selectedRoteiroData.latitude_final, selectedRoteiroData.longitude_final]
-                  ]}
-                  color="#3b82f6"
-                  weight={3}
-                  opacity={0.7}
-                  dashArray="10, 10"
+                  weight={4}
+                  opacity={0.8}
                 />
               )}
 
