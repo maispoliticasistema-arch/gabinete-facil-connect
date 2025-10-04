@@ -17,6 +17,7 @@ import Agenda from "./pages/Agenda";
 import Mapa from "./pages/Mapa";
 import Roteiros from "./pages/Roteiros";
 import Configuracoes from "./pages/Configuracoes";
+import Relatorios from "./pages/Relatorios";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -106,6 +107,18 @@ const App = () => (
                     <RequiresGabinete>
                       <MainLayout>
                         <Roteiros />
+                      </MainLayout>
+                    </RequiresGabinete>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/relatorios"
+                element={
+                  <ProtectedRoute>
+                    <RequiresGabinete>
+                      <MainLayout>
+                        <Relatorios />
                       </MainLayout>
                     </RequiresGabinete>
                   </ProtectedRoute>
