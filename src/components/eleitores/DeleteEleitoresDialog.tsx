@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { isPermissionError, getPermissionErrorMessage } from '@/lib/permissionErrors';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -44,7 +45,20 @@ export const DeleteEleitoresDialog = ({
         .delete()
         .eq('id', eleitor.id);
 
-      if (error) throw error;
+      if (error) {
+        // Verificar se é erro de permissão (RLS)
+        if (isPermissionError(error)) {
+          const errorMsg = getPermissionErrorMessage('delete');
+          toast({
+            title: errorMsg.title,
+            description: errorMsg.description,
+            variant: 'destructive',
+          });
+          setLoading(false);
+          return;
+        }
+        throw error;
+      }
 
       toast({
         title: 'Eleitor excluído!',
@@ -54,11 +68,21 @@ export const DeleteEleitoresDialog = ({
       onOpenChange(false);
       onEleitoresDeleted();
     } catch (error: any) {
-      toast({
-        title: 'Erro ao excluir eleitor',
-        description: error.message,
-        variant: 'destructive',
-      });
+      // Verificar se é erro de permissão
+      if (isPermissionError(error)) {
+        const errorMsg = getPermissionErrorMessage('delete');
+        toast({
+          title: errorMsg.title,
+          description: errorMsg.description,
+          variant: 'destructive',
+        });
+      } else {
+        toast({
+          title: 'Erro ao excluir eleitor',
+          description: error.message,
+          variant: 'destructive',
+        });
+      }
     } finally {
       setLoading(false);
     }

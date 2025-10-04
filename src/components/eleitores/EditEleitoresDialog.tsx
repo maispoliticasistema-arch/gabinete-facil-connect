@@ -5,6 +5,7 @@ import * as z from 'zod';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useGabinete } from '@/contexts/GabineteContext';
+import { isPermissionError, getPermissionErrorMessage } from '@/lib/permissionErrors';
 import {
   Dialog,
   DialogContent,
@@ -198,7 +199,20 @@ export const EditEleitoresDialog = ({
         })
         .eq('id', eleitor.id);
 
-      if (error) throw error;
+      if (error) {
+        // Verificar se é erro de permissão (RLS)
+        if (isPermissionError(error)) {
+          const errorMsg = getPermissionErrorMessage('edit');
+          toast({
+            title: errorMsg.title,
+            description: errorMsg.description,
+            variant: 'destructive',
+          });
+          setLoading(false);
+          return;
+        }
+        throw error;
+      }
 
       // Atualizar tags
       // Primeiro deletar as tags antigas
@@ -246,11 +260,21 @@ export const EditEleitoresDialog = ({
       onOpenChange(false);
       onEleitoresUpdated();
     } catch (error: any) {
-      toast({
-        title: 'Erro ao atualizar eleitor',
-        description: error.message,
-        variant: 'destructive',
-      });
+      // Verificar se é erro de permissão
+      if (isPermissionError(error)) {
+        const errorMsg = getPermissionErrorMessage('edit');
+        toast({
+          title: errorMsg.title,
+          description: errorMsg.description,
+          variant: 'destructive',
+        });
+      } else {
+        toast({
+          title: 'Erro ao atualizar eleitor',
+          description: error.message,
+          variant: 'destructive',
+        });
+      }
     } finally {
       setLoading(false);
     }
