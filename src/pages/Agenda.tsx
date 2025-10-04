@@ -79,27 +79,40 @@ const Agenda = () => {
       endDate = addDays(endDate || startDate, 30);
     }
 
-    const { data, error } = await supabase
+    // Buscar eventos
+    const { data: agendaData, error: agendaError } = await supabase
       .from("agenda")
-      .select(`
-        *,
-        agenda_participantes(
-          user_id,
-          presente,
-          profiles(nome_completo)
-        )
-      `)
+      .select("*")
       .eq("gabinete_id", currentGabinete.gabinete_id)
       .gte("data_inicio", startDate.toISOString())
       .lte("data_inicio", endDate.toISOString())
       .order("data_inicio", { ascending: true });
 
-    if (error) {
-      console.error("Erro ao buscar eventos:", error);
+    if (agendaError) {
+      console.error("Erro ao buscar eventos:", agendaError);
       return;
     }
 
-    setEventos(data || []);
+    // Buscar participantes e perfis separadamente
+    const eventosComParticipantes = await Promise.all(
+      (agendaData || []).map(async (evento) => {
+        const { data: participantesData } = await supabase
+          .from("agenda_participantes")
+          .select(`
+            user_id,
+            presente,
+            profiles!fk_agenda_participantes_user_id(nome_completo)
+          `)
+          .eq("evento_id", evento.id);
+
+        return {
+          ...evento,
+          agenda_participantes: participantesData || [],
+        };
+      })
+    );
+
+    setEventos(eventosComParticipantes as Evento[]);
   };
 
   const filteredEventos = useMemo(() => {

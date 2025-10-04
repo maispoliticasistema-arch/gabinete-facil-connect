@@ -129,6 +129,13 @@ export type Database = {
             referencedRelation: "agenda"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "fk_agenda_participantes_user_id"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
         ]
       }
       demanda_comentarios: {
