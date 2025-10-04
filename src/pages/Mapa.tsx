@@ -101,16 +101,15 @@ const Mapa = () => {
         const { data: eleitoresData, error: eleitoresError } = await supabase
           .from('eleitores')
           .select('*')
-          .eq('gabinete_id', currentGabinete.gabinete_id)
-          .not('latitude', 'is', null)
-          .not('longitude', 'is', null);
+          .eq('gabinete_id', currentGabinete.gabinete_id);
 
         if (eleitoresError) {
           console.error('Error fetching eleitores:', eleitoresError);
           throw eleitoresError;
         }
 
-        console.log('Eleitores fetched:', eleitoresData?.length || 0);
+        const eleitoresComCoords = (eleitoresData || []).filter(e => e.latitude && e.longitude);
+        console.log('Eleitores fetched:', eleitoresData?.length || 0, 'com coordenadas:', eleitoresComCoords.length);
 
         const { data: demandasData, error: demandasError } = await supabase
           .from('demandas')
@@ -140,11 +139,11 @@ const Mapa = () => {
         const validDemandas = (demandasData || []).filter(d => d.eleitores && d.eleitores.latitude && d.eleitores.longitude);
         console.log('Valid demandas with coords:', validDemandas.length);
 
-        setEleitores(eleitoresData || []);
+        setEleitores(eleitoresComCoords);
         setDemandas(validDemandas);
 
-        if (eleitoresData && eleitoresData.length > 0 && mapRef.current) {
-          mapRef.current.setView([eleitoresData[0].latitude, eleitoresData[0].longitude], 13);
+        if (eleitoresComCoords.length > 0 && mapRef.current) {
+          mapRef.current.setView([eleitoresComCoords[0].latitude, eleitoresComCoords[0].longitude], 13);
         }
       } catch (error: any) {
         console.error('Error in fetchData:', error);
