@@ -50,6 +50,7 @@ interface Eleitor {
   bairro: string | null;
   cidade: string | null;
   estado: string | null;
+  cep: string | null;
   created_at: string;
 }
 
