@@ -1,4 +1,4 @@
-import { Building2, Calendar, FileText, Home, Map, Route, Users, ChevronDown, LogOut, Moon, Sun } from 'lucide-react';
+import { Building2, Calendar, FileText, Home, Map, Route, Users, ChevronDown, LogOut, Moon, Sun, Settings } from 'lucide-react';
 import { NavLink, useLocation } from 'react-router-dom';
 import {
   Sidebar,
@@ -33,6 +33,7 @@ const menuItems = [
   { title: 'Agenda', url: '/agenda', icon: Calendar },
   { title: 'Mapa', url: '/mapa', icon: Map },
   { title: 'Roteiros', url: '/roteiros', icon: Route },
+  { title: 'Configurações', url: '/configuracoes', icon: Settings },
 ];
 
 export function AppSidebar() {

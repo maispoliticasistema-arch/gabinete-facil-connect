@@ -138,6 +138,53 @@ export type Database = {
           },
         ]
       }
+      audit_logs: {
+        Row: {
+          action: Database["public"]["Enums"]["audit_action"]
+          created_at: string | null
+          details: Json | null
+          entity_id: string | null
+          entity_type: Database["public"]["Enums"]["audit_entity"] | null
+          gabinete_id: string
+          id: string
+          ip_address: string | null
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          action: Database["public"]["Enums"]["audit_action"]
+          created_at?: string | null
+          details?: Json | null
+          entity_id?: string | null
+          entity_type?: Database["public"]["Enums"]["audit_entity"] | null
+          gabinete_id: string
+          id?: string
+          ip_address?: string | null
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          action?: Database["public"]["Enums"]["audit_action"]
+          created_at?: string | null
+          details?: Json | null
+          entity_id?: string | null
+          entity_type?: Database["public"]["Enums"]["audit_entity"] | null
+          gabinete_id?: string
+          id?: string
+          ip_address?: string | null
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_logs_gabinete_id_fkey"
+            columns: ["gabinete_id"]
+            isOneToOne: false
+            referencedRelation: "gabinetes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       demanda_comentarios: {
         Row: {
           comentario: string
@@ -365,6 +412,47 @@ export type Database = {
           },
         ]
       }
+      gabinete_integrations: {
+        Row: {
+          config: Json | null
+          created_at: string | null
+          gabinete_id: string
+          id: string
+          integration_type: string
+          is_active: boolean | null
+          last_sync: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          config?: Json | null
+          created_at?: string | null
+          gabinete_id: string
+          id?: string
+          integration_type: string
+          is_active?: boolean | null
+          last_sync?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          config?: Json | null
+          created_at?: string | null
+          gabinete_id?: string
+          id?: string
+          integration_type?: string
+          is_active?: boolean | null
+          last_sync?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gabinete_integrations_gabinete_id_fkey"
+            columns: ["gabinete_id"]
+            isOneToOne: false
+            referencedRelation: "gabinetes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       gabinetes: {
         Row: {
           cargo: Database["public"]["Enums"]["cargo_politico"] | null
@@ -374,6 +462,7 @@ export type Database = {
           estado: string | null
           id: string
           nome: string
+          slogan: string | null
           updated_at: string | null
         }
         Insert: {
@@ -384,6 +473,7 @@ export type Database = {
           estado?: string | null
           id?: string
           nome: string
+          slogan?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -394,6 +484,7 @@ export type Database = {
           estado?: string | null
           id?: string
           nome?: string
+          slogan?: string | null
           updated_at?: string | null
         }
         Relationships: []
@@ -656,17 +747,123 @@ export type Database = {
           },
         ]
       }
+      user_notification_preferences: {
+        Row: {
+          created_at: string | null
+          deadline_reminders: boolean | null
+          email_notifications: boolean | null
+          gabinete_id: string
+          id: string
+          internal_notifications: boolean | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          deadline_reminders?: boolean | null
+          email_notifications?: boolean | null
+          gabinete_id: string
+          id?: string
+          internal_notifications?: boolean | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          deadline_reminders?: boolean | null
+          email_notifications?: boolean | null
+          gabinete_id?: string
+          id?: string
+          internal_notifications?: boolean | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_notification_preferences_gabinete_id_fkey"
+            columns: ["gabinete_id"]
+            isOneToOne: false
+            referencedRelation: "gabinetes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_permissions: {
+        Row: {
+          created_at: string | null
+          id: string
+          permission: Database["public"]["Enums"]["permission_type"]
+          user_gabinete_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          permission: Database["public"]["Enums"]["permission_type"]
+          user_gabinete_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          permission?: Database["public"]["Enums"]["permission_type"]
+          user_gabinete_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_permissions_user_gabinete_id_fkey"
+            columns: ["user_gabinete_id"]
+            isOneToOne: false
+            referencedRelation: "user_gabinetes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      log_audit_action: {
+        Args: {
+          _action: Database["public"]["Enums"]["audit_action"]
+          _details?: Json
+          _entity_id?: string
+          _entity_type?: Database["public"]["Enums"]["audit_entity"]
+          _gabinete_id: string
+        }
+        Returns: undefined
+      }
       user_has_gabinete_access: {
         Args: { gabinete_uuid: string }
         Returns: boolean
       }
+      user_has_permission: {
+        Args: {
+          _gabinete_id: string
+          _permission: Database["public"]["Enums"]["permission_type"]
+        }
+        Returns: boolean
+      }
     }
     Enums: {
+      audit_action:
+        | "create"
+        | "update"
+        | "delete"
+        | "login"
+        | "logout"
+        | "permission_change"
+        | "user_created"
+        | "user_disabled"
+        | "user_deleted"
+      audit_entity:
+        | "eleitor"
+        | "demanda"
+        | "agenda"
+        | "roteiro"
+        | "tag"
+        | "user"
+        | "gabinete"
+        | "permission"
       cargo_politico:
         | "vereador"
         | "prefeito"
@@ -675,6 +872,26 @@ export type Database = {
         | "senador"
       demanda_prioridade: "baixa" | "media" | "alta" | "urgente"
       demanda_status: "aberta" | "em_andamento" | "concluida" | "cancelada"
+      permission_type:
+        | "view_eleitores"
+        | "create_eleitores"
+        | "edit_eleitores"
+        | "delete_eleitores"
+        | "view_demandas"
+        | "create_demandas"
+        | "edit_demandas"
+        | "delete_demandas"
+        | "view_agenda"
+        | "create_agenda"
+        | "edit_agenda"
+        | "delete_agenda"
+        | "view_roteiros"
+        | "create_roteiros"
+        | "edit_roteiros"
+        | "delete_roteiros"
+        | "view_relatorios"
+        | "manage_users"
+        | "manage_settings"
       roteiro_status: "planejado" | "em_andamento" | "concluido" | "cancelado"
       user_role: "owner" | "admin" | "assessor"
     }
@@ -804,6 +1021,27 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      audit_action: [
+        "create",
+        "update",
+        "delete",
+        "login",
+        "logout",
+        "permission_change",
+        "user_created",
+        "user_disabled",
+        "user_deleted",
+      ],
+      audit_entity: [
+        "eleitor",
+        "demanda",
+        "agenda",
+        "roteiro",
+        "tag",
+        "user",
+        "gabinete",
+        "permission",
+      ],
       cargo_politico: [
         "vereador",
         "prefeito",
@@ -813,6 +1051,27 @@ export const Constants = {
       ],
       demanda_prioridade: ["baixa", "media", "alta", "urgente"],
       demanda_status: ["aberta", "em_andamento", "concluida", "cancelada"],
+      permission_type: [
+        "view_eleitores",
+        "create_eleitores",
+        "edit_eleitores",
+        "delete_eleitores",
+        "view_demandas",
+        "create_demandas",
+        "edit_demandas",
+        "delete_demandas",
+        "view_agenda",
+        "create_agenda",
+        "edit_agenda",
+        "delete_agenda",
+        "view_roteiros",
+        "create_roteiros",
+        "edit_roteiros",
+        "delete_roteiros",
+        "view_relatorios",
+        "manage_users",
+        "manage_settings",
+      ],
       roteiro_status: ["planejado", "em_andamento", "concluido", "cancelado"],
       user_role: ["owner", "admin", "assessor"],
     },

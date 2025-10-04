@@ -16,6 +16,7 @@ import Eleitores from "./pages/Eleitores";
 import Agenda from "./pages/Agenda";
 import Mapa from "./pages/Mapa";
 import Roteiros from "./pages/Roteiros";
+import Configuracoes from "./pages/Configuracoes";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -105,6 +106,18 @@ const App = () => (
                     <RequiresGabinete>
                       <MainLayout>
                         <Roteiros />
+                      </MainLayout>
+                    </RequiresGabinete>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/configuracoes"
+                element={
+                  <ProtectedRoute>
+                    <RequiresGabinete>
+                      <MainLayout>
+                        <Configuracoes />
                       </MainLayout>
                     </RequiresGabinete>
                   </ProtectedRoute>
