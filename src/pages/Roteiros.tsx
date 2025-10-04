@@ -72,14 +72,14 @@ const Roteiros = () => {
   const [selectedRoteiroForMap, setSelectedRoteiroForMap] = useState<string | null>(null);
   const [pontos, setPontos] = useState<Ponto[]>([]);
   const [selectedRoteiroData, setSelectedRoteiroData] = useState<Roteiro | null>(null);
+  const [mapCenter, setMapCenter] = useState<[number, number]>([-30.0346, -51.2177]);
+  const [routeGeometry, setRouteGeometry] = useState<[number, number][]>([]);
+  const [locaisVisitados, setLocaisVisitados] = useState(0);
 
   // Verificar permissão de visualização
   if (!hasPermission('view_roteiros')) {
     return <NoPermissionMessage />;
   }
-  const [mapCenter, setMapCenter] = useState<[number, number]>([-30.0346, -51.2177]);
-  const [routeGeometry, setRouteGeometry] = useState<[number, number][]>([]);
-  const [locaisVisitados, setLocaisVisitados] = useState(0);
 
   useEffect(() => {
     if (currentGabinete) {
