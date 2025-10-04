@@ -168,7 +168,21 @@ export function ImportEleitoresDialog({ onEleitoresImported }: ImportEleitoresDi
             headers.forEach((header) => {
               const campo = columnMapping[header];
               if (campo && campo !== 'ignore' && row[header]) {
-                eleitor[campo] = String(row[header]).trim();
+                let valor = String(row[header]).trim();
+                
+                // Convert data_nascimento from DD/MM/AAAA to YYYY-MM-DD
+                if (campo === 'data_nascimento' && valor) {
+                  // Check if it's in DD/MM/AAAA format
+                  if (valor.includes('/')) {
+                    const parts = valor.split('/');
+                    if (parts.length === 3) {
+                      const [dia, mes, ano] = parts;
+                      valor = `${ano}-${mes.padStart(2, '0')}-${dia.padStart(2, '0')}`;
+                    }
+                  }
+                }
+                
+                eleitor[campo] = valor;
               }
             });
 
