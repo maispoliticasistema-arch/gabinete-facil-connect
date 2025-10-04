@@ -822,6 +822,12 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_user_gabinetes_ids: {
+        Args: { _user_id: string }
+        Returns: {
+          gabinete_id: string
+        }[]
+      }
       log_audit_action: {
         Args: {
           _action: Database["public"]["Enums"]["audit_action"]
