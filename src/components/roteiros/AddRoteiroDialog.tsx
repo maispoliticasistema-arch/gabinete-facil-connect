@@ -216,15 +216,47 @@ export const AddRoteiroDialog = ({
         observacoes: `${eleitor.endereco || ''}, ${eleitor.bairro || ''}`
       }));
 
-      const pontosComEnderecoAlternativo = pontosComEndereco.map((ponto, index) => ({
-        roteiro_id: roteiro.id,
-        ordem: selectedEleitores.length + index + 1,
-        eleitor_id: ponto.eleitor.id,
-        endereco_manual: ponto.endereco_alternativo,
-        latitude: null,
-        longitude: null,
-        observacoes: ponto.observacoes || null
-      }));
+      // Geocodificar endereços alternativos
+      const pontosComEnderecoAlternativo = await Promise.all(
+        pontosComEndereco.map(async (ponto, index) => {
+          let latitude = null;
+          let longitude = null;
+
+          // Tentar geocodificar o endereço alternativo usando Nominatim
+          try {
+            const response = await fetch(
+              `https://nominatim.openstreetmap.org/search?` +
+              `q=${encodeURIComponent(ponto.endereco_alternativo)}` +
+              `&format=json&limit=1`,
+              {
+                headers: {
+                  'User-Agent': 'GabineteApp/1.0'
+                }
+              }
+            );
+
+            if (response.ok) {
+              const data = await response.json();
+              if (data && data.length > 0) {
+                latitude = parseFloat(data[0].lat);
+                longitude = parseFloat(data[0].lon);
+              }
+            }
+          } catch (error) {
+            console.error('Erro ao geocodificar endereço alternativo:', error);
+          }
+
+          return {
+            roteiro_id: roteiro.id,
+            ordem: selectedEleitores.length + index + 1,
+            eleitor_id: ponto.eleitor.id,
+            endereco_manual: ponto.endereco_alternativo,
+            latitude,
+            longitude,
+            observacoes: ponto.observacoes || null
+          };
+        })
+      );
 
       const todosPontos = [...pontosEleitores, ...pontosComEnderecoAlternativo];
 
