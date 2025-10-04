@@ -112,13 +112,10 @@ const Mapa = () => {
 
   // Initialize map
   useEffect(() => {
-    if (!mapContainerRef.current) return;
-    
-    // Prevent double initialization
-    if (mapRef.current) return;
+    if (!mapContainerRef.current || mapRef.current) return;
 
-    // Small delay to ensure container is rendered
-    const timer = setTimeout(() => {
+    // Wait for next frame to ensure container is rendered with dimensions
+    requestAnimationFrame(() => {
       if (!mapContainerRef.current) return;
 
       try {
@@ -128,6 +125,11 @@ const Mapa = () => {
           zoom: 4,
           scrollWheelZoom: true,
         });
+
+        // Force map to recognize container size
+        setTimeout(() => {
+          map.invalidateSize();
+        }, 100);
 
         // Add tile layer
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -142,10 +144,9 @@ const Mapa = () => {
       } catch (error) {
         console.error('Error initializing map:', error);
       }
-    }, 100);
+    });
 
     return () => {
-      clearTimeout(timer);
       if (mapRef.current) {
         mapRef.current.remove();
         mapRef.current = null;
@@ -550,8 +551,8 @@ const Mapa = () => {
       {/* Map Container */}
       <div 
         ref={mapContainerRef} 
-        className="absolute inset-0 z-0"
-        style={{ background: '#f0f0f0' }}
+        className="absolute inset-0"
+        style={{ width: '100%', height: '100%', background: '#f0f0f0' }}
       />
     </div>
   );
