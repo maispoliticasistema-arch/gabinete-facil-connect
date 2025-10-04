@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { RelatoriosStats } from "@/components/relatorios/RelatoriosStats";
 import { DemandasChart } from "@/components/relatorios/DemandasChart";
 import { EleitoresChart } from "@/components/relatorios/EleitoresChart";
+import { RoteirosChart } from "@/components/relatorios/RoteirosChart";
 import { ExportButtons } from "@/components/relatorios/ExportButtons";
 import { format, subMonths, startOfMonth, endOfMonth } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -43,6 +44,15 @@ const Relatorios = () => {
   const [eleitoresData, setEleitoresData] = useState({
     crescimentoMensal: [] as { mes: string; total: number }[],
     porBairro: [] as { bairro: string; total: number }[],
+  });
+
+  const [roteirosData, setRoteirosData] = useState({
+    evolucaoMensal: [] as { mes: string; planejados: number; concluidos: number }[],
+    totalKm: 0,
+    kmMedio: 0,
+    locaisVisitados: 0,
+    totalPontos: 0,
+    porStatus: [] as { status: string; total: number; color: string }[],
   });
 
   useEffect(() => {
@@ -84,6 +94,7 @@ const Relatorios = () => {
         fetchStats(),
         fetchDemandasData(),
         fetchEleitoresData(),
+        fetchRoteirosData(),
       ]);
     } catch (error) {
       console.error("Erro ao carregar dados:", error);
@@ -296,6 +307,102 @@ const Relatorios = () => {
     setEleitoresData({ crescimentoMensal, porBairro });
   };
 
+  const fetchRoteirosData = async () => {
+    if (!currentGabinete) return;
+
+    // Evolução mensal - últimos 6 meses
+    const mesesPassados = Array.from({ length: 6 }, (_, i) => {
+      const data = subMonths(new Date(), i);
+      return {
+        mes: format(data, "MMM/yy", { locale: ptBR }),
+        inicio: startOfMonth(data),
+        fim: endOfMonth(data),
+      };
+    }).reverse();
+
+    const evolucaoMensal = await Promise.all(
+      mesesPassados.map(async ({ mes, inicio, fim }) => {
+        const { count: planejados } = await supabase
+          .from("roteiros")
+          .select("*", { count: "exact", head: true })
+          .eq("gabinete_id", currentGabinete.gabinete_id)
+          .gte("data", inicio.toISOString().split("T")[0])
+          .lte("data", fim.toISOString().split("T")[0]);
+
+        const { count: concluidos } = await supabase
+          .from("roteiros")
+          .select("*", { count: "exact", head: true })
+          .eq("gabinete_id", currentGabinete.gabinete_id)
+          .eq("status", "concluido")
+          .gte("data", inicio.toISOString().split("T")[0])
+          .lte("data", fim.toISOString().split("T")[0]);
+
+        return { mes, planejados: planejados || 0, concluidos: concluidos || 0 };
+      })
+    );
+
+    // Km total e médio
+    const { data: roteiros } = await supabase
+      .from("roteiros")
+      .select("id, distancia_total")
+      .eq("gabinete_id", currentGabinete.gabinete_id)
+      .not("distancia_total", "is", null);
+
+    const totalKm = (roteiros || []).reduce((acc, r) => acc + Number(r.distancia_total || 0), 0);
+    const kmMedio = roteiros && roteiros.length > 0 ? totalKm / roteiros.length : 0;
+
+    const roteiroIds = (roteiros || []).map(r => r.id);
+
+    // Locais visitados
+    const { count: locaisVisitados } = await supabase
+      .from("roteiro_pontos")
+      .select("*", { count: "exact", head: true })
+      .in("roteiro_id", roteiroIds)
+      .eq("visitado", true);
+
+    // Total de pontos
+    const { count: totalPontos } = await supabase
+      .from("roteiro_pontos")
+      .select("*", { count: "exact", head: true })
+      .in("roteiro_id", roteiroIds);
+
+    // Por status
+    const { data: statusData } = await supabase
+      .from("roteiros")
+      .select("status")
+      .eq("gabinete_id", currentGabinete.gabinete_id);
+
+    const statusCount = (statusData || []).reduce((acc: any, r) => {
+      const status = r.status === "planejado" ? "Planejado" : 
+                     r.status === "em_andamento" ? "Em Andamento" : 
+                     r.status === "concluido" ? "Concluído" : "Cancelado";
+      acc[status] = (acc[status] || 0) + 1;
+      return acc;
+    }, {});
+
+    const statusColors: any = {
+      "Planejado": "#3b82f6",
+      "Em Andamento": "#f59e0b",
+      "Concluído": "#10b981",
+      "Cancelado": "#ef4444",
+    };
+
+    const porStatus = Object.entries(statusCount).map(([status, total]) => ({
+      status,
+      total: total as number,
+      color: statusColors[status],
+    }));
+
+    setRoteirosData({
+      evolucaoMensal,
+      totalKm: Math.round(totalKm),
+      kmMedio: Math.round(kmMedio * 10) / 10,
+      locaisVisitados: locaisVisitados || 0,
+      totalPontos: totalPontos || 0,
+      porStatus,
+    });
+  };
+
   const exportToXLSX = () => {
     try {
       const wb = XLSX.utils.book_new();
@@ -493,16 +600,7 @@ const Relatorios = () => {
         </TabsContent>
 
         <TabsContent value="roteiros">
-          <Card>
-            <CardHeader>
-              <CardTitle>Relatório de Roteiros</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground">
-                Gráficos de roteiros em desenvolvimento
-              </p>
-            </CardContent>
-          </Card>
+          <RoteirosChart {...roteirosData} />
         </TabsContent>
       </Tabs>
 
