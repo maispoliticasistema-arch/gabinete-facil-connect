@@ -21,6 +21,7 @@ const CAMPOS_ELEITOR = [
   { value: 'email', label: 'Email' },
   { value: 'data_nascimento', label: 'Data de Nascimento' },
   { value: 'endereco', label: 'Endereço' },
+  { value: 'numero', label: 'Número' },
   { value: 'bairro', label: 'Bairro' },
   { value: 'cidade', label: 'Cidade' },
   { value: 'estado', label: 'Estado' },
@@ -94,6 +95,7 @@ export function ImportEleitoresDialog({ onEleitoresImported }: ImportEleitoresDi
           else if (normalized.includes('email') || normalized.includes('e-mail')) autoMapping[header] = 'email';
           else if (normalized.includes('nascimento') || normalized.includes('data')) autoMapping[header] = 'data_nascimento';
           else if (normalized.includes('endereco') || normalized.includes('endereço')) autoMapping[header] = 'endereco';
+          else if (normalized.includes('numero') || normalized.includes('número') || normalized === 'nro' || normalized === 'nº') autoMapping[header] = 'numero';
           else if (normalized.includes('bairro')) autoMapping[header] = 'bairro';
           else if (normalized.includes('cidade')) autoMapping[header] = 'cidade';
           else if (normalized.includes('estado') || normalized.includes('uf')) autoMapping[header] = 'estado';
