@@ -6,10 +6,24 @@ import { EleitoresTable } from '@/components/eleitores/EleitoresTable';
 import { AddEleitoresDialog } from '@/components/eleitores/AddEleitoresDialog';
 import { ImportEleitoresDialog } from '@/components/eleitores/ImportEleitoresDialog';
 import { TagsDialog } from '@/components/eleitores/TagsDialog';
-import { Users, Search } from 'lucide-react';
+import { Users, Search, Filter, X } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Pagination,
   PaginationContent,
@@ -19,6 +33,12 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from '@/components/ui/pagination';
+
+interface Tag {
+  id: string;
+  nome: string;
+  cor: string;
+}
 
 interface Eleitor {
   id: string;
@@ -39,11 +59,19 @@ const Eleitores = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
+  const [bairros, setBairros] = useState<string[]>([]);
+  const [cidades, setCidades] = useState<string[]>([]);
+  const [tags, setTags] = useState<Tag[]>([]);
+  const [selectedBairro, setSelectedBairro] = useState<string>('');
+  const [selectedCidade, setSelectedCidade] = useState<string>('');
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const { currentGabinete } = useGabinete();
   const { toast } = useToast();
 
   const ITEMS_PER_PAGE = 20;
   const totalPages = Math.ceil(totalCount / ITEMS_PER_PAGE);
+
+  const hasActiveFilters = selectedBairro || selectedCidade || selectedTags.length > 0;
 
   const fetchEleitores = async () => {
     if (!currentGabinete) return;
@@ -61,6 +89,35 @@ const Eleitores = () => {
       // Aplicar filtro de busca
       if (searchTerm.trim()) {
         query = query.or(`nome_completo.ilike.%${searchTerm}%,telefone.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%,cidade.ilike.%${searchTerm}%`);
+      }
+
+      // Aplicar filtro de bairro
+      if (selectedBairro) {
+        query = query.eq('bairro', selectedBairro);
+      }
+
+      // Aplicar filtro de cidade
+      if (selectedCidade) {
+        query = query.eq('cidade', selectedCidade);
+      }
+
+      // Aplicar filtro de tags
+      if (selectedTags.length > 0) {
+        const { data: eleitoresComTags } = await supabase
+          .from('eleitor_tags')
+          .select('eleitor_id')
+          .in('tag_id', selectedTags);
+
+        if (eleitoresComTags && eleitoresComTags.length > 0) {
+          const eleitoresIds = eleitoresComTags.map((et) => et.eleitor_id);
+          query = query.in('id', eleitoresIds);
+        } else {
+          // Se não há eleitores com essas tags, retornar vazio
+          setEleitores([]);
+          setTotalCount(0);
+          setLoading(false);
+          return;
+        }
       }
 
       const { data, error, count } = await query
@@ -82,9 +139,54 @@ const Eleitores = () => {
     }
   };
 
+  const fetchFilterOptions = async () => {
+    if (!currentGabinete) return;
+
+    try {
+      // Buscar bairros únicos
+      const { data: bairrosData } = await supabase
+        .from('eleitores')
+        .select('bairro')
+        .eq('gabinete_id', currentGabinete.gabinete_id)
+        .not('bairro', 'is', null)
+        .order('bairro');
+
+      const uniqueBairros = [...new Set(bairrosData?.map((e) => e.bairro).filter(Boolean) || [])];
+      setBairros(uniqueBairros as string[]);
+
+      // Buscar cidades únicas
+      const { data: cidadesData } = await supabase
+        .from('eleitores')
+        .select('cidade')
+        .eq('gabinete_id', currentGabinete.gabinete_id)
+        .not('cidade', 'is', null)
+        .order('cidade');
+
+      const uniqueCidades = [...new Set(cidadesData?.map((e) => e.cidade).filter(Boolean) || [])];
+      setCidades(uniqueCidades as string[]);
+
+      // Buscar tags
+      const { data: tagsData } = await supabase
+        .from('tags')
+        .select('*')
+        .eq('gabinete_id', currentGabinete.gabinete_id)
+        .order('nome');
+
+      setTags(tagsData || []);
+    } catch (error: any) {
+      console.error('Erro ao carregar opções de filtro:', error);
+    }
+  };
+
   useEffect(() => {
     fetchEleitores();
-  }, [currentGabinete, currentPage, searchTerm]);
+  }, [currentGabinete, currentPage, searchTerm, selectedBairro, selectedCidade, selectedTags]);
+
+  useEffect(() => {
+    if (currentGabinete) {
+      fetchFilterOptions();
+    }
+  }, [currentGabinete]);
 
   const handleSearch = (value: string) => {
     setSearchTerm(value);
@@ -95,6 +197,20 @@ const Eleitores = () => {
     if (page >= 1 && page <= totalPages) {
       setCurrentPage(page);
     }
+  };
+
+  const clearFilters = () => {
+    setSelectedBairro('');
+    setSelectedCidade('');
+    setSelectedTags([]);
+    setCurrentPage(1);
+  };
+
+  const toggleTag = (tagId: string) => {
+    setSelectedTags((prev) =>
+      prev.includes(tagId) ? prev.filter((id) => id !== tagId) : [...prev, tagId]
+    );
+    setCurrentPage(1);
   };
 
   return (
@@ -130,6 +246,112 @@ const Eleitores = () => {
                   className="pl-8"
                 />
               </div>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="icon" className="relative">
+                    <Filter className="h-4 w-4" />
+                    {hasActiveFilters && (
+                      <span className="absolute -top-1 -right-1 h-3 w-3 bg-primary rounded-full" />
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-80" align="end">
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h3 className="font-semibold">Filtros</h3>
+                      {hasActiveFilters && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={clearFilters}
+                          className="h-8 text-xs"
+                        >
+                          <X className="h-3 w-3 mr-1" />
+                          Limpar
+                        </Button>
+                      )}
+                    </div>
+
+                    {/* Filtro de Bairro */}
+                    {bairros.length > 0 && (
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">Bairro</label>
+                        <Select value={selectedBairro || "__all__"} onValueChange={(value) => {
+                          setSelectedBairro(value === "__all__" ? '' : value);
+                          setCurrentPage(1);
+                        }}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Todos os bairros" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="__all__">Todos os bairros</SelectItem>
+                            {bairros.map((bairro) => (
+                              <SelectItem key={bairro} value={bairro}>
+                                {bairro}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
+
+                    {/* Filtro de Cidade */}
+                    {cidades.length > 0 && (
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">Cidade</label>
+                        <Select value={selectedCidade || "__all__"} onValueChange={(value) => {
+                          setSelectedCidade(value === "__all__" ? '' : value);
+                          setCurrentPage(1);
+                        }}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Todas as cidades" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="__all__">Todas as cidades</SelectItem>
+                            {cidades.map((cidade) => (
+                              <SelectItem key={cidade} value={cidade}>
+                                {cidade}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
+
+                    {/* Filtro de Tags */}
+                    {tags.length > 0 && (
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">Tags</label>
+                        <div className="space-y-2 max-h-[200px] overflow-y-auto">
+                          {tags.map((tag) => (
+                            <div key={tag.id} className="flex items-center gap-2">
+                              <Checkbox
+                                id={`filter-tag-${tag.id}`}
+                                checked={selectedTags.includes(tag.id)}
+                                onCheckedChange={() => toggleTag(tag.id)}
+                              />
+                              <label
+                                htmlFor={`filter-tag-${tag.id}`}
+                                className="cursor-pointer"
+                              >
+                                <Badge
+                                  style={{
+                                    backgroundColor: tag.cor,
+                                    color: '#fff',
+                                  }}
+                                  className="text-xs"
+                                >
+                                  {tag.nome}
+                                </Badge>
+                              </label>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </PopoverContent>
+              </Popover>
             </div>
           </div>
           <CardDescription>
