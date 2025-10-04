@@ -94,6 +94,22 @@ const Agenda = () => {
       return;
     }
 
+    // Atualizar eventos que já passaram do horário de término
+    const agora = new Date();
+    const eventosParaAtualizar = (agendaData || []).filter(evento => {
+      if (!evento.data_fim) return false;
+      const dataFim = new Date(evento.data_fim);
+      return dataFim < agora && evento.status !== "concluido" && evento.status !== "cancelado";
+    });
+
+    if (eventosParaAtualizar.length > 0) {
+      const idsParaAtualizar = eventosParaAtualizar.map(e => e.id);
+      await supabase
+        .from("agenda")
+        .update({ status: "concluido" })
+        .in("id", idsParaAtualizar);
+    }
+
     // Buscar participantes e perfis separadamente
     const eventosComParticipantes = await Promise.all(
       (agendaData || []).map(async (evento) => {
@@ -106,8 +122,13 @@ const Agenda = () => {
           `)
           .eq("evento_id", evento.id);
 
+        // Atualizar status localmente se foi concluído
+        const eventoAtualizado = eventosParaAtualizar.find(e => e.id === evento.id);
+        const status = eventoAtualizado ? "concluido" : evento.status;
+
         return {
           ...evento,
+          status,
           agenda_participantes: participantesData || [],
         };
       })
