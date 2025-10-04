@@ -369,7 +369,7 @@ export type Database = {
         Row: {
           created_at: string
           demanda_id: string | null
-          eleitor_id: string | null
+          eleitor_id: string
           endereco_manual: string | null
           id: string
           latitude: number | null
@@ -383,7 +383,7 @@ export type Database = {
         Insert: {
           created_at?: string
           demanda_id?: string | null
-          eleitor_id?: string | null
+          eleitor_id: string
           endereco_manual?: string | null
           id?: string
           latitude?: number | null
@@ -397,7 +397,7 @@ export type Database = {
         Update: {
           created_at?: string
           demanda_id?: string | null
-          eleitor_id?: string | null
+          eleitor_id?: string
           endereco_manual?: string | null
           id?: string
           latitude?: number | null

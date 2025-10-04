@@ -27,7 +27,7 @@ import {
 interface Ponto {
   id: string;
   ordem: number;
-  eleitor_id: string | null;
+  eleitor_id: string;
   endereco_manual: string | null;
   observacoes: string | null;
   visitado: boolean;
