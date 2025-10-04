@@ -32,6 +32,12 @@ interface Roteiro {
   status: string;
   objetivo: string | null;
   distancia_total: number | null;
+  endereco_partida: string | null;
+  latitude_partida: number | null;
+  longitude_partida: number | null;
+  endereco_final: string | null;
+  latitude_final: number | null;
+  longitude_final: number | null;
 }
 
 interface Ponto {
@@ -62,6 +68,7 @@ const Roteiros = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedRoteiroForMap, setSelectedRoteiroForMap] = useState<string | null>(null);
   const [pontos, setPontos] = useState<Ponto[]>([]);
+  const [selectedRoteiroData, setSelectedRoteiroData] = useState<Roteiro | null>(null);
   const [mapCenter, setMapCenter] = useState<[number, number]>([-30.0346, -51.2177]);
 
   useEffect(() => {
@@ -73,10 +80,13 @@ const Roteiros = () => {
   useEffect(() => {
     if (selectedRoteiroForMap) {
       fetchPontos(selectedRoteiroForMap);
+      const roteiro = roteiros.find(r => r.id === selectedRoteiroForMap);
+      setSelectedRoteiroData(roteiro || null);
     } else {
       setPontos([]);
+      setSelectedRoteiroData(null);
     }
-  }, [selectedRoteiroForMap]);
+  }, [selectedRoteiroForMap, roteiros]);
 
   const fetchRoteiros = async () => {
     if (!currentGabinete) return;
@@ -173,6 +183,19 @@ const Roteiros = () => {
       iconAnchor: [16, 16]
     });
   };
+
+  const createCustomIcon = (color: string, emoji: string) => {
+    return L.divIcon({
+      className: 'custom-marker',
+      html: `<div style="background-color: ${color}; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 3px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.4); font-size: 20px;">${emoji}</div>`,
+      iconSize: [40, 40],
+      iconAnchor: [20, 40],
+      popupAnchor: [0, -40],
+    });
+  };
+
+  const roteiroPartidaIcon = createCustomIcon('#22c55e', '🚀');
+  const roteiroFimIcon = createCustomIcon('#3b82f6', '🏁');
 
   return (
     <div className="animate-fade-in space-y-6">
@@ -275,6 +298,36 @@ const Roteiros = () => {
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
               />
+
+              {selectedRoteiroData && selectedRoteiroData.latitude_partida && selectedRoteiroData.longitude_partida && (
+                <Marker
+                  position={[selectedRoteiroData.latitude_partida, selectedRoteiroData.longitude_partida]}
+                  icon={roteiroPartidaIcon}
+                >
+                  <Popup>
+                    <div className="text-sm">
+                      <strong>🚀 Ponto de Partida</strong>
+                      <br />
+                      {selectedRoteiroData.endereco_partida || 'Endereço de partida'}
+                    </div>
+                  </Popup>
+                </Marker>
+              )}
+
+              {selectedRoteiroData && selectedRoteiroData.latitude_final && selectedRoteiroData.longitude_final && (
+                <Marker
+                  position={[selectedRoteiroData.latitude_final, selectedRoteiroData.longitude_final]}
+                  icon={roteiroFimIcon}
+                >
+                  <Popup>
+                    <div className="text-sm">
+                      <strong>🏁 Ponto de Chegada</strong>
+                      <br />
+                      {selectedRoteiroData.endereco_final || 'Endereço final'}
+                    </div>
+                  </Popup>
+                </Marker>
+              )}
 
               {pontos.length > 0 && (
                 <>
