@@ -112,30 +112,44 @@ const Mapa = () => {
 
   // Initialize map
   useEffect(() => {
-    if (!mapContainerRef.current || mapRef.current) return;
+    if (!mapContainerRef.current) return;
+    
+    // Prevent double initialization
+    if (mapRef.current) return;
 
-    // Create map
-    const map = L.map(mapContainerRef.current, {
-      center: [-15.7939, -47.8828], // Brazil center
-      zoom: 4,
-      scrollWheelZoom: true,
-    });
+    // Small delay to ensure container is rendered
+    const timer = setTimeout(() => {
+      if (!mapContainerRef.current) return;
 
-    // Add tile layer
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-      maxZoom: 19,
-    }).addTo(map);
+      try {
+        // Create map
+        const map = L.map(mapContainerRef.current, {
+          center: [-15.7939, -47.8828], // Brazil center
+          zoom: 4,
+          scrollWheelZoom: true,
+        });
 
-    // Create markers layer
-    const markersLayer = L.layerGroup().addTo(map);
-    markersLayerRef.current = markersLayer;
-    mapRef.current = map;
+        // Add tile layer
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+          maxZoom: 19,
+        }).addTo(map);
+
+        // Create markers layer
+        const markersLayer = L.layerGroup().addTo(map);
+        markersLayerRef.current = markersLayer;
+        mapRef.current = map;
+      } catch (error) {
+        console.error('Error initializing map:', error);
+      }
+    }, 100);
 
     return () => {
+      clearTimeout(timer);
       if (mapRef.current) {
         mapRef.current.remove();
         mapRef.current = null;
+        markersLayerRef.current = null;
       }
     };
   }, []);
@@ -536,7 +550,7 @@ const Mapa = () => {
       {/* Map Container */}
       <div 
         ref={mapContainerRef} 
-        className="h-full w-full z-0"
+        className="absolute inset-0 z-0"
         style={{ background: '#f0f0f0' }}
       />
     </div>
