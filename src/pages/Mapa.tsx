@@ -1,11 +1,8 @@
 import { useEffect, useState, useMemo } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
-import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
 import { supabase } from '@/integrations/supabase/client';
 import { useGabinete } from '@/contexts/GabineteContext';
 import { useToast } from '@/hooks/use-toast';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
@@ -15,8 +12,6 @@ import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { 
   Users, 
-  FileText, 
-  Calendar, 
   MapPin, 
   Filter, 
   X,
@@ -26,32 +21,8 @@ import {
   Mail,
   CheckCircle2,
   AlertCircle,
-  Clock
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-
-// Fix Leaflet default icon issue
-delete (L.Icon.Default.prototype as any)._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
-  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-});
-
-// Custom icons for different marker types
-const createCustomIcon = (color: string, icon: string) => {
-  return L.divIcon({
-    className: 'custom-marker',
-    html: `<div style="background-color: ${color}; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3); font-size: 16px;">${icon}</div>`,
-    iconSize: [32, 32],
-    iconAnchor: [16, 32],
-  });
-};
-
-const eleitorIcon = createCustomIcon('#3b82f6', '👤');
-const demandaAbertaIcon = createCustomIcon('#ef4444', '⚠️');
-const demandaConcluidaIcon = createCustomIcon('#22c55e', '✓');
-const eventoIcon = createCustomIcon('#eab308', '📍');
 
 interface Eleitor {
   id: string;
@@ -82,27 +53,11 @@ interface Demanda {
   };
 }
 
-interface Evento {
-  id: string;
-  titulo: string;
-  local: string | null;
-  data_inicio: string;
-}
-
 interface Stats {
   totalEleitores: number;
   demandasAbertas: number;
   demandasConcluidas: number;
-  totalEventos: number;
 }
-
-const MapUpdater = ({ center }: { center: [number, number] }) => {
-  const map = useMap();
-  useEffect(() => {
-    map.setView(center, map.getZoom());
-  }, [center, map]);
-  return null;
-};
 
 const Mapa = () => {
   const { currentGabinete } = useGabinete();
@@ -110,14 +65,12 @@ const Mapa = () => {
   
   const [eleitores, setEleitores] = useState<Eleitor[]>([]);
   const [demandas, setDemandas] = useState<Demanda[]>([]);
-  const [eventos, setEventos] = useState<Evento[]>([]);
   const [loading, setLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   
   // Filters
   const [showEleitores, setShowEleitores] = useState(true);
   const [showDemandas, setShowDemandas] = useState(true);
-  const [showEventos, setShowEventos] = useState(false);
   const [selectedCidade, setSelectedCidade] = useState<string>('all');
   const [selectedBairro, setSelectedBairro] = useState<string>('all');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
@@ -127,12 +80,7 @@ const Mapa = () => {
     totalEleitores: 0,
     demandasAbertas: 0,
     demandasConcluidas: 0,
-    totalEventos: 0,
   });
-
-  // Default center (Brazil)
-  const [mapCenter, setMapCenter] = useState<[number, number]>([-15.7939, -47.8828]);
-  const [mapZoom] = useState(4);
 
   useEffect(() => {
     if (currentGabinete) {
@@ -187,13 +135,7 @@ const Mapa = () => {
         totalEleitores: eleitoresData?.length || 0,
         demandasAbertas,
         demandasConcluidas,
-        totalEventos: 0,
       });
-
-      // Set map center to first eleitor or demanda location
-      if (eleitoresData && eleitoresData.length > 0) {
-        setMapCenter([eleitoresData[0].latitude, eleitoresData[0].longitude]);
-      }
 
     } catch (error: any) {
       toast({
@@ -255,7 +197,7 @@ const Mapa = () => {
   }
 
   return (
-    <div className="relative h-screen w-full overflow-hidden">
+    <div className="relative h-screen w-full overflow-hidden bg-muted/30">
       {/* Stats Bar */}
       <div className="absolute top-4 left-4 right-4 z-[1000] pointer-events-none">
         <div className="flex gap-2 justify-center flex-wrap pointer-events-auto">
@@ -453,119 +395,37 @@ const Mapa = () => {
         </ScrollArea>
       </div>
 
-      {/* Map */}
-      <MapContainer
-        center={mapCenter}
-        zoom={mapZoom}
-        className="h-full w-full z-0"
-        scrollWheelZoom={true}
-      >
-        <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        />
-        <MapUpdater center={mapCenter} />
-
-        {/* Eleitores Markers */}
-        {showEleitores && filteredEleitores.map((eleitor) => (
-            <Marker
-              key={`eleitor-${eleitor.id}`}
-              position={[eleitor.latitude, eleitor.longitude]}
-              icon={eleitorIcon}
-            >
-              <Popup>
-                <div className="p-2 min-w-[200px]">
-                  <h3 className="font-bold text-base mb-2">{eleitor.nome_completo}</h3>
-                  <div className="space-y-1 text-sm">
-                    {eleitor.telefone && (
-                      <div className="flex items-center gap-2">
-                        <Phone className="h-3 w-3 text-muted-foreground" />
-                        <span>{eleitor.telefone}</span>
-                      </div>
-                    )}
-                    {eleitor.email && (
-                      <div className="flex items-center gap-2">
-                        <Mail className="h-3 w-3 text-muted-foreground" />
-                        <span className="truncate">{eleitor.email}</span>
-                      </div>
-                    )}
-                    {(eleitor.endereco || eleitor.bairro || eleitor.cidade) && (
-                      <div className="flex items-start gap-2">
-                        <MapPin className="h-3 w-3 text-muted-foreground mt-0.5" />
-                        <div className="text-xs">
-                          {eleitor.endereco && <div>{eleitor.endereco}{eleitor.numero && `, ${eleitor.numero}`}</div>}
-                          {eleitor.bairro && <div>{eleitor.bairro}</div>}
-                          {eleitor.cidade && <div>{eleitor.cidade} - {eleitor.estado}</div>}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                  <Button
-                    size="sm"
-                    className="w-full mt-3"
-                    onClick={() => window.location.href = `/eleitores`}
-                  >
-                    Ver Detalhes
-                  </Button>
-                </div>
-              </Popup>
-            </Marker>
-          ))}
-
-        {/* Demandas Markers */}
-        {showDemandas && filteredDemandas.map((demanda) => {
-            const isOpen = demanda.status === 'aberta' || demanda.status === 'em_andamento';
-            const icon = isOpen ? demandaAbertaIcon : demandaConcluidaIcon;
+      {/* Temporary Map Placeholder */}
+      <div className="h-full w-full flex items-center justify-center">
+        <Card className="max-w-2xl mx-auto">
+          <CardContent className="p-8 text-center space-y-4">
+            <MapPin className="h-16 w-16 mx-auto text-primary" />
+            <h2 className="text-2xl font-bold">Mapa em Desenvolvimento</h2>
+            <p className="text-muted-foreground">
+              A funcionalidade de mapa está sendo otimizada para melhor performance. 
+              Por enquanto, você pode visualizar os dados filtrados abaixo.
+            </p>
             
-            return (
-              <Marker
-                key={`demanda-${demanda.id}`}
-                position={[demanda.eleitores.latitude, demanda.eleitores.longitude]}
-                icon={icon}
-              >
-                <Popup>
-                  <div className="p-2 min-w-[200px]">
-                    <div className="flex items-start justify-between gap-2 mb-2">
-                      <h3 className="font-bold text-sm">{demanda.titulo}</h3>
-                      <Badge 
-                        variant="secondary"
-                        className={cn(
-                          isOpen ? "bg-red-100 text-red-800" : "bg-green-100 text-green-800"
-                        )}
-                      >
-                        {demanda.status.replace('_', ' ')}
-                      </Badge>
-                    </div>
-                    <div className="space-y-1 text-xs">
-                      <div className="flex items-center gap-2">
-                        <Users className="h-3 w-3 text-muted-foreground" />
-                        <span>{demanda.eleitores.nome_completo}</span>
-                      </div>
-                      {demanda.eleitores.bairro && (
-                        <div className="flex items-center gap-2">
-                          <MapPin className="h-3 w-3 text-muted-foreground" />
-                          <span>{demanda.eleitores.bairro} - {demanda.eleitores.cidade}</span>
-                        </div>
-                      )}
-                      <div className="flex items-center gap-2">
-                        <Badge variant="outline" className="text-xs">
-                          {demanda.prioridade}
-                        </Badge>
-                      </div>
-                    </div>
-                    <Button
-                      size="sm"
-                      className="w-full mt-3"
-                      onClick={() => window.location.href = `/demandas`}
-                    >
-                      Ver Detalhes
-                    </Button>
-                  </div>
-              </Popup>
-            </Marker>
-          );
-        })}
-      </MapContainer>
+            <div className="pt-4 space-y-3">
+              <h3 className="font-semibold">Dados Filtrados:</h3>
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div className="p-3 bg-blue-50 rounded-lg">
+                  <p className="text-xs text-muted-foreground">Eleitores</p>
+                  <p className="text-2xl font-bold text-blue-600">{filteredEleitores.length}</p>
+                </div>
+                <div className="p-3 bg-red-50 rounded-lg">
+                  <p className="text-xs text-muted-foreground">Demandas</p>
+                  <p className="text-2xl font-bold text-red-600">{filteredDemandas.length}</p>
+                </div>
+              </div>
+            </div>
+
+            <Button className="mt-4" onClick={() => window.location.href = '/eleitores'}>
+              Ver Lista de Eleitores
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 };
