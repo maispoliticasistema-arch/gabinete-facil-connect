@@ -279,13 +279,13 @@ const Agenda = () => {
         </div>
       ) : (
         <div className="grid lg:grid-cols-[1fr_300px] gap-6">
-          <Card className="p-6">
+          <Card className="p-6 flex items-center justify-center">
             <Calendar
               mode="single"
               selected={selectedDate}
               onSelect={handleDateSelect}
               locale={ptBR}
-              className="w-full"
+              className="w-full max-w-3xl scale-125"
               modifiers={{
                 hasEvent: (date) => {
                   const dateKey = format(date, "yyyy-MM-dd");
