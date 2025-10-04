@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Users, FileText, Calendar, AlertCircle, TrendingUp, UserPlus } from 'lucide-react';
 import { StatsCard } from '@/components/dashboard/StatsCard';
+import { AniversariantesDialog } from '@/components/dashboard/AniversariantesDialog';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -29,6 +30,7 @@ const Index = () => {
     eventosHoje: 0,
   });
   const [loading, setLoading] = useState(true);
+  const [aniversariantesDialogOpen, setAniversariantesDialogOpen] = useState(false);
 
   useEffect(() => {
     if (!currentGabinete) return;
@@ -45,11 +47,23 @@ const Index = () => {
           .eq('gabinete_id', currentGabinete.gabinete_id);
 
         // Aniversariantes do dia
-        const { count: aniversariantes } = await supabase
+        const now = new Date();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        
+        const { data: eleitoresData } = await supabase
           .from('eleitores')
-          .select('*', { count: 'exact', head: true })
+          .select('data_nascimento')
           .eq('gabinete_id', currentGabinete.gabinete_id)
-          .like('data_nascimento', `%-${new Date().toISOString().slice(5, 10)}`);
+          .not('data_nascimento', 'is', null);
+
+        const aniversariantes = eleitoresData?.filter(eleitor => {
+          if (!eleitor.data_nascimento) return false;
+          const nascimento = new Date(eleitor.data_nascimento + 'T00:00:00');
+          const nascMonth = String(nascimento.getMonth() + 1).padStart(2, '0');
+          const nascDay = String(nascimento.getDate()).padStart(2, '0');
+          return nascMonth === month && nascDay === day;
+        }).length || 0;
 
         // Demandas abertas
         const { count: demandasAbertas } = await supabase
@@ -84,7 +98,7 @@ const Index = () => {
 
         setStats({
           totalEleitores: totalEleitores || 0,
-          aniversariantes: aniversariantes || 0,
+          aniversariantes,
           demandasAbertas: demandasAbertas || 0,
           demandasHoje: demandasHoje || 0,
           demandasAtrasadas: demandasAtrasadas || 0,
@@ -148,6 +162,7 @@ const Index = () => {
           value={stats.aniversariantes}
           icon={Calendar}
           description="Envie suas felicitações!"
+          onClick={() => setAniversariantesDialogOpen(true)}
         />
         <StatsCard
           title="Demandas Abertas"
@@ -239,6 +254,11 @@ const Index = () => {
           </Card>
         </TabsContent>
       </Tabs>
+
+      <AniversariantesDialog 
+        open={aniversariantesDialogOpen} 
+        onOpenChange={setAniversariantesDialogOpen} 
+      />
     </div>
   );
 };

@@ -10,11 +10,15 @@ interface StatsCardProps {
     value: number;
     isPositive: boolean;
   };
+  onClick?: () => void;
 }
 
-export const StatsCard = ({ title, value, icon: Icon, description, trend }: StatsCardProps) => {
+export const StatsCard = ({ title, value, icon: Icon, description, trend, onClick }: StatsCardProps) => {
   return (
-    <Card className="shadow-card transition-smooth hover:shadow-card-hover">
+    <Card 
+      className={`shadow-card transition-smooth hover:shadow-card-hover ${onClick ? 'cursor-pointer' : ''}`}
+      onClick={onClick}
+    >
       <CardContent className="p-6">
         <div className="flex items-center justify-between">
           <div className="space-y-1">
