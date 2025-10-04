@@ -41,7 +41,10 @@ export const GabineteProvider = ({ children }: { children: React.ReactNode }) =>
   const [loading, setLoading] = useState(true);
 
   const fetchGabinetes = async () => {
+    console.log('[GabineteContext] fetchGabinetes called, user:', user?.id);
+    
     if (!user) {
+      console.log('[GabineteContext] No user, clearing gabinetes');
       setGabinetes([]);
       setCurrentGabinete(null);
       setLoading(false);
@@ -49,6 +52,8 @@ export const GabineteProvider = ({ children }: { children: React.ReactNode }) =>
     }
 
     setLoading(true);
+    console.log('[GabineteContext] Fetching gabinetes for user:', user.id);
+    
     const { data, error } = await supabase
       .from('user_gabinetes')
       .select('gabinete_id, role, gabinetes(*)')
@@ -56,22 +61,25 @@ export const GabineteProvider = ({ children }: { children: React.ReactNode }) =>
       .eq('ativo', true);
 
     if (error) {
-      console.error('Erro ao buscar gabinetes:', error);
+      console.error('[GabineteContext] Erro ao buscar gabinetes:', error);
       setLoading(false);
       return;
     }
 
     const gabinetesList = data || [];
+    console.log('[GabineteContext] Gabinetes loaded:', gabinetesList.length);
     setGabinetes(gabinetesList);
     
     // Always set first gabinete as current if we have gabinetes and no current selection
     if (gabinetesList.length > 0) {
       setCurrentGabinete(prev => {
-        // If no current gabinete or current is not in the list, set first one
         const currentExists = prev && gabinetesList.some(g => g.gabinete_id === prev.gabinete_id);
-        return currentExists ? prev : gabinetesList[0];
+        const selected = currentExists ? prev : gabinetesList[0];
+        console.log('[GabineteContext] Setting current gabinete:', selected.gabinete_id);
+        return selected;
       });
     } else {
+      console.log('[GabineteContext] No gabinetes found');
       setCurrentGabinete(null);
     }
     
