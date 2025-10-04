@@ -94,16 +94,25 @@ const Mapa = () => {
   useEffect(() => {
     if (!currentGabinete) return;
     
+    console.log('Fetching data for gabinete:', currentGabinete.gabinete_id);
+    
     const fetchData = async () => {
       try {
-        const { data: eleitoresData } = await supabase
+        const { data: eleitoresData, error: eleitoresError } = await supabase
           .from('eleitores')
           .select('*')
           .eq('gabinete_id', currentGabinete.gabinete_id)
           .not('latitude', 'is', null)
           .not('longitude', 'is', null);
 
-        const { data: demandasData } = await supabase
+        if (eleitoresError) {
+          console.error('Error fetching eleitores:', eleitoresError);
+          throw eleitoresError;
+        }
+
+        console.log('Eleitores fetched:', eleitoresData?.length || 0);
+
+        const { data: demandasData, error: demandasError } = await supabase
           .from('demandas')
           .select(`
             id,
@@ -121,13 +130,24 @@ const Mapa = () => {
           `)
           .eq('gabinete_id', currentGabinete.gabinete_id);
 
+        if (demandasError) {
+          console.error('Error fetching demandas:', demandasError);
+          throw demandasError;
+        }
+
+        console.log('Demandas fetched:', demandasData?.length || 0);
+
+        const validDemandas = (demandasData || []).filter(d => d.eleitores && d.eleitores.latitude && d.eleitores.longitude);
+        console.log('Valid demandas with coords:', validDemandas.length);
+
         setEleitores(eleitoresData || []);
-        setDemandas((demandasData || []).filter(d => d.eleitores && d.eleitores.latitude && d.eleitores.longitude));
+        setDemandas(validDemandas);
 
         if (eleitoresData && eleitoresData.length > 0 && mapRef.current) {
           mapRef.current.setView([eleitoresData[0].latitude, eleitoresData[0].longitude], 13);
         }
       } catch (error: any) {
+        console.error('Error in fetchData:', error);
         toast({
           title: 'Erro ao carregar dados',
           description: error.message,
@@ -220,7 +240,7 @@ const Mapa = () => {
   return (
     <div style={{ position: 'relative', width: '100%', height: '100vh', overflow: 'hidden' }}>
       {/* Stats */}
-      <div style={{ position: 'absolute', top: '16px', left: '16px', right: '16px', zIndex: 1000, pointerEvents: 'none' }}>
+      <div style={{ position: 'absolute', top: '16px', left: '16px', right: '16px', zIndex: 500, pointerEvents: 'none' }}>
         <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', flexWrap: 'wrap', pointerEvents: 'auto' }}>
           <Card className="shadow-lg border-2">
             <CardContent className="flex items-center gap-2 p-3">
@@ -258,14 +278,14 @@ const Mapa = () => {
       <Button
         variant="secondary"
         size="icon"
-        className={cn("absolute top-24 z-[1000] shadow-lg transition-all", sidebarOpen ? "right-[320px]" : "right-4")}
+        className={cn("absolute top-24 z-[1001] shadow-lg transition-all", sidebarOpen ? "right-[320px]" : "right-4")}
         onClick={() => setSidebarOpen(!sidebarOpen)}
       >
         {sidebarOpen ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
       </Button>
 
       {/* Sidebar */}
-      <div className={cn("absolute top-0 right-0 h-full w-80 bg-background border-l shadow-2xl z-[999] transition-transform duration-300", !sidebarOpen && "translate-x-full")}>
+      <div className={cn("absolute top-0 right-0 h-full w-80 bg-background border-l shadow-2xl z-[1002] transition-transform duration-300", !sidebarOpen && "translate-x-full")}>
         <ScrollArea className="h-full">
           <div className="p-6 space-y-6">
             <div>
