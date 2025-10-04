@@ -57,8 +57,8 @@ export function GeocodeAllDialog({ onComplete }: GeocodeAllDialogProps) {
         description: `Processando ${eleitores.length} eleitores...`,
       });
 
-      // Processar em lotes de 50
-      const batchSize = 50;
+      // Processar em lotes menores para feedback mais rápido
+      const batchSize = 20;
       let totalSuccess = 0;
 
       for (let i = 0; i < eleitores.length; i += batchSize) {

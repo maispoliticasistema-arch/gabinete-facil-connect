@@ -26,9 +26,11 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
+    // Process in parallel batches for speed
+    const PARALLEL_BATCH_SIZE = 5;
     const results = [];
     
-    for (const eleitor of eleitores) {
+    const processEleitor = async (eleitor: any) => {
       try {
         // Build address string
         const addressParts = [
@@ -42,8 +44,7 @@ serve(async (req) => {
 
         if (addressParts.length === 0) {
           console.log(`Eleitor ${eleitor.id}: sem endereço`);
-          results.push({ id: eleitor.id, success: false, reason: 'sem_endereco' });
-          continue;
+          return { id: eleitor.id, success: false, reason: 'sem_endereco' };
         }
 
         const address = addressParts.join(', ');
@@ -63,8 +64,7 @@ serve(async (req) => {
 
         if (!response.ok) {
           console.error(`API error for ${eleitor.id}:`, response.status);
-          results.push({ id: eleitor.id, success: false, reason: 'api_error' });
-          continue;
+          return { id: eleitor.id, success: false, reason: 'api_error' };
         }
 
         const data = await response.json();
@@ -84,27 +84,36 @@ serve(async (req) => {
 
           if (updateError) {
             console.error(`Update error for ${eleitor.id}:`, updateError);
-            results.push({ id: eleitor.id, success: false, reason: 'update_error' });
+            return { id: eleitor.id, success: false, reason: 'update_error' };
           } else {
             console.log(`Success for ${eleitor.id}: ${lat}, ${lon}`);
-            results.push({ 
+            return { 
               id: eleitor.id, 
               success: true, 
               latitude: lat, 
               longitude: lon 
-            });
+            };
           }
         } else {
           console.log(`No results for ${eleitor.id}`);
-          results.push({ id: eleitor.id, success: false, reason: 'nao_encontrado' });
+          return { id: eleitor.id, success: false, reason: 'nao_encontrado' };
         }
-
-        // Rate limiting: wait 1 second between requests (Nominatim requirement)
-        await new Promise(resolve => setTimeout(resolve, 1000));
 
       } catch (error) {
         console.error(`Error processing ${eleitor.id}:`, error);
-        results.push({ id: eleitor.id, success: false, reason: 'erro_processamento' });
+        return { id: eleitor.id, success: false, reason: 'erro_processamento' };
+      }
+    };
+
+    // Process in parallel batches
+    for (let i = 0; i < eleitores.length; i += PARALLEL_BATCH_SIZE) {
+      const batch = eleitores.slice(i, i + PARALLEL_BATCH_SIZE);
+      const batchResults = await Promise.all(batch.map(processEleitor));
+      results.push(...batchResults);
+      
+      // Smaller delay between batches (200ms instead of 1000ms per item)
+      if (i + PARALLEL_BATCH_SIZE < eleitores.length) {
+        await new Promise(resolve => setTimeout(resolve, 200));
       }
     }
 
