@@ -250,44 +250,42 @@ export function ImportEleitoresDialog({ onEleitoresImported }: ImportEleitoresDi
                 </Button>
               </div>
 
-              <div className="space-y-4">
-                <h3 className="text-sm font-semibold">Mapeamento de Colunas</h3>
-                <div className="grid gap-4">
-                  {headers.map((header, index) => (
-                    <div key={index} className="grid grid-cols-2 gap-4 items-center">
-                      <Label className="text-sm font-medium">{header}</Label>
-                      <Select
-                        value={columnMapping[header] || 'ignore'}
-                        onValueChange={(value) =>
-                          setColumnMapping((prev) => ({ ...prev, [header]: value }))
-                        }
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {CAMPOS_ELEITOR.map((campo) => (
-                            <SelectItem key={campo.value} value={campo.value}>
-                              {campo.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
               {previewData.length > 0 && (
-                <div className="space-y-2">
-                  <h3 className="text-sm font-semibold">Preview (primeiras 5 linhas)</h3>
+                <div className="space-y-3">
+                  <div>
+                    <h3 className="text-sm font-semibold mb-1">Pré-visualização e Mapeamento</h3>
+                    <p className="text-xs text-muted-foreground">
+                      Configure qual campo cada coluna representa (primeiras 5 linhas)
+                    </p>
+                  </div>
                   <div className="border rounded-lg overflow-auto">
                     <table className="w-full text-sm">
                       <thead className="bg-muted">
                         <tr>
                           {headers.map((header, i) => (
-                            <th key={i} className="px-4 py-2 text-left font-medium">
-                              {header}
+                            <th key={i} className="px-3 py-2 min-w-[180px]">
+                              <div className="space-y-2">
+                                <div className="text-xs font-medium text-muted-foreground">
+                                  {header}
+                                </div>
+                                <Select
+                                  value={columnMapping[header] || 'ignore'}
+                                  onValueChange={(value) =>
+                                    setColumnMapping((prev) => ({ ...prev, [header]: value }))
+                                  }
+                                >
+                                  <SelectTrigger className="h-8 text-xs">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {CAMPOS_ELEITOR.map((campo) => (
+                                      <SelectItem key={campo.value} value={campo.value}>
+                                        {campo.label}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
                             </th>
                           ))}
                         </tr>
@@ -296,7 +294,7 @@ export function ImportEleitoresDialog({ onEleitoresImported }: ImportEleitoresDi
                         {previewData.map((row: any, i) => (
                           <tr key={i} className="border-t">
                             {headers.map((header, j) => (
-                              <td key={j} className="px-4 py-2">
+                              <td key={j} className="px-3 py-2 text-xs">
                                 {row[j]}
                               </td>
                             ))}
