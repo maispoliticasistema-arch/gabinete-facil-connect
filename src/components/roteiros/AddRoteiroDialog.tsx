@@ -77,6 +77,7 @@ export const AddRoteiroDialog = ({
   const [selectedEleitorForEndereco, setSelectedEleitorForEndereco] = useState<Eleitor | null>(null);
   const [enderecoAlternativo, setEnderecoAlternativo] = useState('');
   const [obsAlternativo, setObsAlternativo] = useState('');
+  const [searchEleitorEndereco, setSearchEleitorEndereco] = useState('');
 
   const form = useForm<RoteiroFormData>({
     resolver: zodResolver(roteiroSchema),
@@ -146,12 +147,18 @@ export const AddRoteiroDialog = ({
     setSelectedEleitorForEndereco(null);
     setEnderecoAlternativo('');
     setObsAlternativo('');
+    setSearchEleitorEndereco('');
     setShowEnderecoForm(false);
   };
 
   const removePontoComEndereco = (id: string) => {
     setPontosComEndereco(prev => prev.filter(p => p.id !== id));
   };
+
+  const filteredEleitoresEndereco = eleitores.filter(e =>
+    e.nome_completo.toLowerCase().includes(searchEleitorEndereco.toLowerCase()) ||
+    (e.endereco && e.endereco.toLowerCase().includes(searchEleitorEndereco.toLowerCase()))
+  );
 
   const filteredEleitores = eleitores.filter(e =>
     e.nome_completo.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -367,27 +374,60 @@ export const AddRoteiroDialog = ({
 
               {showEnderecoForm && (
                 <div className="p-3 border rounded-md space-y-2 bg-muted/30">
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-sm text-muted-foreground mb-2">
                     Selecione um eleitor e informe onde ele será encontrado
                   </p>
-                  <Select
-                    value={selectedEleitorForEndereco?.id || ''}
-                    onValueChange={(value) => {
-                      const eleitor = eleitores.find(e => e.id === value);
-                      setSelectedEleitorForEndereco(eleitor || null);
-                    }}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione o eleitor" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {eleitores.slice(0, 50).map(eleitor => (
-                        <SelectItem key={eleitor.id} value={eleitor.id}>
-                          {eleitor.nome_completo}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  
+                  <div className="space-y-2">
+                    <Input
+                      placeholder="Buscar eleitor por nome..."
+                      value={searchEleitorEndereco}
+                      onChange={(e) => {
+                        setSearchEleitorEndereco(e.target.value);
+                        setSelectedEleitorForEndereco(null);
+                      }}
+                    />
+                    
+                    {searchEleitorEndereco.length >= 2 && (
+                      <div className="max-h-48 overflow-y-auto border rounded-md p-2 space-y-1">
+                        {filteredEleitoresEndereco.slice(0, 20).map(eleitor => {
+                          const isSelected = selectedEleitorForEndereco?.id === eleitor.id;
+                          return (
+                            <button
+                              key={eleitor.id}
+                              type="button"
+                              onClick={() => {
+                                setSelectedEleitorForEndereco(eleitor);
+                                setSearchEleitorEndereco(eleitor.nome_completo);
+                              }}
+                              className={`w-full text-left p-2 rounded-md text-sm transition-colors ${
+                                isSelected
+                                  ? 'bg-primary text-primary-foreground'
+                                  : 'hover:bg-muted'
+                              }`}
+                            >
+                              <div className="font-medium">{eleitor.nome_completo}</div>
+                              <div className="text-xs opacity-75">
+                                {eleitor.endereco || 'Sem endereço cadastrado'}
+                              </div>
+                            </button>
+                          );
+                        })}
+                        {filteredEleitoresEndereco.length === 0 && (
+                          <p className="text-sm text-muted-foreground text-center p-2">
+                            Nenhum eleitor encontrado
+                          </p>
+                        )}
+                      </div>
+                    )}
+                    
+                    {selectedEleitorForEndereco && (
+                      <div className="p-2 bg-primary/10 rounded-md text-sm">
+                        <strong>Selecionado:</strong> {selectedEleitorForEndereco.nome_completo}
+                      </div>
+                    )}
+                  </div>
+
                   <Input
                     placeholder="Endereço onde encontrará esta pessoa"
                     value={enderecoAlternativo}
@@ -404,6 +444,7 @@ export const AddRoteiroDialog = ({
                     size="sm"
                     onClick={addPontoComEndereco}
                     className="w-full"
+                    disabled={!selectedEleitorForEndereco || !enderecoAlternativo}
                   >
                     Adicionar ao Roteiro
                   </Button>
