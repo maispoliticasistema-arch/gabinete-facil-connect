@@ -49,57 +49,23 @@ export function AddUserDialog({ open, onOpenChange, gabineteId, onSuccess }: Add
     setLoading(true);
 
     try {
-      // 1. Criar usuário no Supabase Auth
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: formData.email,
-        password: formData.password,
-        options: {
-          data: {
-            nome_completo: formData.nome_completo,
-          },
-        },
-      });
-
-      if (authError) throw authError;
-      if (!authData.user) throw new Error("Erro ao criar usuário");
-
-      // 2. Criar perfil do usuário
-      const { error: profileError } = await supabase
-        .from("profiles")
-        .insert({
-          id: authData.user.id,
+      // Criar usuário via edge function para não deslogar o admin
+      const { data: functionData, error: functionError } = await supabase.functions.invoke('create-user', {
+        body: {
+          email: formData.email,
+          password: formData.password,
           nome_completo: formData.nome_completo,
           telefone: formData.telefone,
-        });
-
-      if (profileError) throw profileError;
-
-      // 3. Vincular ao gabinete
-      const { data: userGabinete, error: ugError } = await supabase
-        .from("user_gabinetes")
-        .insert({
-          user_id: authData.user.id,
           gabinete_id: gabineteId,
           role: formData.role,
-        })
-        .select()
-        .single();
+          permissions: formData.role === "assessor" ? selectedPermissions : [],
+        }
+      });
 
-      if (ugError) throw ugError;
+      if (functionError) throw functionError;
+      if (functionData?.error) throw new Error(functionData.error);
 
-      // 4. Adicionar permissões (se não for owner/admin)
-      if (formData.role === "assessor" && selectedPermissions.length > 0) {
-        const permissionsToInsert = selectedPermissions.map(permission => ({
-          user_gabinete_id: userGabinete.id,
-          permission: permission as any,
-        }));
-
-        const { error: permError } = await supabase
-          .from("user_permissions")
-          .insert(permissionsToInsert);
-
-        if (permError) throw permError;
-      }
+      const userGabinete = functionData.userGabinete;
 
       toast.success("Usuário criado com sucesso!");
       onSuccess();
