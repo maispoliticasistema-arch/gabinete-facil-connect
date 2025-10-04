@@ -17,8 +17,6 @@ export function UsuariosPermissoes({ gabineteId }: UsuariosPermissoesProps) {
 
   const fetchUsers = async () => {
     try {
-      console.log("Buscando usuários para o gabinete:", gabineteId);
-      
       const { data, error } = await supabase
         .from("user_gabinetes")
         .select(`
@@ -35,13 +33,8 @@ export function UsuariosPermissoes({ gabineteId }: UsuariosPermissoesProps) {
         .eq("gabinete_id", gabineteId)
         .order("created_at", { ascending: false });
 
-      if (error) {
-        console.error("Erro na query:", error);
-        throw error;
-      }
+      if (error) throw error;
       
-      console.log("Usuários encontrados:", data?.length || 0);
-      console.log("Dados:", data);
       setUsers(data || []);
     } catch (error) {
       console.error("Erro ao buscar usuários:", error);
