@@ -218,6 +218,26 @@ export const EditEleitoresDialog = ({
         if (tagError) throw tagError;
       }
 
+      // Tentar geocodificar automaticamente se o endereço mudou
+      if (data.endereco || data.cep) {
+        try {
+          const { data: updatedEleitor } = await supabase
+            .from('eleitores')
+            .select('*')
+            .eq('id', eleitor.id)
+            .single();
+
+          if (updatedEleitor) {
+            await supabase.functions.invoke('geocode', {
+              body: { eleitores: [updatedEleitor] }
+            });
+          }
+        } catch (geocodeError) {
+          console.error('Geocode error:', geocodeError);
+          // Não bloquear a atualização se a geocodificação falhar
+        }
+      }
+
       toast({
         title: 'Eleitor atualizado!',
         description: 'As informações foram atualizadas com sucesso.',

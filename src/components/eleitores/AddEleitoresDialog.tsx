@@ -165,6 +165,18 @@ export const AddEleitoresDialog = ({
         if (tagError) throw tagError;
       }
 
+      // Tentar geocodificar automaticamente
+      if (eleitorData && (data.endereco || data.cep)) {
+        try {
+          await supabase.functions.invoke('geocode', {
+            body: { eleitores: [eleitorData] }
+          });
+        } catch (geocodeError) {
+          console.error('Geocode error:', geocodeError);
+          // Não bloquear o cadastro se a geocodificação falhar
+        }
+      }
+
       toast({
         title: 'Eleitor cadastrado!',
         description: 'O eleitor foi adicionado com sucesso.',

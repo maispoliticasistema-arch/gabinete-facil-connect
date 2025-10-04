@@ -7,6 +7,7 @@ import { AddEleitoresDialog } from '@/components/eleitores/AddEleitoresDialog';
 import { ImportEleitoresDialog } from '@/components/eleitores/ImportEleitoresDialog';
 import { TagsDialog } from '@/components/eleitores/TagsDialog';
 import { EleitoresDetailsSheet } from '@/components/eleitores/EleitoresDetailsSheet';
+import { GeocodeAllDialog } from '@/components/eleitores/GeocodeAllDialog';
 import { Users, Search, Filter, X, UserPlus } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -238,6 +239,7 @@ const Eleitores = () => {
           </p>
         </div>
         <div className="flex gap-2">
+          <GeocodeAllDialog onComplete={fetchEleitores} />
           <TagsDialog />
           <ImportEleitoresDialog onEleitoresImported={fetchEleitores} />
           <Button onClick={() => setAddEleitorOpen(true)}>
