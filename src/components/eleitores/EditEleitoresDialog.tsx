@@ -27,7 +27,7 @@ const eleitoresSchema = z.object({
   nome_completo: z.string().trim().min(1, 'Nome completo é obrigatório').max(200, 'Nome muito longo'),
   telefone: z.string().trim().max(20, 'Telefone muito longo').optional(),
   email: z.string().trim().email('E-mail inválido').max(255, 'E-mail muito longo').optional().or(z.literal('')),
-  data_nascimento: z.string().optional(),
+  data_nascimento: z.string().regex(/^(\d{2}\/\d{2}\/\d{4})?$/, 'Formato deve ser DD/MM/AAAA').optional(),
   endereco: z.string().trim().max(300, 'Endereço muito longo').optional(),
 });
 
@@ -71,11 +71,20 @@ export const EditEleitoresDialog = ({
 
   useEffect(() => {
     if (eleitor) {
+      // Convert YYYY-MM-DD to DD/MM/AAAA
+      let dataNascimento = '';
+      if (eleitor.data_nascimento) {
+        const [ano, mes, dia] = eleitor.data_nascimento.split('-');
+        if (ano && mes && dia) {
+          dataNascimento = `${dia}/${mes}/${ano}`;
+        }
+      }
+
       form.reset({
         nome_completo: eleitor.nome_completo,
         telefone: eleitor.telefone || '',
         email: eleitor.email || '',
-        data_nascimento: eleitor.data_nascimento || '',
+        data_nascimento: dataNascimento,
         endereco: eleitor.endereco || '',
       });
     }
@@ -86,13 +95,22 @@ export const EditEleitoresDialog = ({
 
     setLoading(true);
     try {
+      // Convert DD/MM/AAAA to YYYY-MM-DD
+      let dataNascimento = null;
+      if (data.data_nascimento && data.data_nascimento.trim()) {
+        const [dia, mes, ano] = data.data_nascimento.split('/');
+        if (dia && mes && ano) {
+          dataNascimento = `${ano}-${mes}-${dia}`;
+        }
+      }
+
       const { error } = await supabase
         .from('eleitores')
         .update({
           nome_completo: data.nome_completo,
           telefone: data.telefone || null,
           email: data.email || null,
-          data_nascimento: data.data_nascimento || null,
+          data_nascimento: dataNascimento,
           endereco: data.endereco || null,
         })
         .eq('id', eleitor.id);
@@ -164,7 +182,7 @@ export const EditEleitoresDialog = ({
                   <FormItem>
                     <FormLabel>Data de Nascimento</FormLabel>
                     <FormControl>
-                      <Input type="date" {...field} />
+                      <Input placeholder="DD/MM/AAAA" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

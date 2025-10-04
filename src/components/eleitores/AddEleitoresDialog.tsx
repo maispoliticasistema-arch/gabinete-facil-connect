@@ -30,7 +30,7 @@ const eleitoresSchema = z.object({
   nome_completo: z.string().trim().min(1, 'Nome completo é obrigatório').max(200, 'Nome muito longo'),
   telefone: z.string().trim().max(20, 'Telefone muito longo').optional(),
   email: z.string().trim().email('E-mail inválido').max(255, 'E-mail muito longo').optional().or(z.literal('')),
-  data_nascimento: z.string().optional(),
+  data_nascimento: z.string().regex(/^(\d{2}\/\d{2}\/\d{4})?$/, 'Formato deve ser DD/MM/AAAA').optional(),
   endereco: z.string().trim().max(300, 'Endereço muito longo').optional(),
 });
 
@@ -63,11 +63,20 @@ export const AddEleitoresDialog = ({ onEleitoresAdded }: AddEleitoresDialogProps
 
     setLoading(true);
     try {
+      // Convert DD/MM/AAAA to YYYY-MM-DD
+      let dataNascimento = null;
+      if (data.data_nascimento && data.data_nascimento.trim()) {
+        const [dia, mes, ano] = data.data_nascimento.split('/');
+        if (dia && mes && ano) {
+          dataNascimento = `${ano}-${mes}-${dia}`;
+        }
+      }
+
       const { error } = await supabase.from('eleitores').insert({
         nome_completo: data.nome_completo,
         telefone: data.telefone || null,
         email: data.email || null,
-        data_nascimento: data.data_nascimento || null,
+        data_nascimento: dataNascimento,
         endereco: data.endereco || null,
         gabinete_id: currentGabinete.gabinete_id,
         cadastrado_por: user.id,
@@ -147,7 +156,7 @@ export const AddEleitoresDialog = ({ onEleitoresAdded }: AddEleitoresDialogProps
                   <FormItem>
                     <FormLabel>Data de Nascimento</FormLabel>
                     <FormControl>
-                      <Input type="date" {...field} />
+                      <Input placeholder="DD/MM/AAAA" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
