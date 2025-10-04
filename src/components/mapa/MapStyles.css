@@ -1,0 +1,24 @@
+/* Custom styles for Leaflet map markers and popups */
+
+.custom-marker {
+  background: transparent !important;
+  border: none !important;
+}
+
+.leaflet-popup-content-wrapper {
+  border-radius: 8px;
+  padding: 0;
+}
+
+.leaflet-popup-content {
+  margin: 0;
+  min-width: 250px;
+}
+
+.leaflet-popup-tip-container {
+  display: none;
+}
+
+.leaflet-container {
+  font-family: inherit;
+}
