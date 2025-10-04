@@ -6,6 +6,7 @@ import { EleitoresTable } from '@/components/eleitores/EleitoresTable';
 import { AddEleitoresDialog } from '@/components/eleitores/AddEleitoresDialog';
 import { ImportEleitoresDialog } from '@/components/eleitores/ImportEleitoresDialog';
 import { TagsDialog } from '@/components/eleitores/TagsDialog';
+import { EleitoresDetailsSheet } from '@/components/eleitores/EleitoresDetailsSheet';
 import { Users, Search, Filter, X } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -52,6 +53,10 @@ interface Eleitor {
   cidade: string | null;
   estado: string | null;
   cep: string | null;
+  cpf: string | null;
+  rg: string | null;
+  profissao: string | null;
+  observacoes: string | null;
   created_at: string;
 }
 
@@ -67,6 +72,8 @@ const Eleitores = () => {
   const [selectedBairro, setSelectedBairro] = useState<string>('');
   const [selectedCidade, setSelectedCidade] = useState<string>('');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [selectedEleitor, setSelectedEleitor] = useState<Eleitor | null>(null);
+  const [eleitorSheetOpen, setEleitorSheetOpen] = useState(false);
   const { currentGabinete } = useGabinete();
   const { toast } = useToast();
 
@@ -213,6 +220,11 @@ const Eleitores = () => {
       prev.includes(tagId) ? prev.filter((id) => id !== tagId) : [...prev, tagId]
     );
     setCurrentPage(1);
+  };
+
+  const handleEleitoresClick = (eleitor: Eleitor) => {
+    setSelectedEleitor(eleitor);
+    setEleitorSheetOpen(true);
   };
 
   return (
@@ -367,7 +379,11 @@ const Eleitores = () => {
             </div>
           ) : (
             <>
-              <EleitoresTable eleitores={eleitores} onEleitoresUpdated={fetchEleitores} />
+              <EleitoresTable 
+                eleitores={eleitores} 
+                onEleitoresUpdated={fetchEleitores}
+                onEleitoresClick={handleEleitoresClick}
+              />
               
               {totalPages > 1 && (
                 <div className="flex items-center justify-between pt-4">
@@ -465,6 +481,12 @@ const Eleitores = () => {
           )}
         </CardContent>
       </Card>
+
+      <EleitoresDetailsSheet
+        eleitor={selectedEleitor}
+        open={eleitorSheetOpen}
+        onOpenChange={setEleitorSheetOpen}
+      />
     </div>
   );
 };

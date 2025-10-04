@@ -34,9 +34,10 @@ interface Eleitor {
 interface EleitoresTableProps {
   eleitores: Eleitor[];
   onEleitoresUpdated: () => void;
+  onEleitoresClick?: (eleitor: Eleitor) => void;
 }
 
-export const EleitoresTable = ({ eleitores, onEleitoresUpdated }: EleitoresTableProps) => {
+export const EleitoresTable = ({ eleitores, onEleitoresUpdated, onEleitoresClick }: EleitoresTableProps) => {
   const [editingEleitor, setEditingEleitor] = useState<Eleitor | null>(null);
   const [deletingEleitor, setDeletingEleitor] = useState<Eleitor | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -102,7 +103,11 @@ export const EleitoresTable = ({ eleitores, onEleitoresUpdated }: EleitoresTable
               </TableRow>
             ) : (
               eleitores.map((eleitor) => (
-                <TableRow key={eleitor.id}>
+                <TableRow 
+                  key={eleitor.id}
+                  onClick={() => onEleitoresClick?.(eleitor)}
+                  className="cursor-pointer"
+                >
                 <TableCell>
                   <div className="flex items-center gap-2">
                     <Avatar className="h-8 w-8">
@@ -172,7 +177,10 @@ export const EleitoresTable = ({ eleitores, onEleitoresUpdated }: EleitoresTable
                       <Button
                         variant="ghost"
                         size="icon"
-                        onClick={() => handleEdit(eleitor)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleEdit(eleitor);
+                        }}
                         className="h-7 w-7"
                       >
                         <Pencil className="h-3.5 w-3.5" />
@@ -180,7 +188,10 @@ export const EleitoresTable = ({ eleitores, onEleitoresUpdated }: EleitoresTable
                       <Button
                         variant="ghost"
                         size="icon"
-                        onClick={() => handleDelete(eleitor)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDelete(eleitor);
+                        }}
                         className="h-7 w-7 text-destructive hover:text-destructive"
                       >
                         <Trash2 className="h-3.5 w-3.5" />
