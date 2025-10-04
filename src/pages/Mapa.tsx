@@ -101,37 +101,38 @@ const Mapa = () => {
 
     console.log('Initializing map...');
     
-    const initMap = () => {
-      try {
-        if (!mapContainerRef.current) return;
-        
-        const map = L.map(mapContainerRef.current).setView([-15.7939, -47.8828], 4);
-        
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-          maxZoom: 19,
-        }).addTo(map);
+    // Direct initialization without timeout
+    try {
+      if (!mapContainerRef.current) return;
+      
+      const map = L.map(mapContainerRef.current, {
+        center: [-15.7939, -47.8828],
+        zoom: 4,
+        scrollWheelZoom: true
+      });
+      
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        maxZoom: 19,
+      }).addTo(map);
 
-        const markersLayer = L.layerGroup().addTo(map);
-        markersLayerRef.current = markersLayer;
-        mapRef.current = map;
-        
-        setTimeout(() => {
-          map.invalidateSize();
-          setMapInitialized(true);
-          console.log('Map initialized successfully');
-        }, 100);
-        
-      } catch (error) {
-        console.error('Error initializing map:', error);
-      }
-    };
-
-    // Delay initialization to ensure container is ready
-    const timer = setTimeout(initMap, 100);
+      const markersLayer = L.layerGroup().addTo(map);
+      markersLayerRef.current = markersLayer;
+      mapRef.current = map;
+      
+      // Force resize immediately and after a delay
+      map.invalidateSize();
+      setTimeout(() => {
+        map.invalidateSize();
+        setMapInitialized(true);
+        console.log('Map initialized successfully');
+      }, 200);
+      
+    } catch (error) {
+      console.error('Error initializing map:', error);
+    }
 
     return () => {
-      clearTimeout(timer);
       if (mapRef.current) {
         mapRef.current.remove();
         mapRef.current = null;
@@ -549,7 +550,16 @@ const Mapa = () => {
       <div 
         ref={mapContainerRef} 
         id="map"
-        className="absolute inset-0"
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          width: '100%',
+          height: '100%',
+          zIndex: 0
+        }}
       />
     </div>
   );
