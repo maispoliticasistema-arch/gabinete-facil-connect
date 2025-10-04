@@ -82,6 +82,7 @@ export const AddRoteiroDialog = ({
   const [selectedAssessores, setSelectedAssessores] = useState<string[]>([]);
   const [pontosComEndereco, setPontosComEndereco] = useState<PontoComEndereco[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [searchResponsavel, setSearchResponsavel] = useState('');
   const [showEnderecoForm, setShowEnderecoForm] = useState(false);
   const [selectedEleitorForEndereco, setSelectedEleitorForEndereco] = useState<Eleitor | null>(null);
   const [enderecoAlternativo, setEnderecoAlternativo] = useState('');
@@ -152,6 +153,20 @@ export const AddRoteiroDialog = ({
       return [...prev, eleitor];
     });
   };
+
+  const toggleAssessor = (userId: string) => {
+    setSelectedAssessores(prev => {
+      if (prev.includes(userId)) {
+        return prev.filter(id => id !== userId);
+      }
+      return [...prev, userId];
+    });
+    setSearchResponsavel('');
+  };
+
+  const filteredAssessores = assessores.filter(a =>
+    a.profiles.nome_completo.toLowerCase().includes(searchResponsavel.toLowerCase())
+  );
 
   const addPontoComEndereco = () => {
     if (!selectedEleitorForEndereco || !enderecoAlternativo) {
@@ -432,6 +447,7 @@ export const AddRoteiroDialog = ({
       setSelectedAssessores([]);
       setPontosComEndereco([]);
       setSearchTerm('');
+      setSearchResponsavel('');
       onOpenChange(false);
       onRoteiroAdded();
     } catch (error) {
@@ -550,37 +566,65 @@ export const AddRoteiroDialog = ({
             {/* Seleção de Responsáveis */}
             <div className="space-y-2">
               <FormLabel>Responsáveis ({selectedAssessores.length})</FormLabel>
-              <div className="border rounded-md p-3 space-y-2 max-h-48 overflow-y-auto bg-muted/30">
-                {assessores.length === 0 ? (
-                  <p className="text-sm text-muted-foreground text-center py-2">
-                    Nenhum assessor cadastrado neste gabinete
-                  </p>
-                ) : (
-                  assessores.map((assessor) => (
-                    <div
-                      key={assessor.user_id}
-                      className="flex items-center space-x-2 p-2 hover:bg-background rounded cursor-pointer"
-                      onClick={() => {
-                        setSelectedAssessores(prev =>
-                          prev.includes(assessor.user_id)
-                            ? prev.filter(id => id !== assessor.user_id)
-                            : [...prev, assessor.user_id]
-                        );
-                      }}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={selectedAssessores.includes(assessor.user_id)}
-                        onChange={() => {}}
-                        className="h-4 w-4 rounded border-gray-300"
-                      />
-                      <label className="text-sm cursor-pointer flex-1">
-                        {assessor.profiles.nome_completo}
-                      </label>
-                    </div>
-                  ))
-                )}
-              </div>
+              
+              {selectedAssessores.length > 0 && (
+                <div className="space-y-1 mb-2">
+                  {selectedAssessores.map((userId) => {
+                    const assessor = assessores.find(a => a.user_id === userId);
+                    if (!assessor) return null;
+                    return (
+                      <div
+                        key={userId}
+                        className="flex items-center justify-between p-2 bg-primary/10 rounded-md text-sm"
+                      >
+                        <div className="font-medium">{assessor.profiles.nome_completo}</div>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => toggleAssessor(userId)}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              <Input
+                placeholder="Buscar responsável por nome..."
+                value={searchResponsavel}
+                onChange={(e) => setSearchResponsavel(e.target.value)}
+              />
+
+              {searchResponsavel.length >= 2 && (
+                <div className="max-h-48 overflow-y-auto border rounded-md p-2 space-y-1">
+                  {filteredAssessores.length === 0 ? (
+                    <p className="text-sm text-muted-foreground text-center py-2">
+                      Nenhum assessor encontrado
+                    </p>
+                  ) : (
+                    filteredAssessores.map((assessor) => {
+                      const isSelected = selectedAssessores.includes(assessor.user_id);
+                      return (
+                        <button
+                          key={assessor.user_id}
+                          type="button"
+                          onClick={() => toggleAssessor(assessor.user_id)}
+                          className={`w-full text-left p-2 rounded-md text-sm transition-colors ${
+                            isSelected
+                              ? 'bg-primary text-primary-foreground'
+                              : 'hover:bg-muted'
+                          }`}
+                        >
+                          <div className="font-medium">{assessor.profiles.nome_completo}</div>
+                        </button>
+                      );
+                    })
+                  )}
+                </div>
+              )}
             </div>
 
             <div className="space-y-2">
