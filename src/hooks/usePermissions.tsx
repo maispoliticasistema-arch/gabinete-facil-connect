@@ -117,7 +117,7 @@ export function usePermissions() {
 
   const hasPermission = (permission: Permission): boolean => {
     const result = permissions.includes(permission);
-    console.log('hasPermission:', permission, '=', result, '| total permissions:', permissions.length);
+    console.log('hasPermission:', permission, '=', result, '| total permissions:', permissions.length, '| permissions:', permissions);
     return result;
   };
 
