@@ -61,11 +61,18 @@ export const GabineteProvider = ({ children }: { children: React.ReactNode }) =>
       return;
     }
 
-    setGabinetes(data || []);
+    const gabinetesList = data || [];
+    setGabinetes(gabinetesList);
     
-    // Set first gabinete as current if none selected
-    if (data && data.length > 0 && !currentGabinete) {
-      setCurrentGabinete(data[0]);
+    // Always set first gabinete as current if we have gabinetes and no current selection
+    if (gabinetesList.length > 0) {
+      setCurrentGabinete(prev => {
+        // If no current gabinete or current is not in the list, set first one
+        const currentExists = prev && gabinetesList.some(g => g.gabinete_id === prev.gabinete_id);
+        return currentExists ? prev : gabinetesList[0];
+      });
+    } else {
+      setCurrentGabinete(null);
     }
     
     setLoading(false);
