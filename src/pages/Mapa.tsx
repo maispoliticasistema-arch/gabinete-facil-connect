@@ -1,6 +1,5 @@
 import { useEffect, useState, useMemo } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
-import MarkerClusterGroup from 'react-leaflet-cluster';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { supabase } from '@/integrations/supabase/client';
@@ -467,9 +466,8 @@ const Mapa = () => {
         />
         <MapUpdater center={mapCenter} />
 
-        <MarkerClusterGroup chunkedLoading>
-          {/* Eleitores Markers */}
-          {showEleitores && filteredEleitores.map((eleitor) => (
+        {/* Eleitores Markers */}
+        {showEleitores && filteredEleitores.map((eleitor) => (
             <Marker
               key={`eleitor-${eleitor.id}`}
               position={[eleitor.latitude, eleitor.longitude]}
@@ -514,8 +512,8 @@ const Mapa = () => {
             </Marker>
           ))}
 
-          {/* Demandas Markers */}
-          {showDemandas && filteredDemandas.map((demanda) => {
+        {/* Demandas Markers */}
+        {showDemandas && filteredDemandas.map((demanda) => {
             const isOpen = demanda.status === 'aberta' || demanda.status === 'em_andamento';
             const icon = isOpen ? demandaAbertaIcon : demandaConcluidaIcon;
             
@@ -563,11 +561,10 @@ const Mapa = () => {
                       Ver Detalhes
                     </Button>
                   </div>
-                </Popup>
-              </Marker>
-            );
-          })}
-        </MarkerClusterGroup>
+              </Popup>
+            </Marker>
+          );
+        })}
       </MapContainer>
     </div>
   );
