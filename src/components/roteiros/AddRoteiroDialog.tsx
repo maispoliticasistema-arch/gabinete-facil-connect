@@ -54,6 +54,13 @@ interface Eleitor {
   longitude: number | null;
 }
 
+interface Assessor {
+  user_id: string;
+  profiles: {
+    nome_completo: string;
+  };
+}
+
 interface AddRoteiroDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -70,7 +77,9 @@ export const AddRoteiroDialog = ({
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [eleitores, setEleitores] = useState<Eleitor[]>([]);
+  const [assessores, setAssessores] = useState<Assessor[]>([]);
   const [selectedEleitores, setSelectedEleitores] = useState<Eleitor[]>([]);
+  const [selectedAssessores, setSelectedAssessores] = useState<string[]>([]);
   const [pontosComEndereco, setPontosComEndereco] = useState<PontoComEndereco[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [showEnderecoForm, setShowEnderecoForm] = useState(false);
@@ -94,6 +103,7 @@ export const AddRoteiroDialog = ({
   useEffect(() => {
     if (open && currentGabinete) {
       fetchEleitores();
+      fetchAssessores();
     }
   }, [open, currentGabinete]);
 
@@ -114,6 +124,23 @@ export const AddRoteiroDialog = ({
     }
 
     setEleitores(data || []);
+  };
+
+  const fetchAssessores = async () => {
+    if (!currentGabinete) return;
+
+    const { data, error } = await supabase
+      .from('user_gabinetes')
+      .select('user_id, profiles!inner(nome_completo)')
+      .eq('gabinete_id', currentGabinete.gabinete_id)
+      .eq('ativo', true);
+
+    if (error) {
+      console.error('Erro ao buscar assessores:', error);
+      return;
+    }
+
+    setAssessores(data || []);
   };
 
   const toggleEleitor = (eleitor: Eleitor) => {
@@ -378,6 +405,23 @@ export const AddRoteiroDialog = ({
         }
       }
 
+      // Salvar responsáveis do roteiro
+      if (selectedAssessores.length > 0) {
+        const responsaveis = selectedAssessores.map(userId => ({
+          roteiro_id: roteiro.id,
+          user_id: userId
+        }));
+
+        const { error: responsaveisError } = await supabase
+          .from('roteiro_responsaveis')
+          .insert(responsaveis);
+
+        if (responsaveisError) {
+          console.error('Erro ao salvar responsáveis:', responsaveisError);
+          // Não falha a criação do roteiro por causa disso
+        }
+      }
+
       toast({
         title: 'Sucesso',
         description: 'Roteiro criado com sucesso!'
@@ -385,6 +429,7 @@ export const AddRoteiroDialog = ({
 
       form.reset();
       setSelectedEleitores([]);
+      setSelectedAssessores([]);
       setPontosComEndereco([]);
       setSearchTerm('');
       onOpenChange(false);
@@ -501,6 +546,42 @@ export const AddRoteiroDialog = ({
                 </FormItem>
               )}
             />
+
+            {/* Seleção de Responsáveis */}
+            <div className="space-y-2">
+              <FormLabel>Responsáveis ({selectedAssessores.length})</FormLabel>
+              <div className="border rounded-md p-3 space-y-2 max-h-48 overflow-y-auto bg-muted/30">
+                {assessores.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-2">
+                    Nenhum assessor cadastrado neste gabinete
+                  </p>
+                ) : (
+                  assessores.map((assessor) => (
+                    <div
+                      key={assessor.user_id}
+                      className="flex items-center space-x-2 p-2 hover:bg-background rounded cursor-pointer"
+                      onClick={() => {
+                        setSelectedAssessores(prev =>
+                          prev.includes(assessor.user_id)
+                            ? prev.filter(id => id !== assessor.user_id)
+                            : [...prev, assessor.user_id]
+                        );
+                      }}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedAssessores.includes(assessor.user_id)}
+                        onChange={() => {}}
+                        className="h-4 w-4 rounded border-gray-300"
+                      />
+                      <label className="text-sm cursor-pointer flex-1">
+                        {assessor.profiles.nome_completo}
+                      </label>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
 
             <div className="space-y-2">
               <div className="flex items-center justify-between">

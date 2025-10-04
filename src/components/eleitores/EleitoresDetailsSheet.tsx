@@ -61,6 +61,11 @@ interface Roteiro {
     visitado: boolean;
     visitado_em: string | null;
   }>;
+  roteiro_responsaveis: Array<{
+    profiles: {
+      nome_completo: string;
+    };
+  }>;
 }
 
 interface EleitoresDetailsSheetProps {
@@ -129,7 +134,12 @@ export const EleitoresDetailsSheet = ({
             nome,
             data,
             status,
-            objetivo
+            objetivo,
+            roteiro_responsaveis(
+              profiles!inner(
+                nome_completo
+              )
+            )
           )
         `)
         .eq('eleitor_id', eleitor.id)
@@ -387,6 +397,12 @@ export const EleitoresDetailsSheet = ({
                               </Badge>
                             )}
                           </div>
+                          {roteiro.roteiro_responsaveis && roteiro.roteiro_responsaveis.length > 0 && (
+                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                              <span className="font-medium">Responsáveis:</span>
+                              <span>{roteiro.roteiro_responsaveis.map(r => r.profiles.nome_completo).join(', ')}</span>
+                            </div>
+                          )}
                         </div>
                       </div>
                     );

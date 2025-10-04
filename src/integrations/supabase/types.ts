@@ -432,6 +432,35 @@ export type Database = {
           },
         ]
       }
+      roteiro_responsaveis: {
+        Row: {
+          created_at: string
+          id: string
+          roteiro_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          roteiro_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          roteiro_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "roteiro_responsaveis_roteiro_id_fkey"
+            columns: ["roteiro_id"]
+            isOneToOne: false
+            referencedRelation: "roteiros"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       roteiros: {
         Row: {
           created_at: string
