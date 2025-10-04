@@ -79,8 +79,10 @@ export function AppSidebar() {
           </div>
         )}
         {collapsed && (
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-primary">
-            <Building2 className="h-5 w-5 text-white" />
+          <div className="flex justify-center">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-primary">
+              <Building2 className="h-5 w-5 text-white" />
+            </div>
           </div>
         )}
       </SidebarHeader>
@@ -148,12 +150,12 @@ export function AppSidebar() {
           </DropdownMenu>
         )}
 
-        <div className="flex gap-2">
+        <div className={`flex ${collapsed ? 'flex-col' : ''} gap-2`}>
           <Button
             variant="ghost"
             size="icon"
             onClick={toggleTheme}
-            className="flex-1 bg-sidebar-accent text-sidebar-accent-foreground hover:bg-sidebar-accent/80"
+            className={`${!collapsed ? 'flex-1' : ''} bg-sidebar-accent text-sidebar-accent-foreground hover:bg-sidebar-accent/80`}
           >
             {theme === 'light' ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
           </Button>
@@ -161,7 +163,7 @@ export function AppSidebar() {
             variant="ghost"
             size="icon"
             onClick={signOut}
-            className="flex-1 bg-sidebar-accent text-sidebar-accent-foreground hover:bg-sidebar-accent/80"
+            className={`${!collapsed ? 'flex-1' : ''} bg-sidebar-accent text-sidebar-accent-foreground hover:bg-sidebar-accent/80`}
           >
             <LogOut className="h-4 w-4" />
           </Button>
