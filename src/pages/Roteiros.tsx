@@ -76,11 +76,6 @@ const Roteiros = () => {
   const [routeGeometry, setRouteGeometry] = useState<[number, number][]>([]);
   const [locaisVisitados, setLocaisVisitados] = useState(0);
 
-  // Verificar permissão de visualização
-  if (!hasPermission('view_roteiros')) {
-    return <NoPermissionMessage />;
-  }
-
   useEffect(() => {
     if (currentGabinete) {
       fetchRoteiros();
@@ -285,6 +280,11 @@ const Roteiros = () => {
 
   const roteiroPartidaIcon = createCustomIcon('#22c55e', '🚀');
   const roteiroFimIcon = createCustomIcon('#3b82f6', '🏁');
+
+  // Verificar permissão de visualização
+  if (!hasPermission('view_roteiros')) {
+    return <NoPermissionMessage />;
+  }
 
   return (
     <div className="animate-fade-in space-y-6">

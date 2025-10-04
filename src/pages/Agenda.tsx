@@ -58,11 +58,6 @@ const Agenda = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [selectedEvento, setSelectedEvento] = useState<Evento | null>(null);
-
-  // Verificar permissão de visualização
-  if (!hasPermission('view_agenda')) {
-    return <NoPermissionMessage />;
-  }
   const [detailsSheetOpen, setDetailsSheetOpen] = useState(false);
   const [editingEvento, setEditingEvento] = useState<any>(null);
 
@@ -203,6 +198,11 @@ const Agenda = () => {
     setEditingEvento(evento);
     setAddDialogOpen(true);
   };
+
+  // Verificar permissão de visualização
+  if (!hasPermission('view_agenda')) {
+    return <NoPermissionMessage />;
+  }
 
   return (
     <div className="animate-fade-in space-y-6">

@@ -87,11 +87,6 @@ const Eleitores = () => {
 
   const hasActiveFilters = selectedBairro || selectedCidade || selectedTags.length > 0;
 
-  // Verificar permissão de visualização
-  if (!hasPermission('view_eleitores')) {
-    return <NoPermissionMessage />;
-  }
-
   const fetchEleitores = async () => {
     if (!currentGabinete) return;
 
@@ -236,6 +231,11 @@ const Eleitores = () => {
     setSelectedEleitor(eleitor);
     setEleitorSheetOpen(true);
   };
+
+  // Verificar permissão de visualização
+  if (!hasPermission('view_eleitores')) {
+    return <NoPermissionMessage />;
+  }
 
   return (
     <div className="animate-fade-in space-y-6">

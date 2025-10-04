@@ -66,11 +66,6 @@ const Demandas = () => {
 
   const hasActiveFilters = selectedStatus || selectedPrioridade;
 
-  // Verificar permissão de visualização
-  if (!hasPermission('view_demandas')) {
-    return <NoPermissionMessage />;
-  }
-
   useEffect(() => {
     if (currentGabinete) {
       fetchDemandas();
@@ -183,6 +178,11 @@ const Demandas = () => {
     if (!date) return '-';
     return format(new Date(date), 'dd/MM/yyyy', { locale: ptBR });
   };
+
+  // Verificar permissão de visualização
+  if (!hasPermission('view_demandas')) {
+    return <NoPermissionMessage />;
+  }
 
   return (
     <div className="animate-fade-in space-y-6">
