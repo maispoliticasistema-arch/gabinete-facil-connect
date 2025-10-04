@@ -74,11 +74,20 @@ const demandaSchema = z.object({
 type DemandaFormData = z.infer<typeof demandaSchema>;
 
 interface AddDemandaDialogProps {
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
   onDemandaAdded: () => void;
 }
 
-export const AddDemandaDialog = ({ onDemandaAdded }: AddDemandaDialogProps) => {
-  const [open, setOpen] = useState(false);
+export const AddDemandaDialog = ({ 
+  open: controlledOpen, 
+  onOpenChange: controlledOnOpenChange, 
+  onDemandaAdded 
+}: AddDemandaDialogProps) => {
+  const [internalOpen, setInternalOpen] = useState(false);
+  
+  const open = controlledOpen !== undefined ? controlledOpen : internalOpen;
+  const setOpen = controlledOnOpenChange !== undefined ? controlledOnOpenChange : setInternalOpen;
   const [loading, setLoading] = useState(false);
   const [eleitores, setEleitores] = useState<Eleitor[]>([]);
   const [filteredEleitores, setFilteredEleitores] = useState<Eleitor[]>([]);

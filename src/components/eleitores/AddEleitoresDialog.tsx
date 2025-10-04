@@ -50,11 +50,20 @@ const eleitoresSchema = z.object({
 type EleitoresFormData = z.infer<typeof eleitoresSchema>;
 
 interface AddEleitoresDialogProps {
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
   onEleitoresAdded: () => void;
 }
 
-export const AddEleitoresDialog = ({ onEleitoresAdded }: AddEleitoresDialogProps) => {
-  const [open, setOpen] = useState(false);
+export const AddEleitoresDialog = ({ 
+  open: controlledOpen, 
+  onOpenChange: controlledOnOpenChange, 
+  onEleitoresAdded 
+}: AddEleitoresDialogProps) => {
+  const [internalOpen, setInternalOpen] = useState(false);
+  
+  const open = controlledOpen !== undefined ? controlledOpen : internalOpen;
+  const setOpen = controlledOnOpenChange !== undefined ? controlledOnOpenChange : setInternalOpen;
   const [loading, setLoading] = useState(false);
   const [tags, setTags] = useState<Tag[]>([]);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);

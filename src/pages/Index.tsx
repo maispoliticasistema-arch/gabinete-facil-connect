@@ -1,7 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Users, FileText, Calendar, AlertCircle, TrendingUp, UserPlus } from 'lucide-react';
 import { StatsCard } from '@/components/dashboard/StatsCard';
 import { AniversariantesDialog } from '@/components/dashboard/AniversariantesDialog';
+import { AddDemandaDialog } from '@/components/demandas/AddDemandaDialog';
+import { AddEleitoresDialog } from '@/components/eleitores/AddEleitoresDialog';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -31,93 +33,103 @@ const Index = () => {
   });
   const [loading, setLoading] = useState(true);
   const [aniversariantesDialogOpen, setAniversariantesDialogOpen] = useState(false);
+  const [novaDemandaDialogOpen, setNovaDemandaDialogOpen] = useState(false);
+  const [novoEleitorDialogOpen, setNovoEleitorDialogOpen] = useState(false);
 
-  useEffect(() => {
+  const fetchStats = useCallback(async () => {
     if (!currentGabinete) return;
 
-    const fetchStats = async () => {
-      setLoading(true);
-      const today = new Date().toISOString().split('T')[0];
+    setLoading(true);
+    const today = new Date().toISOString().split('T')[0];
 
-      try {
-        // Total eleitores
-        const { count: totalEleitores } = await supabase
-          .from('eleitores')
-          .select('*', { count: 'exact', head: true })
-          .eq('gabinete_id', currentGabinete.gabinete_id);
+    try {
+      // Total eleitores
+      const { count: totalEleitores } = await supabase
+        .from('eleitores')
+        .select('*', { count: 'exact', head: true })
+        .eq('gabinete_id', currentGabinete.gabinete_id);
 
-        // Aniversariantes do dia
-        const now = new Date();
-        const month = String(now.getMonth() + 1).padStart(2, '0');
-        const day = String(now.getDate()).padStart(2, '0');
-        
-        const { data: eleitoresData } = await supabase
-          .from('eleitores')
-          .select('data_nascimento')
-          .eq('gabinete_id', currentGabinete.gabinete_id)
-          .not('data_nascimento', 'is', null);
+      // Aniversariantes do dia
+      const now = new Date();
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const day = String(now.getDate()).padStart(2, '0');
+      
+      const { data: eleitoresData } = await supabase
+        .from('eleitores')
+        .select('data_nascimento')
+        .eq('gabinete_id', currentGabinete.gabinete_id)
+        .not('data_nascimento', 'is', null);
 
-        const aniversariantes = eleitoresData?.filter(eleitor => {
-          if (!eleitor.data_nascimento) return false;
-          const nascimento = new Date(eleitor.data_nascimento + 'T00:00:00');
-          const nascMonth = String(nascimento.getMonth() + 1).padStart(2, '0');
-          const nascDay = String(nascimento.getDate()).padStart(2, '0');
-          return nascMonth === month && nascDay === day;
-        }).length || 0;
+      const aniversariantes = eleitoresData?.filter(eleitor => {
+        if (!eleitor.data_nascimento) return false;
+        const nascimento = new Date(eleitor.data_nascimento + 'T00:00:00');
+        const nascMonth = String(nascimento.getMonth() + 1).padStart(2, '0');
+        const nascDay = String(nascimento.getDate()).padStart(2, '0');
+        return nascMonth === month && nascDay === day;
+      }).length || 0;
 
-        // Demandas abertas
-        const { count: demandasAbertas } = await supabase
-          .from('demandas')
-          .select('*', { count: 'exact', head: true })
-          .eq('gabinete_id', currentGabinete.gabinete_id)
-          .eq('status', 'aberta');
+      // Demandas abertas
+      const { count: demandasAbertas } = await supabase
+        .from('demandas')
+        .select('*', { count: 'exact', head: true })
+        .eq('gabinete_id', currentGabinete.gabinete_id)
+        .eq('status', 'aberta');
 
-        // Demandas com prazo para hoje
-        const { count: demandasHoje } = await supabase
-          .from('demandas')
-          .select('*', { count: 'exact', head: true })
-          .eq('gabinete_id', currentGabinete.gabinete_id)
-          .eq('prazo', today)
-          .neq('status', 'concluida');
+      // Demandas com prazo para hoje
+      const { count: demandasHoje } = await supabase
+        .from('demandas')
+        .select('*', { count: 'exact', head: true })
+        .eq('gabinete_id', currentGabinete.gabinete_id)
+        .eq('prazo', today)
+        .neq('status', 'concluida');
 
-        // Demandas atrasadas
-        const { count: demandasAtrasadas } = await supabase
-          .from('demandas')
-          .select('*', { count: 'exact', head: true })
-          .eq('gabinete_id', currentGabinete.gabinete_id)
-          .lt('prazo', today)
-          .neq('status', 'concluida');
+      // Demandas atrasadas
+      const { count: demandasAtrasadas } = await supabase
+        .from('demandas')
+        .select('*', { count: 'exact', head: true })
+        .eq('gabinete_id', currentGabinete.gabinete_id)
+        .lt('prazo', today)
+        .neq('status', 'concluida');
 
-        // Eventos hoje
-        const { count: eventosHoje } = await supabase
-          .from('agenda')
-          .select('*', { count: 'exact', head: true })
-          .eq('gabinete_id', currentGabinete.gabinete_id)
-          .gte('data_inicio', `${today}T00:00:00`)
-          .lt('data_inicio', `${today}T23:59:59`);
+      // Eventos hoje
+      const { count: eventosHoje } = await supabase
+        .from('agenda')
+        .select('*', { count: 'exact', head: true })
+        .eq('gabinete_id', currentGabinete.gabinete_id)
+        .gte('data_inicio', `${today}T00:00:00`)
+        .lt('data_inicio', `${today}T23:59:59`);
 
-        setStats({
-          totalEleitores: totalEleitores || 0,
-          aniversariantes,
-          demandasAbertas: demandasAbertas || 0,
-          demandasHoje: demandasHoje || 0,
-          demandasAtrasadas: demandasAtrasadas || 0,
-          eventosHoje: eventosHoje || 0,
-        });
-      } catch (error) {
-        console.error('Erro ao buscar estatísticas:', error);
-        toast({
-          title: 'Erro ao carregar dados',
-          description: 'Não foi possível carregar as estatísticas do dashboard.',
-          variant: 'destructive',
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchStats();
+      setStats({
+        totalEleitores: totalEleitores || 0,
+        aniversariantes,
+        demandasAbertas: demandasAbertas || 0,
+        demandasHoje: demandasHoje || 0,
+        demandasAtrasadas: demandasAtrasadas || 0,
+        eventosHoje: eventosHoje || 0,
+      });
+    } catch (error) {
+      console.error('Erro ao buscar estatísticas:', error);
+      toast({
+        title: 'Erro ao carregar dados',
+        description: 'Não foi possível carregar as estatísticas do dashboard.',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
   }, [currentGabinete, toast]);
+
+  useEffect(() => {
+    fetchStats();
+  }, [fetchStats]);
+
+  const handleDemandaAdded = () => {
+    fetchStats(); // Atualiza as estatísticas
+  };
+
+  const handleEleitoresAdded = () => {
+    fetchStats(); // Atualiza as estatísticas
+  };
 
   if (loading) {
     return (
@@ -137,11 +149,11 @@ const Index = () => {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button className="gap-2">
+          <Button className="gap-2" onClick={() => setNovaDemandaDialogOpen(true)}>
             <FileText className="h-4 w-4" />
             Nova Demanda
           </Button>
-          <Button variant="secondary" className="gap-2">
+          <Button variant="secondary" className="gap-2" onClick={() => setNovoEleitorDialogOpen(true)}>
             <UserPlus className="h-4 w-4" />
             Cadastrar Eleitor
           </Button>
@@ -258,6 +270,16 @@ const Index = () => {
       <AniversariantesDialog 
         open={aniversariantesDialogOpen} 
         onOpenChange={setAniversariantesDialogOpen} 
+      />
+      <AddDemandaDialog 
+        open={novaDemandaDialogOpen}
+        onOpenChange={setNovaDemandaDialogOpen}
+        onDemandaAdded={handleDemandaAdded}
+      />
+      <AddEleitoresDialog 
+        open={novoEleitorDialogOpen}
+        onOpenChange={setNovoEleitorDialogOpen}
+        onEleitoresAdded={handleEleitoresAdded}
       />
     </div>
   );
