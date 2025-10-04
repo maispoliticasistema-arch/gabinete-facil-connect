@@ -9,7 +9,6 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { 
@@ -19,8 +18,6 @@ import {
   X,
   ChevronRight,
   ChevronLeft,
-  Phone,
-  Mail,
   CheckCircle2,
   AlertCircle,
 } from 'lucide-react';
@@ -34,7 +31,7 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
 });
 
-// Custom icons for different marker types
+// Custom icons
 const createCustomIcon = (color: string, emoji: string) => {
   return L.divIcon({
     className: 'custom-marker',
@@ -59,8 +56,8 @@ interface Eleitor {
   bairro: string | null;
   cidade: string | null;
   estado: string | null;
-  latitude: number;
-  longitude: number;
+  latitude: number | null;
+  longitude: number | null;
 }
 
 interface Demanda {
@@ -71,17 +68,11 @@ interface Demanda {
   created_at: string;
   eleitores: {
     nome_completo: string;
-    latitude: number;
-    longitude: number;
+    latitude: number | null;
+    longitude: number | null;
     bairro: string | null;
     cidade: string | null;
-  };
-}
-
-interface Stats {
-  totalEleitores: number;
-  demandasAbertas: number;
-  demandasConcluidas: number;
+  } | null;
 }
 
 const Mapa = () => {
@@ -90,6 +81,7 @@ const Mapa = () => {
   const mapRef = useRef<L.Map | null>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const markersLayerRef = useRef<L.LayerGroup | null>(null);
+  const [mapInitialized, setMapInitialized] = useState(false);
   
   const [eleitores, setEleitores] = useState<Eleitor[]>([]);
   const [demandas, setDemandas] = useState<Demanda[]>([]);
@@ -102,43 +94,41 @@ const Mapa = () => {
   const [selectedCidade, setSelectedCidade] = useState<string>('all');
   const [selectedBairro, setSelectedBairro] = useState<string>('all');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
-  
-  // Stats
-  const [stats, setStats] = useState<Stats>({
-    totalEleitores: 0,
-    demandasAbertas: 0,
-    demandasConcluidas: 0,
-  });
 
-  // Initialize map
+  // Initialize map FIRST
   useEffect(() => {
     if (!mapContainerRef.current || mapRef.current) return;
 
-    // Small delay to ensure DOM is ready
-    const timer = setTimeout(() => {
-      if (!mapContainerRef.current) return;
-
+    console.log('Initializing map...');
+    
+    const initMap = () => {
       try {
-        // Create map
+        if (!mapContainerRef.current) return;
+        
         const map = L.map(mapContainerRef.current).setView([-15.7939, -47.8828], 4);
-
-        // Add tile layer
+        
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
           attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
           maxZoom: 19,
         }).addTo(map);
 
-        // Create markers layer
         const markersLayer = L.layerGroup().addTo(map);
         markersLayerRef.current = markersLayer;
         mapRef.current = map;
-
-        // Force resize after initialization
-        setTimeout(() => map.invalidateSize(), 100);
+        
+        setTimeout(() => {
+          map.invalidateSize();
+          setMapInitialized(true);
+          console.log('Map initialized successfully');
+        }, 100);
+        
       } catch (error) {
         console.error('Error initializing map:', error);
       }
-    }, 250);
+    };
+
+    // Delay initialization to ensure container is ready
+    const timer = setTimeout(initMap, 100);
 
     return () => {
       clearTimeout(timer);
@@ -152,27 +142,35 @@ const Mapa = () => {
 
   // Fetch data
   useEffect(() => {
-    if (currentGabinete) {
+    if (currentGabinete && mapInitialized) {
       fetchData();
     }
-  }, [currentGabinete]);
+  }, [currentGabinete, mapInitialized]);
 
   const fetchData = async () => {
     if (!currentGabinete) return;
     
+    console.log('Fetching data for gabinete:', currentGabinete.gabinete_id);
     setLoading(true);
+    
     try {
-      // Fetch eleitores with coordinates
-      const { data: eleitoresData, error: eleitoresError } = await supabase
+      // Fetch ALL eleitores first
+      const { data: allEleitores, error: eleitoresError } = await supabase
         .from('eleitores')
         .select('*')
-        .eq('gabinete_id', currentGabinete.gabinete_id)
-        .not('latitude', 'is', null)
-        .not('longitude', 'is', null);
+        .eq('gabinete_id', currentGabinete.gabinete_id);
 
       if (eleitoresError) throw eleitoresError;
+      
+      console.log('Total eleitores:', allEleitores?.length || 0);
+      console.log('Eleitores com coordenadas:', allEleitores?.filter(e => e.latitude && e.longitude).length || 0);
 
-      // Fetch demandas with eleitor location
+      // Filter only those with coordinates for map display
+      const eleitoresWithCoords = (allEleitores || []).filter(
+        e => e.latitude !== null && e.longitude !== null
+      ) as Eleitor[];
+
+      // Fetch demandas
       const { data: demandasData, error: demandasError } = await supabase
         .from('demandas')
         .select(`
@@ -193,28 +191,25 @@ const Mapa = () => {
 
       if (demandasError) throw demandasError;
 
-      const validEleitores = (eleitoresData || []) as Eleitor[];
-      const validDemandas = (demandasData || []).filter(d => d.eleitores) as Demanda[];
+      const validDemandas = (demandasData || []).filter(
+        d => d.eleitores && d.eleitores.latitude && d.eleitores.longitude
+      ) as Demanda[];
 
-      setEleitores(validEleitores);
+      console.log('Demandas com coordenadas:', validDemandas.length);
+
+      setEleitores(eleitoresWithCoords);
       setDemandas(validDemandas);
 
-      // Calculate stats
-      const demandasAbertas = validDemandas.filter(d => d.status === 'aberta' || d.status === 'em_andamento').length;
-      const demandasConcluidas = validDemandas.filter(d => d.status === 'concluida').length;
-
-      setStats({
-        totalEleitores: validEleitores.length,
-        demandasAbertas,
-        demandasConcluidas,
-      });
-
-      // Center map on first eleitor if available
-      if (validEleitores.length > 0 && mapRef.current) {
-        mapRef.current.setView([validEleitores[0].latitude, validEleitores[0].longitude], 12);
+      // Center map on first eleitor with coordinates if available
+      if (eleitoresWithCoords.length > 0 && mapRef.current) {
+        const first = eleitoresWithCoords[0];
+        if (first.latitude && first.longitude) {
+          mapRef.current.setView([first.latitude, first.longitude], 13);
+        }
       }
 
     } catch (error: any) {
+      console.error('Error fetching data:', error);
       toast({
         title: 'Erro ao carregar dados',
         description: error.message,
@@ -250,6 +245,7 @@ const Mapa = () => {
 
   const filteredDemandas = useMemo(() => {
     return demandas.filter(d => {
+      if (!d.eleitores) return false;
       if (selectedCidade !== 'all' && d.eleitores.cidade !== selectedCidade) return false;
       if (selectedBairro !== 'all' && d.eleitores.bairro !== selectedBairro) return false;
       if (selectedStatus !== 'all' && d.status !== selectedStatus) return false;
@@ -257,9 +253,11 @@ const Mapa = () => {
     });
   }, [demandas, selectedCidade, selectedBairro, selectedStatus]);
 
-  // Update markers when filters change
+  // Update markers when filters or data change
   useEffect(() => {
-    if (!markersLayerRef.current) return;
+    if (!markersLayerRef.current || !mapInitialized) return;
+
+    console.log('Updating markers:', filteredEleitores.length, 'eleitores,', filteredDemandas.length, 'demandas');
 
     // Clear existing markers
     markersLayerRef.current.clearLayers();
@@ -267,6 +265,8 @@ const Mapa = () => {
     // Add eleitor markers
     if (showEleitores) {
       filteredEleitores.forEach(eleitor => {
+        if (!eleitor.latitude || !eleitor.longitude) return;
+        
         const marker = L.marker([eleitor.latitude, eleitor.longitude], {
           icon: eleitorIcon,
         });
@@ -275,10 +275,10 @@ const Mapa = () => {
           <div style="padding: 8px; min-width: 250px;">
             <h3 style="font-weight: bold; font-size: 16px; margin-bottom: 8px;">${eleitor.nome_completo}</h3>
             <div style="font-size: 14px; line-height: 1.5;">
-              ${eleitor.telefone ? `<div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">📞 ${eleitor.telefone}</div>` : ''}
-              ${eleitor.email ? `<div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">✉️ ${eleitor.email}</div>` : ''}
+              ${eleitor.telefone ? `<div style="margin-bottom: 4px;">📞 ${eleitor.telefone}</div>` : ''}
+              ${eleitor.email ? `<div style="margin-bottom: 4px;">✉️ ${eleitor.email}</div>` : ''}
               ${eleitor.endereco || eleitor.bairro || eleitor.cidade ? `
-                <div style="display: flex; align-items: flex-start; gap: 8px; margin-top: 8px;">
+                <div style="margin-top: 8px;">
                   📍 <div style="font-size: 12px;">
                     ${eleitor.endereco ? `${eleitor.endereco}${eleitor.numero ? `, ${eleitor.numero}` : ''}<br>` : ''}
                     ${eleitor.bairro ? `${eleitor.bairro}<br>` : ''}
@@ -298,6 +298,8 @@ const Mapa = () => {
     // Add demanda markers
     if (showDemandas) {
       filteredDemandas.forEach(demanda => {
+        if (!demanda.eleitores || !demanda.eleitores.latitude || !demanda.eleitores.longitude) return;
+        
         const isOpen = demanda.status === 'aberta' || demanda.status === 'em_andamento';
         const icon = isOpen ? demandaAbertaIcon : demandaConcluidaIcon;
         
@@ -326,7 +328,7 @@ const Mapa = () => {
         markersLayerRef.current?.addLayer(marker);
       });
     }
-  }, [filteredEleitores, filteredDemandas, showEleitores, showDemandas]);
+  }, [filteredEleitores, filteredDemandas, showEleitores, showDemandas, mapInitialized]);
 
   const clearFilters = () => {
     setSelectedCidade('all');
@@ -546,6 +548,7 @@ const Mapa = () => {
       {/* Map Container */}
       <div 
         ref={mapContainerRef} 
+        id="map"
         className="absolute inset-0"
       />
     </div>
