@@ -43,34 +43,50 @@ serve(async (req) => {
       },
     });
 
-    if (authError) throw authError;
+    if (authError) {
+      console.error("Erro ao criar usuário no Auth:", authError);
+      throw authError;
+    }
     if (!authData.user) throw new Error("Erro ao criar usuário");
 
-    // 2. Criar perfil
-    const { error: profileError } = await supabaseAdmin
-      .from("profiles")
-      .insert({
-        id: authData.user.id,
-        nome_completo,
-        telefone: telefone || null,
-      });
+    console.log("Usuário criado no Auth:", authData.user.id);
 
-    if (profileError) throw profileError;
+    // 2. Aguardar um pouco para garantir que o trigger handle_new_user criou o perfil
+    await new Promise(resolve => setTimeout(resolve, 1000));
 
-    // 3. Vincular ao gabinete
+    // 3. Atualizar perfil com telefone (o perfil já foi criado pelo trigger)
+    if (telefone) {
+      const { error: profileError } = await supabaseAdmin
+        .from("profiles")
+        .update({ telefone })
+        .eq("id", authData.user.id);
+
+      if (profileError) {
+        console.error("Erro ao atualizar perfil:", profileError);
+        throw profileError;
+      }
+    }
+
+    // 4. Vincular ao gabinete (IMPORTANTE: ativo=true por padrão)
     const { data: userGabinete, error: ugError } = await supabaseAdmin
       .from("user_gabinetes")
       .insert({
         user_id: authData.user.id,
         gabinete_id,
         role,
+        ativo: true, // Garantir que está ativo
       })
       .select()
       .single();
 
-    if (ugError) throw ugError;
+    if (ugError) {
+      console.error("Erro ao vincular usuário ao gabinete:", ugError);
+      throw ugError;
+    }
 
-    // 4. Adicionar permissões (se aplicável)
+    console.log("Usuário vinculado ao gabinete:", userGabinete.id);
+
+    // 5. Adicionar permissões (se aplicável)
     if (role === "assessor" && permissions && permissions.length > 0) {
       const permissionsToInsert = permissions.map((permission: string) => ({
         user_gabinete_id: userGabinete.id,
@@ -81,10 +97,15 @@ serve(async (req) => {
         .from("user_permissions")
         .insert(permissionsToInsert);
 
-      if (permError) throw permError;
+      if (permError) {
+        console.error("Erro ao adicionar permissões:", permError);
+        throw permError;
+      }
+
+      console.log(`${permissions.length} permissões adicionadas`);
     }
 
-    // 5. Registrar no log de auditoria
+    // 6. Registrar no log de auditoria
     await supabaseAdmin
       .from("audit_logs")
       .insert({
@@ -95,6 +116,8 @@ serve(async (req) => {
         entity_id: authData.user.id,
         details: { email, nome_completo, role },
       });
+
+    console.log("Usuário criado com sucesso:", authData.user.email);
 
     return new Response(
       JSON.stringify({ 
