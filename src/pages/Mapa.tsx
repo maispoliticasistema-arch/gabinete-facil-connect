@@ -45,6 +45,8 @@ const createCustomIcon = (color: string, emoji: string) => {
 const eleitorIcon = createCustomIcon('#3b82f6', '👤');
 const demandaAbertaIcon = createCustomIcon('#ef4444', '⚠️');
 const demandaConcluidaIcon = createCustomIcon('#22c55e', '✓');
+const roteiroPartidaIcon = createCustomIcon('#22c55e', '🚀');
+const roteiroFimIcon = createCustomIcon('#3b82f6', '🏁');
 
 const Mapa = () => {
   const { currentGabinete } = useGabinete();
@@ -56,12 +58,14 @@ const Mapa = () => {
   const [eleitores, setEleitores] = useState<any[]>([]);
   const [totalEleitores, setTotalEleitores] = useState(0);
   const [demandas, setDemandas] = useState<any[]>([]);
+  const [roteiros, setRoteiros] = useState<any[]>([]);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [loadingProgress, setLoadingProgress] = useState(0);
   const [isLoadingMarkers, setIsLoadingMarkers] = useState(false);
   
   const [showEleitores, setShowEleitores] = useState(true);
   const [showDemandas, setShowDemandas] = useState(true);
+  const [showRoteiros, setShowRoteiros] = useState(true);
   const [selectedCidade, setSelectedCidade] = useState<string>('all');
   const [selectedBairro, setSelectedBairro] = useState<string>('all');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
@@ -145,8 +149,22 @@ const Mapa = () => {
         const validDemandas = (demandasData || []).filter(d => d.eleitores && d.eleitores.latitude && d.eleitores.longitude);
         console.log('Valid demandas with coords:', validDemandas.length);
 
+        const { data: roteirosData, error: roteirosError } = await supabase
+          .from('roteiros')
+          .select('id, nome, data, status, endereco_partida, latitude_partida, longitude_partida, endereco_final, latitude_final, longitude_final')
+          .eq('gabinete_id', currentGabinete.gabinete_id);
+
+        if (roteirosError) {
+          console.error('Error fetching roteiros:', roteirosError);
+          throw roteirosError;
+        }
+
+        const validRoteiros = (roteirosData || []).filter(r => r.latitude_partida && r.longitude_partida);
+        console.log('Roteiros fetched:', roteirosData?.length || 0, 'valid:', validRoteiros.length);
+
         setEleitores(eleitoresComCoords);
         setDemandas(validDemandas);
+        setRoteiros(validRoteiros);
 
         if (eleitoresComCoords.length > 0 && mapRef.current) {
           mapRef.current.setView([eleitoresComCoords[0].latitude, eleitoresComCoords[0].longitude], 13);
@@ -200,7 +218,8 @@ const Mapa = () => {
     setLoadingProgress(0);
     markersLayerRef.current.clearLayers();
 
-    const totalMarkers = (showEleitores ? filteredEleitores.length : 0) + (showDemandas ? filteredDemandas.length : 0);
+    const totalRoteirosMarkers = showRoteiros ? roteiros.filter(r => r.latitude_partida && r.longitude_partida).length + roteiros.filter(r => r.latitude_final && r.longitude_final).length : 0;
+    const totalMarkers = (showEleitores ? filteredEleitores.length : 0) + (showDemandas ? filteredDemandas.length : 0) + totalRoteirosMarkers;
     let loadedMarkers = 0;
 
     const updateProgress = () => {
@@ -263,12 +282,50 @@ const Mapa = () => {
         updateProgress();
       });
     }
+
+    if (showRoteiros) {
+      roteiros.forEach(roteiro => {
+        // Marcador de partida
+        if (roteiro.latitude_partida && roteiro.longitude_partida) {
+          const markerPartida = L.marker([roteiro.latitude_partida, roteiro.longitude_partida], { icon: roteiroPartidaIcon });
+          markerPartida.bindPopup(`
+            <div style="padding: 8px; min-width: 250px;">
+              <h3 style="font-weight: bold; font-size: 16px; margin-bottom: 8px;">🚀 Partida: ${roteiro.nome}</h3>
+              <div style="font-size: 14px;">
+                <div>📅 ${new Date(roteiro.data).toLocaleDateString('pt-BR')}</div>
+                ${roteiro.endereco_partida ? `<div>📍 ${roteiro.endereco_partida}</div>` : ''}
+                <div style="margin-top: 4px; padding: 2px 8px; background-color: #22c55e20; color: #22c55e; border-radius: 4px; display: inline-block; font-size: 11px;">Ponto de Partida</div>
+              </div>
+            </div>
+          `);
+          markersLayerRef.current?.addLayer(markerPartida);
+        }
+        updateProgress();
+
+        // Marcador de chegada
+        if (roteiro.latitude_final && roteiro.longitude_final) {
+          const markerFim = L.marker([roteiro.latitude_final, roteiro.longitude_final], { icon: roteiroFimIcon });
+          markerFim.bindPopup(`
+            <div style="padding: 8px; min-width: 250px;">
+              <h3 style="font-weight: bold; font-size: 16px; margin-bottom: 8px;">🏁 Chegada: ${roteiro.nome}</h3>
+              <div style="font-size: 14px;">
+                <div>📅 ${new Date(roteiro.data).toLocaleDateString('pt-BR')}</div>
+                ${roteiro.endereco_final ? `<div>📍 ${roteiro.endereco_final}</div>` : ''}
+                <div style="margin-top: 4px; padding: 2px 8px; background-color: #3b82f620; color: #3b82f6; border-radius: 4px; display: inline-block; font-size: 11px;">Ponto de Chegada</div>
+              </div>
+            </div>
+          `);
+          markersLayerRef.current?.addLayer(markerFim);
+        }
+        updateProgress();
+      });
+    }
     
     if (totalMarkers === 0) {
       setIsLoadingMarkers(false);
       setLoadingProgress(0);
     }
-  }, [filteredEleitores, filteredDemandas, showEleitores, showDemandas]);
+  }, [filteredEleitores, filteredDemandas, roteiros, showEleitores, showDemandas, showRoteiros]);
 
   return (
     <div style={{ position: 'relative', width: '100%', height: '100vh', overflow: 'hidden' }}>
@@ -365,6 +422,14 @@ const Mapa = () => {
                     Demandas ({filteredDemandas.length})
                   </Label>
                 </div>
+
+                <div className="flex items-center gap-2">
+                  <Checkbox id="show-roteiros" checked={showRoteiros} onCheckedChange={(checked) => setShowRoteiros(checked as boolean)} />
+                  <Label htmlFor="show-roteiros" className="flex items-center gap-2 cursor-pointer">
+                    <div className="w-4 h-4 rounded-full bg-green-500"></div>
+                    Roteiros ({roteiros.length})
+                  </Label>
+                </div>
               </div>
             </div>
 
@@ -442,6 +507,14 @@ const Mapa = () => {
                 <div className="flex items-center gap-2">
                   <div className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center text-white text-xs">✓</div>
                   <span>Demanda concluída</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center text-white text-xs">🚀</div>
+                  <span>Ponto de partida do roteiro</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center text-white text-xs">🏁</div>
+                  <span>Ponto de chegada do roteiro</span>
                 </div>
               </div>
             </div>
