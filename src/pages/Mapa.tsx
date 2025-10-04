@@ -1,8 +1,6 @@
-import { useEffect, useState, useMemo } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import { useEffect, useState, useMemo, useRef } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import '../components/mapa/MapStyles.css';
 import { supabase } from '@/integrations/supabase/client';
 import { useGabinete } from '@/contexts/GabineteContext';
 import { useToast } from '@/hooks/use-toast';
@@ -25,7 +23,6 @@ import {
   Mail,
   CheckCircle2,
   AlertCircle,
-  ExternalLink
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -87,19 +84,12 @@ interface Stats {
   demandasConcluidas: number;
 }
 
-const MapUpdater = ({ center }: { center: [number, number] }) => {
-  const map = useMap();
-  
-  useEffect(() => {
-    map.setView(center, map.getZoom());
-  }, [center, map]);
-  
-  return null;
-};
-
 const Mapa = () => {
   const { currentGabinete } = useGabinete();
   const { toast } = useToast();
+  const mapRef = useRef<L.Map | null>(null);
+  const mapContainerRef = useRef<HTMLDivElement>(null);
+  const markersLayerRef = useRef<L.LayerGroup | null>(null);
   
   const [eleitores, setEleitores] = useState<Eleitor[]>([]);
   const [demandas, setDemandas] = useState<Demanda[]>([]);
@@ -120,10 +110,37 @@ const Mapa = () => {
     demandasConcluidas: 0,
   });
 
-  // Default center (Brazil center)
-  const [mapCenter, setMapCenter] = useState<[number, number]>([-15.7939, -47.8828]);
-  const [mapZoom] = useState(4);
+  // Initialize map
+  useEffect(() => {
+    if (!mapContainerRef.current || mapRef.current) return;
 
+    // Create map
+    const map = L.map(mapContainerRef.current, {
+      center: [-15.7939, -47.8828], // Brazil center
+      zoom: 4,
+      scrollWheelZoom: true,
+    });
+
+    // Add tile layer
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+      maxZoom: 19,
+    }).addTo(map);
+
+    // Create markers layer
+    const markersLayer = L.layerGroup().addTo(map);
+    markersLayerRef.current = markersLayer;
+    mapRef.current = map;
+
+    return () => {
+      if (mapRef.current) {
+        mapRef.current.remove();
+        mapRef.current = null;
+      }
+    };
+  }, []);
+
+  // Fetch data
   useEffect(() => {
     if (currentGabinete) {
       fetchData();
@@ -182,9 +199,9 @@ const Mapa = () => {
         demandasConcluidas,
       });
 
-      // Set map center to first eleitor location if available
-      if (validEleitores.length > 0) {
-        setMapCenter([validEleitores[0].latitude, validEleitores[0].longitude]);
+      // Center map on first eleitor if available
+      if (validEleitores.length > 0 && mapRef.current) {
+        mapRef.current.setView([validEleitores[0].latitude, validEleitores[0].longitude], 12);
       }
 
     } catch (error: any) {
@@ -229,6 +246,77 @@ const Mapa = () => {
       return true;
     });
   }, [demandas, selectedCidade, selectedBairro, selectedStatus]);
+
+  // Update markers when filters change
+  useEffect(() => {
+    if (!markersLayerRef.current) return;
+
+    // Clear existing markers
+    markersLayerRef.current.clearLayers();
+
+    // Add eleitor markers
+    if (showEleitores) {
+      filteredEleitores.forEach(eleitor => {
+        const marker = L.marker([eleitor.latitude, eleitor.longitude], {
+          icon: eleitorIcon,
+        });
+
+        const popupContent = `
+          <div style="padding: 8px; min-width: 250px;">
+            <h3 style="font-weight: bold; font-size: 16px; margin-bottom: 8px;">${eleitor.nome_completo}</h3>
+            <div style="font-size: 14px; line-height: 1.5;">
+              ${eleitor.telefone ? `<div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">📞 ${eleitor.telefone}</div>` : ''}
+              ${eleitor.email ? `<div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">✉️ ${eleitor.email}</div>` : ''}
+              ${eleitor.endereco || eleitor.bairro || eleitor.cidade ? `
+                <div style="display: flex; align-items: flex-start; gap: 8px; margin-top: 8px;">
+                  📍 <div style="font-size: 12px;">
+                    ${eleitor.endereco ? `${eleitor.endereco}${eleitor.numero ? `, ${eleitor.numero}` : ''}<br>` : ''}
+                    ${eleitor.bairro ? `${eleitor.bairro}<br>` : ''}
+                    ${eleitor.cidade ? `${eleitor.cidade} - ${eleitor.estado}` : ''}
+                  </div>
+                </div>
+              ` : ''}
+            </div>
+          </div>
+        `;
+
+        marker.bindPopup(popupContent, { maxWidth: 300 });
+        markersLayerRef.current?.addLayer(marker);
+      });
+    }
+
+    // Add demanda markers
+    if (showDemandas) {
+      filteredDemandas.forEach(demanda => {
+        const isOpen = demanda.status === 'aberta' || demanda.status === 'em_andamento';
+        const icon = isOpen ? demandaAbertaIcon : demandaConcluidaIcon;
+        
+        const marker = L.marker([demanda.eleitores.latitude, demanda.eleitores.longitude], {
+          icon: icon,
+        });
+
+        const statusColor = isOpen ? '#ef4444' : '#22c55e';
+        const popupContent = `
+          <div style="padding: 8px; min-width: 250px;">
+            <div style="display: flex; justify-content: space-between; align-items: start; gap: 8px; margin-bottom: 8px;">
+              <h3 style="font-weight: bold; font-size: 14px;">${demanda.titulo}</h3>
+              <span style="background-color: ${statusColor}20; color: ${statusColor}; padding: 2px 8px; border-radius: 4px; font-size: 11px; white-space: nowrap;">${demanda.status.replace('_', ' ')}</span>
+            </div>
+            <div style="font-size: 12px; line-height: 1.5;">
+              <div style="margin-bottom: 4px;">👤 ${demanda.eleitores.nome_completo}</div>
+              ${demanda.eleitores.bairro ? `<div style="margin-bottom: 4px;">📍 ${demanda.eleitores.bairro} - ${demanda.eleitores.cidade}</div>` : ''}
+              <div style="margin-top: 8px;">
+                <span style="background-color: #f0f0f0; padding: 2px 6px; border-radius: 3px; font-size: 10px;">${demanda.prioridade}</span>
+              </div>
+            </div>
+          </div>
+        `;
+
+        marker.bindPopup(popupContent, { maxWidth: 300 });
+        markersLayerRef.current?.addLayer(marker);
+      });
+    }
+  }, [filteredEleitores, filteredDemandas, showEleitores, showDemandas]);
 
   const clearFilters = () => {
     setSelectedCidade('all');
@@ -445,122 +533,12 @@ const Mapa = () => {
         </ScrollArea>
       </div>
 
-      {/* Map */}
-      <MapContainer
-        center={mapCenter}
-        zoom={mapZoom}
+      {/* Map Container */}
+      <div 
+        ref={mapContainerRef} 
         className="h-full w-full z-0"
-        scrollWheelZoom={true}
-      >
-        <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        />
-        <MapUpdater center={mapCenter} />
-
-        {/* Eleitores Markers */}
-        {showEleitores && filteredEleitores.map((eleitor) => (
-          <Marker
-            key={`eleitor-${eleitor.id}`}
-            position={[eleitor.latitude, eleitor.longitude]}
-            icon={eleitorIcon}
-          >
-            <Popup maxWidth={300}>
-              <div className="p-2 min-w-[250px]">
-                <h3 className="font-bold text-base mb-2">{eleitor.nome_completo}</h3>
-                <div className="space-y-1 text-sm">
-                  {eleitor.telefone && (
-                    <div className="flex items-center gap-2">
-                      <Phone className="h-3 w-3 text-muted-foreground" />
-                      <span>{eleitor.telefone}</span>
-                    </div>
-                  )}
-                  {eleitor.email && (
-                    <div className="flex items-center gap-2">
-                      <Mail className="h-3 w-3 text-muted-foreground" />
-                      <span className="truncate">{eleitor.email}</span>
-                    </div>
-                  )}
-                  {(eleitor.endereco || eleitor.bairro || eleitor.cidade) && (
-                    <div className="flex items-start gap-2 mt-2">
-                      <MapPin className="h-3 w-3 text-muted-foreground mt-0.5 shrink-0" />
-                      <div className="text-xs">
-                        {eleitor.endereco && <div>{eleitor.endereco}{eleitor.numero && `, ${eleitor.numero}`}</div>}
-                        {eleitor.bairro && <div>{eleitor.bairro}</div>}
-                        {eleitor.cidade && <div>{eleitor.cidade} - {eleitor.estado}</div>}
-                      </div>
-                    </div>
-                  )}
-                </div>
-                <Button
-                  size="sm"
-                  className="w-full mt-3"
-                  onClick={() => window.location.href = `/eleitores`}
-                >
-                  <ExternalLink className="h-3 w-3 mr-1" />
-                  Ver Detalhes
-                </Button>
-              </div>
-            </Popup>
-          </Marker>
-        ))}
-
-        {/* Demandas Markers */}
-        {showDemandas && filteredDemandas.map((demanda) => {
-          const isOpen = demanda.status === 'aberta' || demanda.status === 'em_andamento';
-          const icon = isOpen ? demandaAbertaIcon : demandaConcluidaIcon;
-          
-          return (
-            <Marker
-              key={`demanda-${demanda.id}`}
-              position={[demanda.eleitores.latitude, demanda.eleitores.longitude]}
-              icon={icon}
-            >
-              <Popup maxWidth={300}>
-                <div className="p-2 min-w-[250px]">
-                  <div className="flex items-start justify-between gap-2 mb-2">
-                    <h3 className="font-bold text-sm">{demanda.titulo}</h3>
-                    <Badge 
-                      variant="secondary"
-                      className={cn(
-                        "text-xs shrink-0",
-                        isOpen ? "bg-red-100 text-red-800" : "bg-green-100 text-green-800"
-                      )}
-                    >
-                      {demanda.status.replace('_', ' ')}
-                    </Badge>
-                  </div>
-                  <div className="space-y-1 text-xs">
-                    <div className="flex items-center gap-2">
-                      <Users className="h-3 w-3 text-muted-foreground" />
-                      <span>{demanda.eleitores.nome_completo}</span>
-                    </div>
-                    {demanda.eleitores.bairro && (
-                      <div className="flex items-center gap-2">
-                        <MapPin className="h-3 w-3 text-muted-foreground" />
-                        <span>{demanda.eleitores.bairro} - {demanda.eleitores.cidade}</span>
-                      </div>
-                    )}
-                    <div className="flex items-center gap-2 mt-2">
-                      <Badge variant="outline" className="text-xs">
-                        {demanda.prioridade}
-                      </Badge>
-                    </div>
-                  </div>
-                  <Button
-                    size="sm"
-                    className="w-full mt-3"
-                    onClick={() => window.location.href = `/demandas`}
-                  >
-                    <ExternalLink className="h-3 w-3 mr-1" />
-                    Ver Detalhes
-                  </Button>
-                </div>
-              </Popup>
-            </Marker>
-          );
-        })}
-      </MapContainer>
+        style={{ background: '#f0f0f0' }}
+      />
     </div>
   );
 };
