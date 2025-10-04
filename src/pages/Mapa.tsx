@@ -1,4 +1,6 @@
-import { useEffect, useState, useMemo, useRef } from 'react';
+import { useEffect, useState, useMemo } from 'react';
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import MarkerClusterGroup from 'react-leaflet-cluster';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { supabase } from '@/integrations/supabase/client';
@@ -48,47 +50,18 @@ const demandaConcluidaIcon = createCustomIcon('#22c55e', '✓');
 const Mapa = () => {
   const { currentGabinete } = useGabinete();
   const { toast } = useToast();
-  const mapRef = useRef<L.Map | null>(null);
-  const mapContainerRef = useRef<HTMLDivElement>(null);
-  const markersLayerRef = useRef<L.LayerGroup | null>(null);
   
   const [eleitores, setEleitores] = useState<any[]>([]);
   const [demandas, setDemandas] = useState<any[]>([]);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [mapCenter, setMapCenter] = useState<[number, number]>([-15.7939, -47.8828]);
+  const [mapZoom, setMapZoom] = useState(4);
   
   const [showEleitores, setShowEleitores] = useState(true);
   const [showDemandas, setShowDemandas] = useState(true);
   const [selectedCidade, setSelectedCidade] = useState<string>('all');
   const [selectedBairro, setSelectedBairro] = useState<string>('all');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
-
-  // Initialize map
-  useEffect(() => {
-    const container = mapContainerRef.current;
-    if (!container || mapRef.current) return;
-
-    const map = L.map(container).setView([-15.7939, -47.8828], 4);
-    
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; OpenStreetMap',
-      maxZoom: 19,
-    }).addTo(map);
-
-    const markersLayer = L.layerGroup().addTo(map);
-    markersLayerRef.current = markersLayer;
-    mapRef.current = map;
-    
-    // Force resize
-    requestAnimationFrame(() => {
-      map.invalidateSize();
-    });
-
-    return () => {
-      map.remove();
-      mapRef.current = null;
-      markersLayerRef.current = null;
-    };
-  }, []);
 
   // Fetch data
   useEffect(() => {
@@ -142,8 +115,9 @@ const Mapa = () => {
         setEleitores(eleitoresComCoords);
         setDemandas(validDemandas);
 
-        if (eleitoresComCoords.length > 0 && mapRef.current) {
-          mapRef.current.setView([eleitoresComCoords[0].latitude, eleitoresComCoords[0].longitude], 13);
+        if (eleitoresComCoords.length > 0) {
+          setMapCenter([eleitoresComCoords[0].latitude, eleitoresComCoords[0].longitude]);
+          setMapZoom(13);
         }
       } catch (error: any) {
         console.error('Error in fetchData:', error);
@@ -187,41 +161,36 @@ const Mapa = () => {
     });
   }, [demandas, selectedCidade, selectedBairro, selectedStatus]);
 
-  useEffect(() => {
-    if (!markersLayerRef.current) return;
-
-    markersLayerRef.current.clearLayers();
-
-    if (showEleitores) {
-      filteredEleitores.forEach(eleitor => {
-        if (!eleitor.latitude || !eleitor.longitude) return;
-        
-        const marker = L.marker([eleitor.latitude, eleitor.longitude], { icon: eleitorIcon });
-        marker.bindPopup(`
-          <div style="padding: 8px; min-width: 250px;">
-            <h3 style="font-weight: bold; font-size: 16px; margin-bottom: 8px;">${eleitor.nome_completo}</h3>
-            <div style="font-size: 14px;">
-              ${eleitor.telefone ? `<div>📞 ${eleitor.telefone}</div>` : ''}
-              ${eleitor.email ? `<div>✉️ ${eleitor.email}</div>` : ''}
-              ${eleitor.endereco ? `<div>📍 ${eleitor.endereco}${eleitor.numero ? `, ${eleitor.numero}` : ''}</div>` : ''}
-              ${eleitor.bairro ? `<div>${eleitor.bairro} - ${eleitor.cidade}</div>` : ''}
-            </div>
+  const eleitoresMarkers = useMemo(() => {
+    if (!showEleitores) return [];
+    return filteredEleitores.map(eleitor => ({
+      position: [eleitor.latitude, eleitor.longitude] as [number, number],
+      icon: eleitorIcon,
+      popup: `
+        <div style="padding: 8px; min-width: 250px;">
+          <h3 style="font-weight: bold; font-size: 16px; margin-bottom: 8px;">${eleitor.nome_completo}</h3>
+          <div style="font-size: 14px;">
+            ${eleitor.telefone ? `<div>📞 ${eleitor.telefone}</div>` : ''}
+            ${eleitor.email ? `<div>✉️ ${eleitor.email}</div>` : ''}
+            ${eleitor.endereco ? `<div>📍 ${eleitor.endereco}${eleitor.numero ? `, ${eleitor.numero}` : ''}</div>` : ''}
+            ${eleitor.bairro ? `<div>${eleitor.bairro} - ${eleitor.cidade}</div>` : ''}
           </div>
-        `);
-        markersLayerRef.current?.addLayer(marker);
-      });
-    }
+        </div>
+      `,
+    }));
+  }, [filteredEleitores, showEleitores]);
 
-    if (showDemandas) {
-      filteredDemandas.forEach(demanda => {
-        if (!demanda.eleitores || !demanda.eleitores.latitude || !demanda.eleitores.longitude) return;
-        
-        const isOpen = demanda.status === 'aberta' || demanda.status === 'em_andamento';
-        const icon = isOpen ? demandaAbertaIcon : demandaConcluidaIcon;
-        const color = isOpen ? '#ef4444' : '#22c55e';
-        
-        const marker = L.marker([demanda.eleitores.latitude, demanda.eleitores.longitude], { icon });
-        marker.bindPopup(`
+  const demandasMarkers = useMemo(() => {
+    if (!showDemandas) return [];
+    return filteredDemandas.map(demanda => {
+      const isOpen = demanda.status === 'aberta' || demanda.status === 'em_andamento';
+      const icon = isOpen ? demandaAbertaIcon : demandaConcluidaIcon;
+      const color = isOpen ? '#ef4444' : '#22c55e';
+      
+      return {
+        position: [demanda.eleitores.latitude, demanda.eleitores.longitude] as [number, number],
+        icon,
+        popup: `
           <div style="padding: 8px; min-width: 250px;">
             <h3 style="font-weight: bold; font-size: 14px; margin-bottom: 8px;">${demanda.titulo}</h3>
             <span style="background-color: ${color}20; color: ${color}; padding: 2px 8px; border-radius: 4px; font-size: 11px;">${demanda.status.replace('_', ' ')}</span>
@@ -230,11 +199,10 @@ const Mapa = () => {
               ${demanda.eleitores.bairro ? `<div>📍 ${demanda.eleitores.bairro} - ${demanda.eleitores.cidade}</div>` : ''}
             </div>
           </div>
-        `);
-        markersLayerRef.current?.addLayer(marker);
-      });
-    }
-  }, [filteredEleitores, filteredDemandas, showEleitores, showDemandas]);
+        `,
+      };
+    });
+  }, [filteredDemandas, showDemandas]);
 
   return (
     <div style={{ position: 'relative', width: '100%', height: '100vh', overflow: 'hidden' }}>
@@ -404,8 +372,9 @@ const Mapa = () => {
       </div>
 
       {/* Map */}
-      <div 
-        ref={mapContainerRef} 
+      <MapContainer
+        center={mapCenter}
+        zoom={mapZoom}
         style={{
           position: 'absolute',
           top: 0,
@@ -415,7 +384,33 @@ const Mapa = () => {
           width: '100%',
           height: '100%'
         }}
-      />
+        zoomControl={true}
+      >
+        <TileLayer
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          maxZoom={19}
+        />
+        
+        <MarkerClusterGroup
+          chunkedLoading
+          maxClusterRadius={50}
+          spiderfyOnMaxZoom={true}
+          showCoverageOnHover={false}
+        >
+          {eleitoresMarkers.map((marker, idx) => (
+            <Marker key={`eleitor-${idx}`} position={marker.position} icon={marker.icon}>
+              <Popup>{<div dangerouslySetInnerHTML={{ __html: marker.popup }} />}</Popup>
+            </Marker>
+          ))}
+          
+          {demandasMarkers.map((marker, idx) => (
+            <Marker key={`demanda-${idx}`} position={marker.position} icon={marker.icon}>
+              <Popup>{<div dangerouslySetInnerHTML={{ __html: marker.popup }} />}</Popup>
+            </Marker>
+          ))}
+        </MarkerClusterGroup>
+      </MapContainer>
     </div>
   );
 };
