@@ -111,7 +111,13 @@ export function usePermissions() {
             .select('permission')
             .eq('user_gabinete_id', userGabineteData.id);
 
-          console.log('usePermissions: [3] Permissões retornadas do banco:', { data: permsData, error: permsError });
+          console.log('usePermissions: [3] Permissões retornadas do banco:', { 
+            data: permsData, 
+            error: permsError,
+            dataType: typeof permsData,
+            isArray: Array.isArray(permsData),
+            dataContent: JSON.stringify(permsData)
+          });
 
           if (permsError) {
             console.error('usePermissions: Erro ao buscar permissões:', permsError);
@@ -121,8 +127,19 @@ export function usePermissions() {
             return;
           }
 
-          const loadedPermissions = (permsData || []).map(p => p.permission as Permission);
-          console.log('usePermissions: [4] Permissões processadas:', loadedPermissions, 'Total:', loadedPermissions.length);
+          if (!permsData || permsData.length === 0) {
+            console.warn('usePermissions: [3.5] AVISO: permsData está vazio ou null!', permsData);
+            setPermissions([]);
+            setIsAdmin(false);
+            setLoading(false);
+            return;
+          }
+
+          const loadedPermissions = (permsData || []).map(p => {
+            console.log('usePermissions: [4a] Processando permissão individual:', p, 'permission value:', p.permission);
+            return p.permission as Permission;
+          });
+          console.log('usePermissions: [4b] Permissões processadas finais:', loadedPermissions, 'Total:', loadedPermissions.length);
           
           setPermissions(loadedPermissions);
           setIsAdmin(false);
