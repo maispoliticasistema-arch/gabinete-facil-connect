@@ -16,41 +16,62 @@ export type Database = {
     Tables: {
       agenda: {
         Row: {
+          cor: string | null
           created_at: string | null
           criado_por: string | null
           data_fim: string | null
           data_inicio: string
           descricao: string | null
+          endereco: string | null
           gabinete_id: string
           id: string
+          latitude: number | null
+          link_online: string | null
           local: string | null
+          longitude: number | null
           responsavel_id: string | null
+          status: string | null
+          tipo: string | null
           titulo: string
           updated_at: string | null
         }
         Insert: {
+          cor?: string | null
           created_at?: string | null
           criado_por?: string | null
           data_fim?: string | null
           data_inicio: string
           descricao?: string | null
+          endereco?: string | null
           gabinete_id: string
           id?: string
+          latitude?: number | null
+          link_online?: string | null
           local?: string | null
+          longitude?: number | null
           responsavel_id?: string | null
+          status?: string | null
+          tipo?: string | null
           titulo: string
           updated_at?: string | null
         }
         Update: {
+          cor?: string | null
           created_at?: string | null
           criado_por?: string | null
           data_fim?: string | null
           data_inicio?: string
           descricao?: string | null
+          endereco?: string | null
           gabinete_id?: string
           id?: string
+          latitude?: number | null
+          link_online?: string | null
           local?: string | null
+          longitude?: number | null
           responsavel_id?: string | null
+          status?: string | null
+          tipo?: string | null
           titulo?: string
           updated_at?: string | null
         }
@@ -74,6 +95,38 @@ export type Database = {
             columns: ["responsavel_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      agenda_participantes: {
+        Row: {
+          created_at: string | null
+          evento_id: string
+          id: string
+          presente: boolean | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          evento_id: string
+          id?: string
+          presente?: boolean | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          evento_id?: string
+          id?: string
+          presente?: boolean | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agenda_participantes_evento_id_fkey"
+            columns: ["evento_id"]
+            isOneToOne: false
+            referencedRelation: "agenda"
             referencedColumns: ["id"]
           },
         ]
