@@ -77,16 +77,16 @@ export const EleitoresTable = ({ eleitores, onEleitoresUpdated }: EleitoresTable
         onOpenChange={setDeleteDialogOpen}
         onEleitoresDeleted={onEleitoresUpdated}
       />
-      <div className="rounded-lg border bg-card">
+      <div className="rounded-lg border bg-card overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Eleitor</TableHead>
-              <TableHead>Contato</TableHead>
-              <TableHead>Localização</TableHead>
-              <TableHead>Data Nascimento</TableHead>
-              <TableHead>Cadastro</TableHead>
-              <TableHead className="text-right">Ações</TableHead>
+              <TableHead className="min-w-[180px]">Eleitor</TableHead>
+              <TableHead className="min-w-[150px]">Contato</TableHead>
+              <TableHead className="min-w-[150px] hidden md:table-cell">Localização</TableHead>
+              <TableHead className="min-w-[120px] hidden lg:table-cell">Data Nasc.</TableHead>
+              <TableHead className="min-w-[100px] hidden xl:table-cell">Cadastro</TableHead>
+              <TableHead className="text-right min-w-[100px]">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -100,85 +100,80 @@ export const EleitoresTable = ({ eleitores, onEleitoresUpdated }: EleitoresTable
               eleitores.map((eleitor) => (
                 <TableRow key={eleitor.id}>
                 <TableCell>
-                  <div className="flex items-center gap-3">
-                    <Avatar>
-                      <AvatarFallback className="bg-primary/10 text-primary">
+                  <div className="flex items-center gap-2">
+                    <Avatar className="h-8 w-8">
+                      <AvatarFallback className="bg-primary/10 text-primary text-xs">
                         {getInitials(eleitor.nome_completo)}
                       </AvatarFallback>
                     </Avatar>
-                    <div>
-                      <div className="font-medium">{eleitor.nome_completo}</div>
+                    <div className="font-medium text-sm truncate max-w-[150px]">
+                      {eleitor.nome_completo}
                     </div>
                   </div>
                 </TableCell>
                 <TableCell>
                   <div className="space-y-1">
                     {eleitor.telefone && (
-                      <div className="flex items-center gap-2 text-sm">
-                        <Phone className="h-3 w-3 text-muted-foreground" />
-                        <span>{eleitor.telefone}</span>
+                      <div className="flex items-center gap-1 text-xs">
+                        <Phone className="h-3 w-3 text-muted-foreground shrink-0" />
+                        <span className="truncate">{eleitor.telefone}</span>
                       </div>
                     )}
                     {eleitor.email && (
-                      <div className="flex items-center gap-2 text-sm">
-                        <Mail className="h-3 w-3 text-muted-foreground" />
-                        <span className="truncate max-w-[200px]">{eleitor.email}</span>
+                      <div className="flex items-center gap-1 text-xs">
+                        <Mail className="h-3 w-3 text-muted-foreground shrink-0" />
+                        <span className="truncate max-w-[120px]">{eleitor.email}</span>
                       </div>
                     )}
                     {!eleitor.telefone && !eleitor.email && (
-                      <span className="text-muted-foreground">-</span>
+                      <span className="text-muted-foreground text-xs">-</span>
                     )}
                   </div>
                 </TableCell>
-                <TableCell>
-                  {eleitor.endereco || eleitor.cidade ? (
-                    <div className="flex items-start gap-2 text-sm">
-                      <MapPin className="h-3 w-3 text-muted-foreground mt-0.5" />
-                      <div className="space-y-0.5">
-                        {eleitor.endereco && <div>{eleitor.endereco}</div>}
-                        {(eleitor.cidade || eleitor.estado) && (
-                          <div className="text-muted-foreground">
-                            {[eleitor.cidade, eleitor.estado].filter(Boolean).join(' - ')}
-                          </div>
-                        )}
-                      </div>
+                <TableCell className="hidden md:table-cell">
+                  {eleitor.cidade || eleitor.estado ? (
+                    <div className="flex items-center gap-1 text-xs">
+                      <MapPin className="h-3 w-3 text-muted-foreground shrink-0" />
+                      <span className="truncate max-w-[130px]">
+                        {[eleitor.cidade, eleitor.estado].filter(Boolean).join(' - ')}
+                      </span>
                     </div>
                   ) : (
-                    <span className="text-muted-foreground">-</span>
+                    <span className="text-muted-foreground text-xs">-</span>
                   )}
                 </TableCell>
-                <TableCell>
+                <TableCell className="hidden lg:table-cell">
                   {eleitor.data_nascimento ? (
-                    <div className="flex items-center gap-2 text-sm">
-                      <Calendar className="h-3 w-3 text-muted-foreground" />
-                      {formatDate(eleitor.data_nascimento)}
+                    <div className="flex items-center gap-1 text-xs">
+                      <Calendar className="h-3 w-3 text-muted-foreground shrink-0" />
+                      <span>{formatDate(eleitor.data_nascimento)}</span>
                     </div>
                   ) : (
-                    <span className="text-muted-foreground">-</span>
+                    <span className="text-muted-foreground text-xs">-</span>
                   )}
                 </TableCell>
-                  <TableCell>
-                    <span className="text-sm text-muted-foreground">
+                  <TableCell className="hidden xl:table-cell">
+                    <span className="text-xs text-muted-foreground">
                       {formatDate(eleitor.created_at)}
                     </span>
                   </TableCell>
                   <TableCell>
-                    <div className="flex items-center justify-end gap-2">
+                    <div className="flex items-center justify-end gap-1">
                       <Button
                         variant="ghost"
                         size="icon"
                         onClick={() => handleEdit(eleitor)}
-                        className="h-8 w-8"
+                        className="h-7 w-7"
                       >
-                        <Pencil className="h-4 w-4" />
+                        <Pencil className="h-3.5 w-3.5" />
                       </Button>
                       <Button
                         variant="ghost"
                         size="icon"
                         onClick={() => handleDelete(eleitor)}
-                        className="h-8 w-8 text-destructive hover:text-destructive"
+                        className="h-7 w-7 text-destructive hover:text-destructive"
                       >
-                        <Trash2 className="h-4 w-4" />
+                        <Trash2 className="h-3.5 w-3.5" />
                       </Button>
                     </div>
                   </TableCell>
