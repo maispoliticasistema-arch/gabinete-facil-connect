@@ -41,10 +41,11 @@ export function usePermissions() {
         return;
       }
 
+      setLoading(true);
+      console.log('usePermissions: Iniciando carregamento. Role:', currentGabinete.role, 'User ID:', user.id, 'Gabinete ID:', currentGabinete.gabinete_id);
+
       try {
-        // Verificar se é owner ou admin
         const role = currentGabinete.role;
-        console.log('usePermissions: Role do usuário:', role, 'User ID:', user.id, 'Gabinete ID:', currentGabinete.gabinete_id);
         
         if (role === 'owner' || role === 'admin') {
           // Owners e admins têm todas as permissões
@@ -69,12 +70,14 @@ export function usePermissions() {
             'manage_users',
             'manage_settings',
           ];
-          console.log('usePermissions: Definindo todas as permissões para admin/owner');
+          console.log('usePermissions: Definindo todas as permissões para admin/owner:', allPermissions.length, 'permissões');
           setPermissions(allPermissions);
           setIsAdmin(true);
-        } else {
+          setLoading(false);
+        } else if (role === 'assessor') {
           // Buscar permissões específicas do assessor
-          console.log('usePermissions: Buscando permissões para assessor');
+          console.log('usePermissions: Assessor detectado - Buscando permissões do banco...');
+          
           const { data: userGabineteData, error: ugError } = await supabase
             .from('user_gabinetes')
             .select('id')
@@ -83,31 +86,57 @@ export function usePermissions() {
             .eq('ativo', true)
             .maybeSingle();
 
-          console.log('usePermissions: userGabineteData:', userGabineteData, 'error:', ugError);
+          console.log('usePermissions: [1] user_gabinete query result:', { data: userGabineteData, error: ugError });
 
-          if (userGabineteData) {
-            const { data: permsData, error: permsError } = await supabase
-              .from('user_permissions')
-              .select('permission')
-              .eq('user_gabinete_id', userGabineteData.id);
-
-            console.log('usePermissions: Permissões do assessor:', permsData, 'error:', permsError);
-
-            const loadedPermissions = (permsData || []).map(p => p.permission as Permission);
-            console.log('usePermissions: Permissões carregadas:', loadedPermissions);
-            setPermissions(loadedPermissions);
-          } else {
-            console.log('usePermissions: Nenhum user_gabinete encontrado para assessor');
+          if (ugError) {
+            console.error('usePermissions: Erro ao buscar user_gabinete:', ugError);
             setPermissions([]);
+            setIsAdmin(false);
+            setLoading(false);
+            return;
           }
+
+          if (!userGabineteData) {
+            console.warn('usePermissions: Nenhum user_gabinete encontrado para o assessor!');
+            setPermissions([]);
+            setIsAdmin(false);
+            setLoading(false);
+            return;
+          }
+
+          console.log('usePermissions: [2] Buscando permissões para user_gabinete_id:', userGabineteData.id);
+
+          const { data: permsData, error: permsError } = await supabase
+            .from('user_permissions')
+            .select('permission')
+            .eq('user_gabinete_id', userGabineteData.id);
+
+          console.log('usePermissions: [3] Permissões retornadas do banco:', { data: permsData, error: permsError });
+
+          if (permsError) {
+            console.error('usePermissions: Erro ao buscar permissões:', permsError);
+            setPermissions([]);
+            setIsAdmin(false);
+            setLoading(false);
+            return;
+          }
+
+          const loadedPermissions = (permsData || []).map(p => p.permission as Permission);
+          console.log('usePermissions: [4] Permissões processadas:', loadedPermissions, 'Total:', loadedPermissions.length);
+          
+          setPermissions(loadedPermissions);
           setIsAdmin(false);
+          setLoading(false);
+        } else {
+          console.warn('usePermissions: Role desconhecido:', role);
+          setPermissions([]);
+          setIsAdmin(false);
+          setLoading(false);
         }
       } catch (error) {
-        console.error('Erro ao buscar permissões:', error);
+        console.error('usePermissions: Erro inesperado ao buscar permissões:', error);
         setPermissions([]);
         setIsAdmin(false);
-      } finally {
-        console.log('usePermissions: Finalizando, loading = false, total permissions:', permissions.length);
         setLoading(false);
       }
     };
