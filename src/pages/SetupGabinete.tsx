@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -15,7 +15,13 @@ const SetupGabinete = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuth();
-  const { refetchGabinetes } = useGabinete();
+  const { gabinetes, loading: gabineteLoading, refetchGabinetes } = useGabinete();
+  
+  useEffect(() => {
+    if (!gabineteLoading && gabinetes.length > 0) {
+      navigate('/');
+    }
+  }, [gabineteLoading, gabinetes, navigate]);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     nomePolitico: '',

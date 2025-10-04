@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import { GabineteProvider } from "./contexts/GabineteContext";
 import { ProtectedRoute } from "./components/ProtectedRoute";
+import { RequiresGabinete } from "./components/RequiresGabinete";
 import { MainLayout } from "./components/layout/MainLayout";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
@@ -41,9 +42,11 @@ const App = () => (
                 path="/"
                 element={
                   <ProtectedRoute>
-                    <MainLayout>
-                      <Index />
-                    </MainLayout>
+                    <RequiresGabinete>
+                      <MainLayout>
+                        <Index />
+                      </MainLayout>
+                    </RequiresGabinete>
                   </ProtectedRoute>
                 }
               />
@@ -51,9 +54,11 @@ const App = () => (
                 path="/demandas"
                 element={
                   <ProtectedRoute>
-                    <MainLayout>
-                      <Demandas />
-                    </MainLayout>
+                    <RequiresGabinete>
+                      <MainLayout>
+                        <Demandas />
+                      </MainLayout>
+                    </RequiresGabinete>
                   </ProtectedRoute>
                 }
               />
@@ -61,9 +66,11 @@ const App = () => (
                 path="/eleitores"
                 element={
                   <ProtectedRoute>
-                    <MainLayout>
-                      <Eleitores />
-                    </MainLayout>
+                    <RequiresGabinete>
+                      <MainLayout>
+                        <Eleitores />
+                      </MainLayout>
+                    </RequiresGabinete>
                   </ProtectedRoute>
                 }
               />
@@ -71,9 +78,11 @@ const App = () => (
                 path="/agenda"
                 element={
                   <ProtectedRoute>
-                    <MainLayout>
-                      <Agenda />
-                    </MainLayout>
+                    <RequiresGabinete>
+                      <MainLayout>
+                        <Agenda />
+                      </MainLayout>
+                    </RequiresGabinete>
                   </ProtectedRoute>
                 }
               />
@@ -81,9 +90,11 @@ const App = () => (
                 path="/mapa"
                 element={
                   <ProtectedRoute>
-                    <MainLayout>
-                      <Mapa />
-                    </MainLayout>
+                    <RequiresGabinete>
+                      <MainLayout>
+                        <Mapa />
+                      </MainLayout>
+                    </RequiresGabinete>
                   </ProtectedRoute>
                 }
               />
@@ -91,9 +102,11 @@ const App = () => (
                 path="/roteiros"
                 element={
                   <ProtectedRoute>
-                    <MainLayout>
-                      <Roteiros />
-                    </MainLayout>
+                    <RequiresGabinete>
+                      <MainLayout>
+                        <Roteiros />
+                      </MainLayout>
+                    </RequiresGabinete>
                   </ProtectedRoute>
                 }
               />
