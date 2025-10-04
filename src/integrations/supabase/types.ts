@@ -241,6 +241,7 @@ export type Database = {
       }
       gabinetes: {
         Row: {
+          cargo: Database["public"]["Enums"]["cargo_politico"] | null
           cidade: string | null
           created_at: string | null
           descricao: string | null
@@ -250,6 +251,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          cargo?: Database["public"]["Enums"]["cargo_politico"] | null
           cidade?: string | null
           created_at?: string | null
           descricao?: string | null
@@ -259,6 +261,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          cargo?: Database["public"]["Enums"]["cargo_politico"] | null
           cidade?: string | null
           created_at?: string | null
           descricao?: string | null
@@ -349,6 +352,12 @@ export type Database = {
       }
     }
     Enums: {
+      cargo_politico:
+        | "vereador"
+        | "prefeito"
+        | "deputado_estadual"
+        | "deputado_federal"
+        | "senador"
       demanda_prioridade: "baixa" | "media" | "alta" | "urgente"
       demanda_status: "aberta" | "em_andamento" | "concluida" | "cancelada"
       user_role: "owner" | "admin" | "assessor"
@@ -479,6 +488,13 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      cargo_politico: [
+        "vereador",
+        "prefeito",
+        "deputado_estadual",
+        "deputado_federal",
+        "senador",
+      ],
       demanda_prioridade: ["baixa", "media", "alta", "urgente"],
       demanda_status: ["aberta", "em_andamento", "concluida", "cancelada"],
       user_role: ["owner", "admin", "assessor"],

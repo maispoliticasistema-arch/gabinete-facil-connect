@@ -9,6 +9,7 @@ import { ProtectedRoute } from "./components/ProtectedRoute";
 import { MainLayout } from "./components/layout/MainLayout";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
+import SetupGabinete from "./pages/SetupGabinete";
 import Demandas from "./pages/Demandas";
 import Eleitores from "./pages/Eleitores";
 import Agenda from "./pages/Agenda";
@@ -28,6 +29,14 @@ const App = () => (
           <GabineteProvider>
             <Routes>
               <Route path="/auth" element={<Auth />} />
+              <Route
+                path="/setup-gabinete"
+                element={
+                  <ProtectedRoute>
+                    <SetupGabinete />
+                  </ProtectedRoute>
+                }
+              />
               <Route
                 path="/"
                 element={

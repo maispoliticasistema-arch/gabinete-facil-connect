@@ -1,11 +1,18 @@
+import { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { AppSidebar } from './AppSidebar';
 import { useGabinete } from '@/contexts/GabineteContext';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { AlertCircle } from 'lucide-react';
 
 export const MainLayout = ({ children }: { children: React.ReactNode }) => {
   const { gabinetes, loading } = useGabinete();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!loading && gabinetes.length === 0) {
+      navigate('/setup-gabinete');
+    }
+  }, [loading, gabinetes, navigate]);
 
   if (loading) {
     return (
@@ -16,17 +23,7 @@ export const MainLayout = ({ children }: { children: React.ReactNode }) => {
   }
 
   if (gabinetes.length === 0) {
-    return (
-      <div className="flex min-h-screen items-center justify-center p-4">
-        <Alert className="max-w-md">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            Você ainda não está vinculado a nenhum gabinete. Entre em contato com o
-            administrador para obter acesso.
-          </AlertDescription>
-        </Alert>
-      </div>
-    );
+    return null;
   }
 
   return (
