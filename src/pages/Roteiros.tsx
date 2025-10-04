@@ -297,9 +297,11 @@ const Roteiros = () => {
                             <div className="text-sm">
                               <strong>Parada {ponto.ordem}</strong>
                               <br />
-                              {ponto.nome_pessoa || ponto.eleitores?.nome_completo || 'Local Manual'}
+                              {ponto.eleitores?.nome_completo || 'Eleitor não encontrado'}
                               {ponto.endereco_manual && (
                                 <>
+                                  <br />
+                                  <span className="text-xs bg-secondary px-1 rounded">Endereço alternativo:</span>
                                   <br />
                                   <span className="text-muted-foreground">{ponto.endereco_manual}</span>
                                 </>

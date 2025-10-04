@@ -38,10 +38,10 @@ const roteiroSchema = z.object({
 
 type RoteiroFormData = z.infer<typeof roteiroSchema>;
 
-interface PontoManual {
+interface PontoComEndereco {
   id: string;
-  nome_pessoa: string;
-  endereco: string;
+  eleitor: Eleitor;
+  endereco_alternativo: string;
   observacoes?: string;
 }
 
@@ -71,12 +71,12 @@ export const AddRoteiroDialog = ({
   const [loading, setLoading] = useState(false);
   const [eleitores, setEleitores] = useState<Eleitor[]>([]);
   const [selectedEleitores, setSelectedEleitores] = useState<Eleitor[]>([]);
-  const [pontosManual, setPontosManual] = useState<PontoManual[]>([]);
+  const [pontosComEndereco, setPontosComEndereco] = useState<PontoComEndereco[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [showManualForm, setShowManualForm] = useState(false);
-  const [manualNome, setManualNome] = useState('');
-  const [manualEndereco, setManualEndereco] = useState('');
-  const [manualObs, setManualObs] = useState('');
+  const [showEnderecoForm, setShowEnderecoForm] = useState(false);
+  const [selectedEleitorForEndereco, setSelectedEleitorForEndereco] = useState<Eleitor | null>(null);
+  const [enderecoAlternativo, setEnderecoAlternativo] = useState('');
+  const [obsAlternativo, setObsAlternativo] = useState('');
 
   const form = useForm<RoteiroFormData>({
     resolver: zodResolver(roteiroSchema),
@@ -125,32 +125,32 @@ export const AddRoteiroDialog = ({
     });
   };
 
-  const addPontoManual = () => {
-    if (!manualNome || !manualEndereco) {
+  const addPontoComEndereco = () => {
+    if (!selectedEleitorForEndereco || !enderecoAlternativo) {
       toast({
         title: 'Atenção',
-        description: 'Preencha nome e endereço',
+        description: 'Selecione um eleitor e informe o endereço alternativo',
         variant: 'destructive'
       });
       return;
     }
 
-    const novoPonto: PontoManual = {
+    const novoPonto: PontoComEndereco = {
       id: Math.random().toString(),
-      nome_pessoa: manualNome,
-      endereco: manualEndereco,
-      observacoes: manualObs
+      eleitor: selectedEleitorForEndereco,
+      endereco_alternativo: enderecoAlternativo,
+      observacoes: obsAlternativo
     };
 
-    setPontosManual(prev => [...prev, novoPonto]);
-    setManualNome('');
-    setManualEndereco('');
-    setManualObs('');
-    setShowManualForm(false);
+    setPontosComEndereco(prev => [...prev, novoPonto]);
+    setSelectedEleitorForEndereco(null);
+    setEnderecoAlternativo('');
+    setObsAlternativo('');
+    setShowEnderecoForm(false);
   };
 
-  const removePontoManual = (id: string) => {
-    setPontosManual(prev => prev.filter(p => p.id !== id));
+  const removePontoComEndereco = (id: string) => {
+    setPontosComEndereco(prev => prev.filter(p => p.id !== id));
   };
 
   const filteredEleitores = eleitores.filter(e =>
@@ -168,10 +168,10 @@ export const AddRoteiroDialog = ({
       return;
     }
 
-    if (selectedEleitores.length === 0 && pontosManual.length === 0) {
+    if (selectedEleitores.length === 0 && pontosComEndereco.length === 0) {
       toast({
         title: 'Atenção',
-        description: 'Adicione pelo menos um local ao roteiro',
+        description: 'Adicione pelo menos um eleitor ao roteiro',
         variant: 'destructive'
       });
       return;
@@ -198,30 +198,28 @@ export const AddRoteiroDialog = ({
 
       if (roteiroError) throw roteiroError;
 
-      // Combinar pontos de eleitores e manuais
+      // Combinar pontos de eleitores (endereço normal e alternativo)
       const pontosEleitores = selectedEleitores.map((eleitor, index) => ({
         roteiro_id: roteiro.id,
         ordem: index + 1,
         eleitor_id: eleitor.id,
-        nome_pessoa: eleitor.nome_completo,
         endereco_manual: null,
         latitude: eleitor.latitude,
         longitude: eleitor.longitude,
         observacoes: `${eleitor.endereco || ''}, ${eleitor.bairro || ''}`
       }));
 
-      const pontosManuais = pontosManual.map((ponto, index) => ({
+      const pontosComEnderecoAlternativo = pontosComEndereco.map((ponto, index) => ({
         roteiro_id: roteiro.id,
         ordem: selectedEleitores.length + index + 1,
-        eleitor_id: null,
-        nome_pessoa: ponto.nome_pessoa,
-        endereco_manual: ponto.endereco,
+        eleitor_id: ponto.eleitor.id,
+        endereco_manual: ponto.endereco_alternativo,
         latitude: null,
         longitude: null,
         observacoes: ponto.observacoes || null
       }));
 
-      const todosPontos = [...pontosEleitores, ...pontosManuais];
+      const todosPontos = [...pontosEleitores, ...pontosComEnderecoAlternativo];
 
       const { error: pontosError } = await supabase
         .from('roteiro_pontos')
@@ -236,7 +234,7 @@ export const AddRoteiroDialog = ({
 
       form.reset();
       setSelectedEleitores([]);
-      setPontosManual([]);
+      setPontosComEndereco([]);
       setSearchTerm('');
       onOpenChange(false);
       onRoteiroAdded();
@@ -355,48 +353,64 @@ export const AddRoteiroDialog = ({
 
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <FormLabel>Locais do Roteiro ({selectedEleitores.length + pontosManual.length})</FormLabel>
+                <FormLabel>Locais do Roteiro ({selectedEleitores.length + pontosComEndereco.length})</FormLabel>
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
-                  onClick={() => setShowManualForm(!showManualForm)}
+                  onClick={() => setShowEnderecoForm(!showEnderecoForm)}
                 >
                   <Plus className="h-4 w-4 mr-1" />
-                  Endereço Manual
+                  Endereço Alternativo
                 </Button>
               </div>
 
-              {showManualForm && (
+              {showEnderecoForm && (
                 <div className="p-3 border rounded-md space-y-2 bg-muted/30">
+                  <p className="text-sm text-muted-foreground">
+                    Selecione um eleitor e informe onde ele será encontrado
+                  </p>
+                  <Select
+                    value={selectedEleitorForEndereco?.id || ''}
+                    onValueChange={(value) => {
+                      const eleitor = eleitores.find(e => e.id === value);
+                      setSelectedEleitorForEndereco(eleitor || null);
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione o eleitor" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {eleitores.slice(0, 50).map(eleitor => (
+                        <SelectItem key={eleitor.id} value={eleitor.id}>
+                          {eleitor.nome_completo}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   <Input
-                    placeholder="Nome da pessoa"
-                    value={manualNome}
-                    onChange={(e) => setManualNome(e.target.value)}
-                  />
-                  <Input
-                    placeholder="Endereço do local"
-                    value={manualEndereco}
-                    onChange={(e) => setManualEndereco(e.target.value)}
+                    placeholder="Endereço onde encontrará esta pessoa"
+                    value={enderecoAlternativo}
+                    onChange={(e) => setEnderecoAlternativo(e.target.value)}
                   />
                   <Textarea
                     placeholder="Observações (opcional)"
-                    value={manualObs}
-                    onChange={(e) => setManualObs(e.target.value)}
+                    value={obsAlternativo}
+                    onChange={(e) => setObsAlternativo(e.target.value)}
                     rows={2}
                   />
                   <Button
                     type="button"
                     size="sm"
-                    onClick={addPontoManual}
+                    onClick={addPontoComEndereco}
                     className="w-full"
                   >
-                    Adicionar Local
+                    Adicionar ao Roteiro
                   </Button>
                 </div>
               )}
               
-              {(selectedEleitores.length > 0 || pontosManual.length > 0) && (
+              {(selectedEleitores.length > 0 || pontosComEndereco.length > 0) && (
                 <div className="space-y-1 mb-2">
                   {selectedEleitores.map((eleitor, index) => (
                     <div
@@ -408,7 +422,7 @@ export const AddRoteiroDialog = ({
                           {index + 1}. {eleitor.nome_completo}
                         </div>
                         <div className="text-xs text-muted-foreground">
-                          {eleitor.endereco}
+                          {eleitor.endereco || 'Sem endereço cadastrado'}
                         </div>
                       </div>
                       <Button
@@ -421,24 +435,24 @@ export const AddRoteiroDialog = ({
                       </Button>
                     </div>
                   ))}
-                  {pontosManual.map((ponto, index) => (
+                  {pontosComEndereco.map((ponto, index) => (
                     <div
                       key={ponto.id}
                       className="flex items-center justify-between p-2 bg-secondary/50 rounded-md text-sm"
                     >
                       <div>
                         <div className="font-medium">
-                          {selectedEleitores.length + index + 1}. {ponto.nome_pessoa}
+                          {selectedEleitores.length + index + 1}. {ponto.eleitor.nome_completo}
                         </div>
                         <div className="text-xs text-muted-foreground">
-                          {ponto.endereco}
+                          📍 {ponto.endereco_alternativo}
                         </div>
                       </div>
                       <Button
                         type="button"
                         variant="ghost"
                         size="sm"
-                        onClick={() => removePontoManual(ponto.id)}
+                        onClick={() => removePontoComEndereco(ponto.id)}
                       >
                         <X className="h-4 w-4" />
                       </Button>

@@ -251,12 +251,17 @@ export const RoteiroDetailsSheet = ({
                             {ponto.ordem}
                           </span>
                           <span className="font-medium">
-                            {ponto.nome_pessoa || ponto.eleitores?.nome_completo || 'Local Manual'}
+                            {ponto.eleitores?.nome_completo || 'Eleitor não encontrado'}
                           </span>
+                          {ponto.endereco_manual && (
+                            <span className="ml-2 text-xs bg-secondary px-2 py-0.5 rounded">
+                              📍 Endereço alternativo
+                            </span>
+                          )}
                         </div>
-                        {(ponto.eleitores?.endereco || ponto.endereco_manual) && (
+                        {(ponto.endereco_manual || ponto.eleitores?.endereco) && (
                           <p className="text-sm text-muted-foreground ml-8">
-                            {ponto.eleitores?.endereco || ponto.endereco_manual}
+                            {ponto.endereco_manual || ponto.eleitores?.endereco}
                           </p>
                         )}
                         {ponto.observacoes && (
