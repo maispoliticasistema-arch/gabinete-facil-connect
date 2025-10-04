@@ -34,6 +34,7 @@ const Relatorios = () => {
   const [demandasData, setDemandasData] = useState({
     evolucaoMensal: [] as { mes: string; abertas: number; concluidas: number }[],
     porBairro: [] as { bairro: string; total: number }[],
+    porCidade: [] as { cidade: string; total: number }[],
     porStatus: [] as { status: string; total: number; color: string }[],
   });
 
@@ -195,9 +196,8 @@ const Relatorios = () => {
     
     const { data: eleitores } = await supabase
       .from("eleitores")
-      .select("bairro")
-      .in("id", eleitorIds)
-      .not("bairro", "is", null);
+      .select("bairro, cidade")
+      .in("id", eleitorIds);
 
     const bairroCount = (eleitores || []).reduce((acc: any, e) => {
       const bairro = e.bairro || "Não informado";
@@ -207,6 +207,18 @@ const Relatorios = () => {
 
     const porBairro = Object.entries(bairroCount)
       .map(([bairro, total]) => ({ bairro, total: total as number }))
+      .sort((a, b) => b.total - a.total)
+      .slice(0, 10);
+
+    // Por cidade
+    const cidadeCount = (eleitores || []).reduce((acc: any, e) => {
+      const cidade = e.cidade || "Não informado";
+      acc[cidade] = (acc[cidade] || 0) + 1;
+      return acc;
+    }, {});
+
+    const porCidade = Object.entries(cidadeCount)
+      .map(([cidade, total]) => ({ cidade, total: total as number }))
       .sort((a, b) => b.total - a.total)
       .slice(0, 10);
 
@@ -234,7 +246,7 @@ const Relatorios = () => {
       color: statusColors[status],
     }));
 
-    setDemandasData({ evolucaoMensal, porBairro, porStatus });
+    setDemandasData({ evolucaoMensal, porBairro, porCidade, porStatus });
   };
 
   const fetchEleitoresData = async () => {

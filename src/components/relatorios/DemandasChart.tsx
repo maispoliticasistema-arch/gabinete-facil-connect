@@ -4,10 +4,11 @@ import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, Cart
 interface DemandasChartProps {
   evolucaoMensal: { mes: string; abertas: number; concluidas: number }[];
   porBairro: { bairro: string; total: number }[];
+  porCidade: { cidade: string; total: number }[];
   porStatus: { status: string; total: number; color: string }[];
 }
 
-export function DemandasChart({ evolucaoMensal, porBairro, porStatus }: DemandasChartProps) {
+export function DemandasChart({ evolucaoMensal, porBairro, porCidade, porStatus }: DemandasChartProps) {
   return (
     <div className="space-y-6">
       <Card>
@@ -49,31 +50,48 @@ export function DemandasChart({ evolucaoMensal, porBairro, porStatus }: Demandas
 
         <Card>
           <CardHeader>
-            <CardTitle>Status das Demandas</CardTitle>
+            <CardTitle>Demandas por Cidade</CardTitle>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
-              <PieChart>
-                <Pie
-                  data={porStatus}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  label={({ status, percent }) => `${status}: ${(percent * 100).toFixed(0)}%`}
-                  outerRadius={80}
-                  fill="#8884d8"
-                  dataKey="total"
-                >
-                  {porStatus.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
+              <BarChart data={porCidade} layout="vertical">
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis type="number" />
+                <YAxis dataKey="cidade" type="category" width={100} />
                 <Tooltip />
-              </PieChart>
+                <Bar dataKey="total" fill="#8b5cf6" />
+              </BarChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Status das Demandas</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ResponsiveContainer width="100%" height={300}>
+            <PieChart>
+              <Pie
+                data={porStatus}
+                cx="50%"
+                cy="50%"
+                labelLine={false}
+                label={({ status, percent }) => `${status}: ${(percent * 100).toFixed(0)}%`}
+                outerRadius={80}
+                fill="#8884d8"
+                dataKey="total"
+              >
+                {porStatus.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={entry.color} />
+                ))}
+              </Pie>
+              <Tooltip />
+            </PieChart>
+          </ResponsiveContainer>
+        </CardContent>
+      </Card>
     </div>
   );
 }
