@@ -51,23 +51,38 @@ serve(async (req) => {
 
     console.log("Usuário criado no Auth:", authData.user.id);
 
-    // 2. Garantir que o perfil existe (usando upsert)
+    // 2. Aguardar trigger criar o perfil básico
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    // 3. Atualizar perfil com dados completos
     const { error: profileError } = await supabaseAdmin
       .from("profiles")
-      .upsert({ 
-        id: authData.user.id,
+      .update({ 
         nome_completo,
         telefone
-      }, {
-        onConflict: 'id'
-      });
+      })
+      .eq("id", authData.user.id);
 
     if (profileError) {
-      console.error("Erro ao criar/atualizar perfil:", profileError);
-      throw profileError;
+      console.error("Erro ao atualizar perfil:", profileError);
+      // Se falhar, tentar inserir diretamente
+      const { error: insertError } = await supabaseAdmin
+        .from("profiles")
+        .insert({ 
+          id: authData.user.id,
+          nome_completo,
+          telefone
+        });
+      
+      if (insertError) {
+        console.error("Erro ao inserir perfil:", insertError);
+        throw insertError;
+      }
     }
 
-    // 4. Vincular ao gabinete (IMPORTANTE: ativo=true por padrão)
+    console.log("Perfil criado/atualizado para:", authData.user.id);
+
+    // 4. Vincular ao gabinete
     const { data: userGabinete, error: ugError } = await supabaseAdmin
       .from("user_gabinetes")
       .insert({
