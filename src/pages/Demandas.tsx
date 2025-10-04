@@ -4,6 +4,7 @@ import { useGabinete } from '@/contexts/GabineteContext';
 import { useToast } from '@/hooks/use-toast';
 import { DemandasStats } from '@/components/demandas/DemandasStats';
 import { AddDemandaDialog } from '@/components/demandas/AddDemandaDialog';
+import { DemandaDetailsSheet } from '@/components/demandas/DemandaDetailsSheet';
 import { Search, Filter, X, ClipboardList } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -35,6 +36,8 @@ interface Demanda {
   prioridade: string;
   prazo: string | null;
   created_at: string;
+  concluida_em: string | null;
+  responsavel_id: string | null;
   eleitores: {
     nome_completo: string;
   } | null;
@@ -46,6 +49,8 @@ const Demandas = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStatus, setSelectedStatus] = useState<string>('');
   const [selectedPrioridade, setSelectedPrioridade] = useState<string>('');
+  const [selectedDemanda, setSelectedDemanda] = useState<Demanda | null>(null);
+  const [detailsOpen, setDetailsOpen] = useState(false);
   const [stats, setStats] = useState({
     total: 0,
     concluidas: 0,
@@ -140,6 +145,11 @@ const Demandas = () => {
     setSearchTerm('');
   };
 
+  const handleDemandaClick = (demanda: Demanda) => {
+    setSelectedDemanda(demanda);
+    setDetailsOpen(true);
+  };
+
   const getStatusColor = (status: string) => {
     const colors: Record<string, string> = {
       aberta: 'bg-blue-100 text-blue-800',
@@ -182,6 +192,16 @@ const Demandas = () => {
         concluidas={stats.concluidas}
         pendentes={stats.pendentes}
         atrasadas={stats.atrasadas}
+      />
+
+      <DemandaDetailsSheet
+        demanda={selectedDemanda}
+        open={detailsOpen}
+        onOpenChange={setDetailsOpen}
+        onDemandaUpdated={() => {
+          fetchDemandas();
+          fetchStats();
+        }}
       />
 
       <Card className="p-6">
@@ -266,7 +286,11 @@ const Demandas = () => {
               </TableHeader>
               <TableBody>
                 {demandas.map((demanda) => (
-                  <TableRow key={demanda.id} className="cursor-pointer hover:bg-muted/50">
+                  <TableRow
+                    key={demanda.id}
+                    className="cursor-pointer hover:bg-muted/50"
+                    onClick={() => handleDemandaClick(demanda)}
+                  >
                     <TableCell>
                       <div>
                         <p className="font-medium">{demanda.titulo}</p>
