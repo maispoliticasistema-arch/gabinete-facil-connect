@@ -78,6 +78,41 @@ export type Database = {
           },
         ]
       }
+      demanda_comentarios: {
+        Row: {
+          comentario: string
+          created_at: string
+          demanda_id: string
+          id: string
+          tipo: string | null
+          user_id: string
+        }
+        Insert: {
+          comentario: string
+          created_at?: string
+          demanda_id: string
+          id?: string
+          tipo?: string | null
+          user_id: string
+        }
+        Update: {
+          comentario?: string
+          created_at?: string
+          demanda_id?: string
+          id?: string
+          tipo?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "demanda_comentarios_demanda_id_fkey"
+            columns: ["demanda_id"]
+            isOneToOne: false
+            referencedRelation: "demandas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       demandas: {
         Row: {
           concluida_em: string | null
@@ -193,6 +228,7 @@ export type Database = {
           latitude: number | null
           longitude: number | null
           nome_completo: string
+          numero: string | null
           observacoes: string | null
           profissao: string | null
           rg: string | null
@@ -215,6 +251,7 @@ export type Database = {
           latitude?: number | null
           longitude?: number | null
           nome_completo: string
+          numero?: string | null
           observacoes?: string | null
           profissao?: string | null
           rg?: string | null
@@ -237,6 +274,7 @@ export type Database = {
           latitude?: number | null
           longitude?: number | null
           nome_completo?: string
+          numero?: string | null
           observacoes?: string | null
           profissao?: string | null
           rg?: string | null
