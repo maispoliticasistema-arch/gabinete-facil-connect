@@ -132,28 +132,103 @@ export const RoteiroDetailsSheet = ({
     await fetchPontos();
     
     // Verificar se todas as paradas foram visitadas
-    if (!visitado && roteiroId) {
+    if (!visitado && roteiroId && roteiro) {
       const { data: pontosAtualizados } = await supabase
         .from('roteiro_pontos')
-        .select('visitado')
-        .eq('roteiro_id', roteiroId);
+        .select('visitado, latitude, longitude, ordem')
+        .eq('roteiro_id', roteiroId)
+        .order('ordem');
 
       if (pontosAtualizados) {
         const todasVisitadas = pontosAtualizados.every(p => p.visitado);
         
-        // Se todas as paradas foram visitadas, marcar roteiro como concluído
+        // Se todas as paradas foram visitadas, marcar roteiro como concluído e calcular distância final
         if (todasVisitadas) {
-          await supabase
-            .from('roteiros')
-            .update({ status: 'concluido' })
-            .eq('id', roteiroId);
-          
-          await fetchRoteiro();
-          
-          toast({
-            title: 'Roteiro concluído!',
-            description: 'Todas as paradas foram visitadas. O roteiro foi marcado como concluído.',
-          });
+          try {
+            // Recalcular rota e distância
+            const coordinates = [];
+            
+            if (roteiro.endereco_partida) {
+              // Buscar coordenadas do endereço de partida
+              const { data: roteiroData } = await supabase
+                .from('roteiros')
+                .select('latitude_partida, longitude_partida, latitude_final, longitude_final')
+                .eq('id', roteiroId)
+                .single();
+              
+              if (roteiroData?.latitude_partida && roteiroData?.longitude_partida) {
+                coordinates.push(`${roteiroData.longitude_partida},${roteiroData.latitude_partida}`);
+              }
+            }
+            
+            pontosAtualizados
+              .filter(p => p.latitude && p.longitude)
+              .forEach(ponto => {
+                coordinates.push(`${ponto.longitude},${ponto.latitude}`);
+              });
+            
+            if (roteiro.endereco_final) {
+              const { data: roteiroData } = await supabase
+                .from('roteiros')
+                .select('latitude_final, longitude_final')
+                .eq('id', roteiroId)
+                .single();
+              
+              if (roteiroData?.latitude_final && roteiroData?.longitude_final) {
+                coordinates.push(`${roteiroData.longitude_final},${roteiroData.latitude_final}`);
+              }
+            }
+
+            let distanciaKm = null;
+            let tempoMinutos = null;
+
+            if (coordinates.length >= 2) {
+              const osrmUrl = `https://router.project-osrm.org/route/v1/driving/${coordinates.join(';')}?overview=full&geometries=geojson`;
+              
+              const routeResponse = await fetch(osrmUrl);
+              
+              if (routeResponse.ok) {
+                const routeData = await routeResponse.json();
+                
+                if (routeData.code === 'Ok' && routeData.routes && routeData.routes.length > 0) {
+                  const route = routeData.routes[0];
+                  distanciaKm = parseFloat((route.distance / 1000).toFixed(2));
+                  tempoMinutos = Math.round(route.duration / 60);
+                }
+              }
+            }
+
+            // Atualizar roteiro como concluído e com distância/tempo
+            await supabase
+              .from('roteiros')
+              .update({ 
+                status: 'concluido',
+                distancia_total: distanciaKm,
+                tempo_estimado: tempoMinutos
+              })
+              .eq('id', roteiroId);
+            
+            await fetchRoteiro();
+            
+            toast({
+              title: 'Roteiro concluído!',
+              description: `Todas as paradas foram visitadas. ${distanciaKm ? `Distância percorrida: ${distanciaKm} km` : ''}`,
+            });
+          } catch (error) {
+            console.error('Erro ao calcular distância final:', error);
+            // Marcar como concluído mesmo se o cálculo falhar
+            await supabase
+              .from('roteiros')
+              .update({ status: 'concluido' })
+              .eq('id', roteiroId);
+            
+            await fetchRoteiro();
+            
+            toast({
+              title: 'Roteiro concluído!',
+              description: 'Todas as paradas foram visitadas.',
+            });
+          }
         }
       }
     }
