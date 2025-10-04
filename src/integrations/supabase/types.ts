@@ -832,6 +832,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      user_gabinete_role: {
+        Args: { _gabinete_id: string; _user_id: string }
+        Returns: string
+      }
       user_has_gabinete_access: {
         Args: { gabinete_uuid: string }
         Returns: boolean
