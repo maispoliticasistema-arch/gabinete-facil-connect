@@ -4,6 +4,7 @@ import { useGabinete } from '@/contexts/GabineteContext';
 import { useToast } from '@/hooks/use-toast';
 import { EleitoresTable } from '@/components/eleitores/EleitoresTable';
 import { AddEleitoresDialog } from '@/components/eleitores/AddEleitoresDialog';
+import { ImportEleitoresDialog } from '@/components/eleitores/ImportEleitoresDialog';
 import { Users } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
@@ -64,7 +65,10 @@ const Eleitores = () => {
             Cadastro completo de eleitores e apoiadores
           </p>
         </div>
-        <AddEleitoresDialog onEleitoresAdded={fetchEleitores} />
+        <div className="flex gap-2">
+          <ImportEleitoresDialog onEleitoresImported={fetchEleitores} />
+          <AddEleitoresDialog onEleitoresAdded={fetchEleitores} />
+        </div>
       </div>
 
       <Card>
