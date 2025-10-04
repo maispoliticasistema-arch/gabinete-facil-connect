@@ -32,12 +32,12 @@ const SetupGabinete = () => {
       // Criar o gabinete
       const { data: gabinete, error: gabineteError } = await supabase
         .from('gabinetes')
-        .insert({
+        .insert([{
           nome: formData.nomePolitico,
-          cargo: formData.cargo,
+          cargo: formData.cargo as 'vereador' | 'prefeito' | 'deputado_estadual' | 'deputado_federal' | 'senador',
           cidade: formData.cidade,
           estado: formData.estado,
-        })
+        }])
         .select()
         .single();
 
