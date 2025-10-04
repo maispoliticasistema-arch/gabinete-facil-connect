@@ -11,6 +11,7 @@ import { RelatoriosStats } from "@/components/relatorios/RelatoriosStats";
 import { DemandasChart } from "@/components/relatorios/DemandasChart";
 import { EleitoresChart } from "@/components/relatorios/EleitoresChart";
 import { RoteirosChart } from "@/components/relatorios/RoteirosChart";
+import { AgendaChart } from "@/components/relatorios/AgendaChart";
 import { ExportButtons } from "@/components/relatorios/ExportButtons";
 import { format, subMonths, startOfMonth, endOfMonth } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -55,6 +56,12 @@ const Relatorios = () => {
     porStatus: [] as { status: string; total: number; color: string }[],
   });
 
+  const [agendaData, setAgendaData] = useState({
+    evolucaoMensal: [] as { mes: string; realizados: number; cancelados: number }[],
+    porTipo: [] as { tipo: string; total: number }[],
+    porStatus: [] as { status: string; total: number; color: string }[],
+  });
+
   useEffect(() => {
     if (currentGabinete) {
       fetchAllData();
@@ -95,6 +102,7 @@ const Relatorios = () => {
         fetchDemandasData(),
         fetchEleitoresData(),
         fetchRoteirosData(),
+        fetchAgendaData(),
       ]);
     } catch (error) {
       console.error("Erro ao carregar dados:", error);
@@ -403,6 +411,89 @@ const Relatorios = () => {
     });
   };
 
+  const fetchAgendaData = async () => {
+    if (!currentGabinete) return;
+
+    // Evolução mensal - últimos 6 meses
+    const mesesPassados = Array.from({ length: 6 }, (_, i) => {
+      const data = subMonths(new Date(), i);
+      return {
+        mes: format(data, "MMM/yy", { locale: ptBR }),
+        inicio: startOfMonth(data),
+        fim: endOfMonth(data),
+      };
+    }).reverse();
+
+    const evolucaoMensal = await Promise.all(
+      mesesPassados.map(async ({ mes, inicio, fim }) => {
+        const { count: realizados } = await supabase
+          .from("agenda")
+          .select("*", { count: "exact", head: true })
+          .eq("gabinete_id", currentGabinete.gabinete_id)
+          .eq("status", "concluido")
+          .gte("data_inicio", inicio.toISOString())
+          .lte("data_inicio", fim.toISOString());
+
+        const { count: cancelados } = await supabase
+          .from("agenda")
+          .select("*", { count: "exact", head: true })
+          .eq("gabinete_id", currentGabinete.gabinete_id)
+          .eq("status", "cancelado")
+          .gte("data_inicio", inicio.toISOString())
+          .lte("data_inicio", fim.toISOString());
+
+        return { mes, realizados: realizados || 0, cancelados: cancelados || 0 };
+      })
+    );
+
+    // Por tipo
+    const { data: eventos } = await supabase
+      .from("agenda")
+      .select("tipo")
+      .eq("gabinete_id", currentGabinete.gabinete_id);
+
+    const tipoCount = (eventos || []).reduce((acc: any, e) => {
+      const tipo = e.tipo === "reuniao" ? "Reunião" : 
+                   e.tipo === "visita" ? "Visita" : 
+                   e.tipo === "evento" ? "Evento" : "Outro";
+      acc[tipo] = (acc[tipo] || 0) + 1;
+      return acc;
+    }, {});
+
+    const porTipo = Object.entries(tipoCount)
+      .map(([tipo, total]) => ({ tipo, total: total as number }))
+      .sort((a, b) => b.total - a.total);
+
+    // Por status
+    const { data: statusData } = await supabase
+      .from("agenda")
+      .select("status")
+      .eq("gabinete_id", currentGabinete.gabinete_id);
+
+    const statusCount = (statusData || []).reduce((acc: any, e) => {
+      const status = e.status === "pendente" ? "Pendente" : 
+                     e.status === "em_andamento" ? "Em Andamento" : 
+                     e.status === "concluido" ? "Concluído" : "Cancelado";
+      acc[status] = (acc[status] || 0) + 1;
+      return acc;
+    }, {});
+
+    const statusColors: any = {
+      "Pendente": "#f59e0b",
+      "Em Andamento": "#3b82f6",
+      "Concluído": "#10b981",
+      "Cancelado": "#ef4444",
+    };
+
+    const porStatus = Object.entries(statusCount).map(([status, total]) => ({
+      status,
+      total: total as number,
+      color: statusColors[status],
+    }));
+
+    setAgendaData({ evolucaoMensal, porTipo, porStatus });
+  };
+
   const exportToXLSX = () => {
     try {
       const wb = XLSX.utils.book_new();
@@ -587,16 +678,7 @@ const Relatorios = () => {
         </TabsContent>
 
         <TabsContent value="agenda">
-          <Card>
-            <CardHeader>
-              <CardTitle>Relatório de Agenda</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground">
-                Gráficos de agenda em desenvolvimento
-              </p>
-            </CardContent>
-          </Card>
+          <AgendaChart {...agendaData} />
         </TabsContent>
 
         <TabsContent value="roteiros">
