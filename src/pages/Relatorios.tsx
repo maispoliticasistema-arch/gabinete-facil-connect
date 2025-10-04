@@ -15,6 +15,8 @@ import { format, subMonths, startOfMonth, endOfMonth } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
 import * as XLSX from "xlsx";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 const Relatorios = () => {
   const { currentGabinete } = useGabinete();
@@ -326,7 +328,98 @@ const Relatorios = () => {
   };
 
   const exportToPDF = () => {
-    toast.info("Funcionalidade de PDF em desenvolvimento");
+    try {
+      const doc = new jsPDF();
+      
+      // Cabeçalho
+      doc.setFontSize(18);
+      doc.text("Relatório do Gabinete", 14, 20);
+      doc.setFontSize(11);
+      doc.text(`Gerado em: ${format(new Date(), "dd/MM/yyyy HH:mm", { locale: ptBR })}`, 14, 28);
+      doc.text(`Gabinete: ${currentGabinete?.gabinetes?.nome || ""}`, 14, 34);
+      
+      // Resumo Geral
+      doc.setFontSize(14);
+      doc.text("Resumo Geral", 14, 45);
+      
+      autoTable(doc, {
+        startY: 50,
+        head: [["Indicador", "Valor"]],
+        body: [
+          ["Total de Demandas", stats.totalDemandas.toString()],
+          ["Demandas Concluídas", stats.demandasConcluidas.toString()],
+          ["Demandas em Andamento", stats.demandasAndamento.toString()],
+          ["Eleitores Cadastrados", stats.eleitoresCadastrados.toString()],
+          ["Eventos Realizados", stats.eventosRealizados.toString()],
+          ["Roteiros Executados", stats.roteirosExecutados.toString()],
+        ],
+      });
+      
+      // Evolução Mensal de Demandas
+      const finalY1 = (doc as any).lastAutoTable.finalY || 50;
+      doc.setFontSize(14);
+      doc.text("Evolução Mensal de Demandas", 14, finalY1 + 10);
+      
+      autoTable(doc, {
+        startY: finalY1 + 15,
+        head: [["Mês", "Abertas", "Concluídas"]],
+        body: demandasData.evolucaoMensal.map(item => [
+          item.mes,
+          item.abertas.toString(),
+          item.concluidas.toString(),
+        ]),
+      });
+      
+      // Demandas por Bairro
+      const finalY2 = (doc as any).lastAutoTable.finalY || 50;
+      doc.setFontSize(14);
+      doc.text("Top 10 Demandas por Bairro", 14, finalY2 + 10);
+      
+      autoTable(doc, {
+        startY: finalY2 + 15,
+        head: [["Bairro", "Total"]],
+        body: demandasData.porBairro.map(item => [
+          item.bairro,
+          item.total.toString(),
+        ]),
+      });
+      
+      // Nova página para mais dados
+      doc.addPage();
+      
+      // Demandas por Cidade
+      doc.setFontSize(14);
+      doc.text("Top 10 Demandas por Cidade", 14, 20);
+      
+      autoTable(doc, {
+        startY: 25,
+        head: [["Cidade", "Total"]],
+        body: demandasData.porCidade.map(item => [
+          item.cidade,
+          item.total.toString(),
+        ]),
+      });
+      
+      // Crescimento de Eleitores
+      const finalY3 = (doc as any).lastAutoTable.finalY || 50;
+      doc.setFontSize(14);
+      doc.text("Crescimento Mensal de Eleitores", 14, finalY3 + 10);
+      
+      autoTable(doc, {
+        startY: finalY3 + 15,
+        head: [["Mês", "Total Acumulado"]],
+        body: eleitoresData.crescimentoMensal.map(item => [
+          item.mes,
+          item.total.toString(),
+        ]),
+      });
+      
+      doc.save(`relatorio-${format(new Date(), "yyyy-MM-dd")}.pdf`);
+      toast.success("PDF exportado com sucesso!");
+    } catch (error) {
+      console.error("Erro ao exportar PDF:", error);
+      toast.error("Erro ao exportar PDF");
+    }
   };
 
   // Verificar permissão

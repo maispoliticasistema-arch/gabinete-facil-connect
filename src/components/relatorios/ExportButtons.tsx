@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Download, FileText, Image } from "lucide-react";
+import { Download, FileText } from "lucide-react";
 import { toast } from "sonner";
 
 interface ExportButtonsProps {
@@ -32,10 +32,6 @@ export function ExportButtons({ onExportXLSX, onExportPDF }: ExportButtonsProps)
         <Button onClick={handleExportPDF} variant="outline" className="flex-1 min-w-[150px]">
           <FileText className="mr-2 h-4 w-4" />
           Exportar PDF
-        </Button>
-        <Button variant="outline" className="flex-1 min-w-[150px]">
-          <Image className="mr-2 h-4 w-4" />
-          Gráficos em Imagem
         </Button>
       </CardContent>
     </Card>
