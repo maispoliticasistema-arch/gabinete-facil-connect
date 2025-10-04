@@ -4,6 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useGabinete } from '@/contexts/GabineteContext';
 import {
   Dialog,
   DialogContent,
@@ -21,7 +22,15 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Loader2 } from 'lucide-react';
+
+interface Tag {
+  id: string;
+  nome: string;
+  cor: string;
+}
 
 const eleitoresSchema = z.object({
   nome_completo: z.string().trim().min(1, 'Nome completo é obrigatório').max(200, 'Nome muito longo'),
@@ -56,7 +65,10 @@ export const EditEleitoresDialog = ({
   onEleitoresUpdated,
 }: EditEleitoresDialogProps) => {
   const [loading, setLoading] = useState(false);
+  const [tags, setTags] = useState<Tag[]>([]);
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const { toast } = useToast();
+  const { currentGabinete } = useGabinete();
 
   const form = useForm<EleitoresFormData>({
     resolver: zodResolver(eleitoresSchema),
@@ -68,6 +80,49 @@ export const EditEleitoresDialog = ({
       endereco: '',
     },
   });
+
+  useEffect(() => {
+    if (open && currentGabinete) {
+      fetchTags();
+    }
+  }, [open, currentGabinete]);
+
+  const fetchTags = async () => {
+    if (!currentGabinete) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('tags')
+        .select('*')
+        .eq('gabinete_id', currentGabinete.gabinete_id)
+        .order('nome');
+
+      if (error) throw error;
+      setTags(data || []);
+    } catch (error: any) {
+      console.error('Erro ao carregar tags:', error);
+    }
+  };
+
+  const fetchEleitoresTags = async (eleitoresId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('eleitor_tags')
+        .select('tag_id')
+        .eq('eleitor_id', eleitoresId);
+
+      if (error) throw error;
+      setSelectedTags((data || []).map((t) => t.tag_id));
+    } catch (error: any) {
+      console.error('Erro ao carregar tags do eleitor:', error);
+    }
+  };
+
+  const toggleTag = (tagId: string) => {
+    setSelectedTags((prev) =>
+      prev.includes(tagId) ? prev.filter((id) => id !== tagId) : [...prev, tagId]
+    );
+  };
 
   useEffect(() => {
     if (eleitor) {
@@ -87,6 +142,9 @@ export const EditEleitoresDialog = ({
         data_nascimento: dataNascimento,
         endereco: eleitor.endereco || '',
       });
+
+      // Buscar tags do eleitor
+      fetchEleitoresTags(eleitor.id);
     }
   }, [eleitor, form]);
 
@@ -116,6 +174,24 @@ export const EditEleitoresDialog = ({
         .eq('id', eleitor.id);
 
       if (error) throw error;
+
+      // Atualizar tags
+      // Primeiro deletar as tags antigas
+      await supabase.from('eleitor_tags').delete().eq('eleitor_id', eleitor.id);
+
+      // Depois adicionar as novas tags
+      if (selectedTags.length > 0) {
+        const tagRelations = selectedTags.map((tagId) => ({
+          eleitor_id: eleitor.id,
+          tag_id: tagId,
+        }));
+
+        const { error: tagError } = await supabase
+          .from('eleitor_tags')
+          .insert(tagRelations);
+
+        if (tagError) throw tagError;
+      }
 
       toast({
         title: 'Eleitor atualizado!',
@@ -217,6 +293,36 @@ export const EditEleitoresDialog = ({
                 </FormItem>
               )}
             />
+
+            {tags.length > 0 && (
+              <div className="space-y-3">
+                <FormLabel>Tags</FormLabel>
+                <div className="flex flex-wrap gap-2">
+                  {tags.map((tag) => (
+                    <div key={tag.id} className="flex items-center gap-2">
+                      <Checkbox
+                        id={`tag-${tag.id}`}
+                        checked={selectedTags.includes(tag.id)}
+                        onCheckedChange={() => toggleTag(tag.id)}
+                      />
+                      <label
+                        htmlFor={`tag-${tag.id}`}
+                        className="cursor-pointer"
+                      >
+                        <Badge
+                          style={{
+                            backgroundColor: tag.cor,
+                            color: '#fff',
+                          }}
+                        >
+                          {tag.nome}
+                        </Badge>
+                      </label>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <div className="flex justify-end gap-3 pt-4">
               <Button
