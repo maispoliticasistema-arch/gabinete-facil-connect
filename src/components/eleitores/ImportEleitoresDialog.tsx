@@ -260,32 +260,36 @@ export function ImportEleitoresDialog({ onEleitoresImported }: ImportEleitoresDi
                   </div>
                   <div className="border rounded-lg overflow-auto">
                     <table className="w-full text-sm">
-                      <thead className="bg-muted">
-                        <tr>
+                      <thead>
+                        <tr className="bg-muted/50 border-b-2">
                           {headers.map((header, i) => (
-                            <th key={i} className="px-3 py-2 min-w-[180px]">
-                              <div className="space-y-2">
-                                <div className="text-xs font-medium text-muted-foreground">
-                                  {header}
-                                </div>
-                                <Select
-                                  value={columnMapping[header] || 'ignore'}
-                                  onValueChange={(value) =>
-                                    setColumnMapping((prev) => ({ ...prev, [header]: value }))
-                                  }
-                                >
-                                  <SelectTrigger className="h-8 text-xs">
-                                    <SelectValue />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    {CAMPOS_ELEITOR.map((campo) => (
-                                      <SelectItem key={campo.value} value={campo.value}>
-                                        {campo.label}
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
+                            <th key={i} className="px-3 py-3 min-w-[200px] text-left">
+                              <div className="font-semibold text-sm">
+                                {header}
                               </div>
+                            </th>
+                          ))}
+                        </tr>
+                        <tr className="bg-muted">
+                          {headers.map((header, i) => (
+                            <th key={i} className="px-3 py-2">
+                              <Select
+                                value={columnMapping[header] || 'ignore'}
+                                onValueChange={(value) =>
+                                  setColumnMapping((prev) => ({ ...prev, [header]: value }))
+                                }
+                              >
+                                <SelectTrigger className="h-9 text-xs bg-background">
+                                  <SelectValue placeholder="Mapear para..." />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {CAMPOS_ELEITOR.map((campo) => (
+                                    <SelectItem key={campo.value} value={campo.value}>
+                                      {campo.label}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
                             </th>
                           ))}
                         </tr>
