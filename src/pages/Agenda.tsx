@@ -280,23 +280,25 @@ const Agenda = () => {
       ) : (
         <div className="grid lg:grid-cols-[1fr_300px] gap-6">
           <Card className="p-6">
-            <div className="flex items-center justify-center">
-              <Calendar
-                mode="single"
-                selected={selectedDate}
-                onSelect={handleDateSelect}
-                locale={ptBR}
-                className="w-full"
-                modifiers={{
-                  hasEvent: (date) => {
-                    const dateKey = format(date, "yyyy-MM-dd");
-                    return eventosPorDia.has(dateKey);
-                  },
-                }}
-                modifiersClassNames={{
-                  hasEvent: "bg-primary/10 font-bold",
-                }}
-              />
+            <div className="flex items-center justify-center w-full">
+              <div className="w-full max-w-2xl">
+                <Calendar
+                  mode="single"
+                  selected={selectedDate}
+                  onSelect={handleDateSelect}
+                  locale={ptBR}
+                  className="w-full flex justify-center"
+                  modifiers={{
+                    hasEvent: (date) => {
+                      const dateKey = format(date, "yyyy-MM-dd");
+                      return eventosPorDia.has(dateKey);
+                    },
+                  }}
+                  modifiersClassNames={{
+                    hasEvent: "bg-primary/10 font-bold",
+                  }}
+                />
+              </div>
             </div>
           </Card>
 
