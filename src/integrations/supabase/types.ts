@@ -14,16 +14,344 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      agenda: {
+        Row: {
+          created_at: string | null
+          criado_por: string | null
+          data_fim: string | null
+          data_inicio: string
+          descricao: string | null
+          gabinete_id: string
+          id: string
+          local: string | null
+          responsavel_id: string | null
+          titulo: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          criado_por?: string | null
+          data_fim?: string | null
+          data_inicio: string
+          descricao?: string | null
+          gabinete_id: string
+          id?: string
+          local?: string | null
+          responsavel_id?: string | null
+          titulo: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          criado_por?: string | null
+          data_fim?: string | null
+          data_inicio?: string
+          descricao?: string | null
+          gabinete_id?: string
+          id?: string
+          local?: string | null
+          responsavel_id?: string | null
+          titulo?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agenda_criado_por_fkey"
+            columns: ["criado_por"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agenda_gabinete_id_fkey"
+            columns: ["gabinete_id"]
+            isOneToOne: false
+            referencedRelation: "gabinetes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agenda_responsavel_id_fkey"
+            columns: ["responsavel_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      demandas: {
+        Row: {
+          concluida_em: string | null
+          created_at: string | null
+          criado_por: string | null
+          descricao: string | null
+          eleitor_id: string | null
+          gabinete_id: string
+          id: string
+          prazo: string | null
+          prioridade: Database["public"]["Enums"]["demanda_prioridade"] | null
+          responsavel_id: string | null
+          status: Database["public"]["Enums"]["demanda_status"] | null
+          titulo: string
+          updated_at: string | null
+        }
+        Insert: {
+          concluida_em?: string | null
+          created_at?: string | null
+          criado_por?: string | null
+          descricao?: string | null
+          eleitor_id?: string | null
+          gabinete_id: string
+          id?: string
+          prazo?: string | null
+          prioridade?: Database["public"]["Enums"]["demanda_prioridade"] | null
+          responsavel_id?: string | null
+          status?: Database["public"]["Enums"]["demanda_status"] | null
+          titulo: string
+          updated_at?: string | null
+        }
+        Update: {
+          concluida_em?: string | null
+          created_at?: string | null
+          criado_por?: string | null
+          descricao?: string | null
+          eleitor_id?: string | null
+          gabinete_id?: string
+          id?: string
+          prazo?: string | null
+          prioridade?: Database["public"]["Enums"]["demanda_prioridade"] | null
+          responsavel_id?: string | null
+          status?: Database["public"]["Enums"]["demanda_status"] | null
+          titulo?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "demandas_criado_por_fkey"
+            columns: ["criado_por"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "demandas_eleitor_id_fkey"
+            columns: ["eleitor_id"]
+            isOneToOne: false
+            referencedRelation: "eleitores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "demandas_gabinete_id_fkey"
+            columns: ["gabinete_id"]
+            isOneToOne: false
+            referencedRelation: "gabinetes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "demandas_responsavel_id_fkey"
+            columns: ["responsavel_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      eleitores: {
+        Row: {
+          bairro: string | null
+          cadastrado_por: string | null
+          cep: string | null
+          cidade: string | null
+          cpf: string | null
+          created_at: string | null
+          data_nascimento: string | null
+          email: string | null
+          endereco: string | null
+          estado: string | null
+          gabinete_id: string
+          id: string
+          latitude: number | null
+          longitude: number | null
+          nome_completo: string
+          observacoes: string | null
+          profissao: string | null
+          rg: string | null
+          telefone: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          bairro?: string | null
+          cadastrado_por?: string | null
+          cep?: string | null
+          cidade?: string | null
+          cpf?: string | null
+          created_at?: string | null
+          data_nascimento?: string | null
+          email?: string | null
+          endereco?: string | null
+          estado?: string | null
+          gabinete_id: string
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
+          nome_completo: string
+          observacoes?: string | null
+          profissao?: string | null
+          rg?: string | null
+          telefone?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          bairro?: string | null
+          cadastrado_por?: string | null
+          cep?: string | null
+          cidade?: string | null
+          cpf?: string | null
+          created_at?: string | null
+          data_nascimento?: string | null
+          email?: string | null
+          endereco?: string | null
+          estado?: string | null
+          gabinete_id?: string
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
+          nome_completo?: string
+          observacoes?: string | null
+          profissao?: string | null
+          rg?: string | null
+          telefone?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "eleitores_cadastrado_por_fkey"
+            columns: ["cadastrado_por"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "eleitores_gabinete_id_fkey"
+            columns: ["gabinete_id"]
+            isOneToOne: false
+            referencedRelation: "gabinetes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gabinetes: {
+        Row: {
+          cidade: string | null
+          created_at: string | null
+          descricao: string | null
+          estado: string | null
+          id: string
+          nome: string
+          updated_at: string | null
+        }
+        Insert: {
+          cidade?: string | null
+          created_at?: string | null
+          descricao?: string | null
+          estado?: string | null
+          id?: string
+          nome: string
+          updated_at?: string | null
+        }
+        Update: {
+          cidade?: string | null
+          created_at?: string | null
+          descricao?: string | null
+          estado?: string | null
+          id?: string
+          nome?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string | null
+          id: string
+          nome_completo: string
+          telefone: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string | null
+          id: string
+          nome_completo: string
+          telefone?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string | null
+          id?: string
+          nome_completo?: string
+          telefone?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      user_gabinetes: {
+        Row: {
+          ativo: boolean | null
+          created_at: string | null
+          gabinete_id: string
+          id: string
+          role: Database["public"]["Enums"]["user_role"]
+          user_id: string
+        }
+        Insert: {
+          ativo?: boolean | null
+          created_at?: string | null
+          gabinete_id: string
+          id?: string
+          role?: Database["public"]["Enums"]["user_role"]
+          user_id: string
+        }
+        Update: {
+          ativo?: boolean | null
+          created_at?: string | null
+          gabinete_id?: string
+          id?: string
+          role?: Database["public"]["Enums"]["user_role"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_gabinetes_gabinete_id_fkey"
+            columns: ["gabinete_id"]
+            isOneToOne: false
+            referencedRelation: "gabinetes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_gabinetes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      user_has_gabinete_access: {
+        Args: { gabinete_uuid: string }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      demanda_prioridade: "baixa" | "media" | "alta" | "urgente"
+      demanda_status: "aberta" | "em_andamento" | "concluida" | "cancelada"
+      user_role: "owner" | "admin" | "assessor"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +478,10 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      demanda_prioridade: ["baixa", "media", "alta", "urgente"],
+      demanda_status: ["aberta", "em_andamento", "concluida", "cancelada"],
+      user_role: ["owner", "admin", "assessor"],
+    },
   },
 } as const
