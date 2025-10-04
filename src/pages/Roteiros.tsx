@@ -329,42 +329,72 @@ const Roteiros = () => {
                 </Marker>
               )}
 
+              {/* Linha do ponto de partida até primeira parada */}
+              {selectedRoteiroData && selectedRoteiroData.latitude_partida && selectedRoteiroData.longitude_partida && pontos.length > 0 && pontos[0].latitude && pontos[0].longitude && (
+                <Polyline
+                  positions={[
+                    [selectedRoteiroData.latitude_partida, selectedRoteiroData.longitude_partida],
+                    [pontos[0].latitude, pontos[0].longitude]
+                  ]}
+                  color="#22c55e"
+                  weight={3}
+                  opacity={0.7}
+                  dashArray="10, 10"
+                />
+              )}
+
+              {/* Linha das paradas */}
               {pontos.length > 0 && (
-                <>
-                  <Polyline
-                    positions={pontos.map(p => [p.latitude, p.longitude] as [number, number])}
-                    color="#3b82f6"
-                    weight={3}
-                    opacity={0.7}
-                  />
-                  <MarkerClusterGroup>
-                    {pontos.map((ponto) => (
-                      ponto.latitude && ponto.longitude && (
-                        <Marker
-                          key={ponto.id}
-                          position={[ponto.latitude, ponto.longitude]}
-                          icon={createNumberIcon(ponto.ordem)}
-                        >
-                          <Popup>
-                            <div className="text-sm">
-                              <strong>Parada {ponto.ordem}</strong>
-                              <br />
-                              {ponto.eleitores?.nome_completo || 'Eleitor não encontrado'}
-                              {ponto.endereco_manual && (
-                                <>
-                                  <br />
-                                  <span className="text-xs bg-secondary px-1 rounded">Endereço alternativo:</span>
-                                  <br />
-                                  <span className="text-muted-foreground">{ponto.endereco_manual}</span>
-                                </>
-                              )}
-                            </div>
-                          </Popup>
-                        </Marker>
-                      )
-                    ))}
-                  </MarkerClusterGroup>
-                </>
+                <Polyline
+                  positions={pontos.map(p => [p.latitude, p.longitude] as [number, number])}
+                  color="#3b82f6"
+                  weight={3}
+                  opacity={0.7}
+                />
+              )}
+
+              {/* Linha da última parada até ponto final */}
+              {selectedRoteiroData && selectedRoteiroData.latitude_final && selectedRoteiroData.longitude_final && pontos.length > 0 && pontos[pontos.length - 1].latitude && pontos[pontos.length - 1].longitude && (
+                <Polyline
+                  positions={[
+                    [pontos[pontos.length - 1].latitude, pontos[pontos.length - 1].longitude],
+                    [selectedRoteiroData.latitude_final, selectedRoteiroData.longitude_final]
+                  ]}
+                  color="#3b82f6"
+                  weight={3}
+                  opacity={0.7}
+                  dashArray="10, 10"
+                />
+              )}
+
+              {pontos.length > 0 && (
+                <MarkerClusterGroup>
+                  {pontos.map((ponto) => (
+                    ponto.latitude && ponto.longitude && (
+                      <Marker
+                        key={ponto.id}
+                        position={[ponto.latitude, ponto.longitude]}
+                        icon={createNumberIcon(ponto.ordem)}
+                      >
+                        <Popup>
+                          <div className="text-sm">
+                            <strong>Parada {ponto.ordem}</strong>
+                            <br />
+                            {ponto.eleitores?.nome_completo || 'Eleitor não encontrado'}
+                            {ponto.endereco_manual && (
+                              <>
+                                <br />
+                                <span className="text-xs bg-secondary px-1 rounded">Endereço alternativo:</span>
+                                <br />
+                                <span className="text-muted-foreground">{ponto.endereco_manual}</span>
+                              </>
+                            )}
+                          </div>
+                        </Popup>
+                      </Marker>
+                    )
+                  ))}
+                </MarkerClusterGroup>
               )}
             </MapContainer>
           </CardContent>
