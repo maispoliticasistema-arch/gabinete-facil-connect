@@ -32,7 +32,21 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Loader2, Plus } from 'lucide-react';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command';
+import { Loader2, Plus, Check, ChevronsUpDown } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface Eleitor {
   id: string;
@@ -67,6 +81,9 @@ export const AddDemandaDialog = ({ onDemandaAdded }: AddDemandaDialogProps) => {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [eleitores, setEleitores] = useState<Eleitor[]>([]);
+  const [filteredEleitores, setFilteredEleitores] = useState<Eleitor[]>([]);
+  const [eleitoresSearch, setEleitoresSearch] = useState('');
+  const [eleitoresOpen, setEleitoresOpen] = useState(false);
   const [assessores, setAssessores] = useState<UserGabinete[]>([]);
   const { toast } = useToast();
   const { currentGabinete } = useGabinete();
@@ -87,23 +104,32 @@ export const AddDemandaDialog = ({ onDemandaAdded }: AddDemandaDialogProps) => {
 
   useEffect(() => {
     if (open && currentGabinete) {
-      fetchEleitores();
       fetchAssessores();
     }
   }, [open, currentGabinete]);
 
+  useEffect(() => {
+    if (eleitoresSearch.length >= 3 && currentGabinete) {
+      fetchEleitores();
+    } else {
+      setFilteredEleitores([]);
+    }
+  }, [eleitoresSearch, currentGabinete]);
+
   const fetchEleitores = async () => {
-    if (!currentGabinete) return;
+    if (!currentGabinete || eleitoresSearch.length < 3) return;
 
     try {
       const { data, error } = await supabase
         .from('eleitores')
         .select('id, nome_completo')
         .eq('gabinete_id', currentGabinete.gabinete_id)
-        .order('nome_completo');
+        .ilike('nome_completo', `%${eleitoresSearch}%`)
+        .order('nome_completo')
+        .limit(50);
 
       if (error) throw error;
-      setEleitores(data || []);
+      setFilteredEleitores(data || []);
     } catch (error: any) {
       console.error('Erro ao carregar eleitores:', error);
     }
@@ -226,22 +252,74 @@ export const AddDemandaDialog = ({ onDemandaAdded }: AddDemandaDialogProps) => {
               control={form.control}
               name="eleitor_id"
               render={({ field }) => (
-                <FormItem>
+                <FormItem className="flex flex-col">
                   <FormLabel>Eleitor *</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione o eleitor" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {eleitores.map((eleitor) => (
-                        <SelectItem key={eleitor.id} value={eleitor.id}>
-                          {eleitor.nome_completo}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Popover open={eleitoresOpen} onOpenChange={setEleitoresOpen}>
+                    <PopoverTrigger asChild>
+                      <FormControl>
+                        <Button
+                          variant="outline"
+                          role="combobox"
+                          className={cn(
+                            'w-full justify-between',
+                            !field.value && 'text-muted-foreground'
+                          )}
+                        >
+                          {field.value
+                            ? [...eleitores, ...filteredEleitores].find(
+                                (eleitor) => eleitor.id === field.value
+                              )?.nome_completo
+                            : 'Buscar eleitor...'}
+                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                        </Button>
+                      </FormControl>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-full p-0" align="start">
+                      <Command>
+                        <CommandInput
+                          placeholder="Digite ao menos 3 letras..."
+                          value={eleitoresSearch}
+                          onValueChange={setEleitoresSearch}
+                        />
+                        <CommandList>
+                          <CommandEmpty>
+                            {eleitoresSearch.length < 3
+                              ? 'Digite ao menos 3 letras para buscar'
+                              : 'Nenhum eleitor encontrado'}
+                          </CommandEmpty>
+                          {filteredEleitores.length > 0 && (
+                            <CommandGroup>
+                              {filteredEleitores.map((eleitor) => (
+                                <CommandItem
+                                  key={eleitor.id}
+                                  value={eleitor.nome_completo}
+                                  onSelect={() => {
+                                    form.setValue('eleitor_id', eleitor.id);
+                                    setEleitores((prev) => {
+                                      const exists = prev.find((e) => e.id === eleitor.id);
+                                      if (!exists) {
+                                        return [...prev, eleitor];
+                                      }
+                                      return prev;
+                                    });
+                                    setEleitoresOpen(false);
+                                  }}
+                                >
+                                  <Check
+                                    className={cn(
+                                      'mr-2 h-4 w-4',
+                                      field.value === eleitor.id ? 'opacity-100' : 'opacity-0'
+                                    )}
+                                  />
+                                  {eleitor.nome_completo}
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                          )}
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
                   <FormMessage />
                 </FormItem>
               )}
