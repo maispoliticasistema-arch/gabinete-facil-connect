@@ -34,6 +34,7 @@ export function usePermissions() {
   useEffect(() => {
     const fetchPermissions = async () => {
       if (!user || !currentGabinete) {
+        console.log('usePermissions: Sem user ou gabinete', { user: !!user, currentGabinete: !!currentGabinete });
         setPermissions([]);
         setIsAdmin(false);
         setLoading(false);
@@ -43,10 +44,11 @@ export function usePermissions() {
       try {
         // Verificar se é owner ou admin
         const role = currentGabinete.role;
+        console.log('usePermissions: Role do usuário:', role);
         
         if (role === 'owner' || role === 'admin') {
           // Owners e admins têm todas as permissões
-          setPermissions([
+          const allPermissions: Permission[] = [
             'view_eleitores',
             'create_eleitores',
             'edit_eleitores',
@@ -66,7 +68,9 @@ export function usePermissions() {
             'view_relatorios',
             'manage_users',
             'manage_settings',
-          ]);
+          ];
+          console.log('usePermissions: Definindo todas as permissões para admin/owner');
+          setPermissions(allPermissions);
           setIsAdmin(true);
         } else {
           // Buscar permissões específicas do assessor
@@ -93,6 +97,7 @@ export function usePermissions() {
         setPermissions([]);
         setIsAdmin(false);
       } finally {
+        console.log('usePermissions: Finalizando, loading = false');
         setLoading(false);
       }
     };
@@ -101,7 +106,9 @@ export function usePermissions() {
   }, [user, currentGabinete]);
 
   const hasPermission = (permission: Permission): boolean => {
-    return permissions.includes(permission);
+    const result = permissions.includes(permission);
+    console.log('hasPermission:', permission, '=', result, '| total permissions:', permissions.length);
+    return result;
   };
 
   const hasAnyPermission = (perms: Permission[]): boolean => {
