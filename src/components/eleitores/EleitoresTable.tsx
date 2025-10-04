@@ -8,10 +8,12 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Mail, Phone, MapPin, Calendar } from 'lucide-react';
+import { Mail, Phone, MapPin, Calendar, Pencil, Trash2 } from 'lucide-react';
+import { EditEleitoresDialog } from './EditEleitoresDialog';
+import { DeleteEleitoresDialog } from './DeleteEleitoresDialog';
 
 interface Eleitor {
   id: string;
@@ -28,9 +30,25 @@ interface Eleitor {
 
 interface EleitoresTableProps {
   eleitores: Eleitor[];
+  onEleitoresUpdated: () => void;
 }
 
-export const EleitoresTable = ({ eleitores }: EleitoresTableProps) => {
+export const EleitoresTable = ({ eleitores, onEleitoresUpdated }: EleitoresTableProps) => {
+  const [editingEleitor, setEditingEleitor] = useState<Eleitor | null>(null);
+  const [deletingEleitor, setDeletingEleitor] = useState<Eleitor | null>(null);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+
+  const handleEdit = (eleitor: Eleitor) => {
+    setEditingEleitor(eleitor);
+    setEditDialogOpen(true);
+  };
+
+  const handleDelete = (eleitor: Eleitor) => {
+    setDeletingEleitor(eleitor);
+    setDeleteDialogOpen(true);
+  };
+
   const getInitials = (name: string) => {
     return name
       .split(' ')
@@ -46,27 +64,41 @@ export const EleitoresTable = ({ eleitores }: EleitoresTableProps) => {
   };
 
   return (
-    <div className="rounded-lg border bg-card">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Eleitor</TableHead>
-            <TableHead>Contato</TableHead>
-            <TableHead>Localização</TableHead>
-            <TableHead>Data Nascimento</TableHead>
-            <TableHead>Cadastro</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {eleitores.length === 0 ? (
+    <>
+      <EditEleitoresDialog
+        eleitor={editingEleitor}
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+        onEleitoresUpdated={onEleitoresUpdated}
+      />
+      <DeleteEleitoresDialog
+        eleitor={deletingEleitor}
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        onEleitoresDeleted={onEleitoresUpdated}
+      />
+      <div className="rounded-lg border bg-card">
+        <Table>
+          <TableHeader>
             <TableRow>
-              <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
-                Nenhum eleitor cadastrado ainda
-              </TableCell>
+              <TableHead>Eleitor</TableHead>
+              <TableHead>Contato</TableHead>
+              <TableHead>Localização</TableHead>
+              <TableHead>Data Nascimento</TableHead>
+              <TableHead>Cadastro</TableHead>
+              <TableHead className="text-right">Ações</TableHead>
             </TableRow>
-          ) : (
-            eleitores.map((eleitor) => (
-              <TableRow key={eleitor.id}>
+          </TableHeader>
+          <TableBody>
+            {eleitores.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                  Nenhum eleitor cadastrado ainda
+                </TableCell>
+              </TableRow>
+            ) : (
+              eleitores.map((eleitor) => (
+                <TableRow key={eleitor.id}>
                 <TableCell>
                   <div className="flex items-center gap-3">
                     <Avatar>
@@ -125,16 +157,37 @@ export const EleitoresTable = ({ eleitores }: EleitoresTableProps) => {
                     <span className="text-muted-foreground">-</span>
                   )}
                 </TableCell>
-                <TableCell>
-                  <span className="text-sm text-muted-foreground">
-                    {formatDate(eleitor.created_at)}
-                  </span>
-                </TableCell>
-              </TableRow>
-            ))
-          )}
-        </TableBody>
-      </Table>
-    </div>
+                  <TableCell>
+                    <span className="text-sm text-muted-foreground">
+                      {formatDate(eleitor.created_at)}
+                    </span>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center justify-end gap-2">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleEdit(eleitor)}
+                        className="h-8 w-8"
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleDelete(eleitor)}
+                        className="h-8 w-8 text-destructive hover:text-destructive"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
+    </>
   );
 };

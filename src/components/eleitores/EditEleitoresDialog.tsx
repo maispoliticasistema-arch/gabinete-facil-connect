@@ -1,0 +1,228 @@
+import { useState, useEffect } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Loader2 } from 'lucide-react';
+
+const eleitoresSchema = z.object({
+  nome_completo: z.string().trim().min(1, 'Nome completo é obrigatório').max(200, 'Nome muito longo'),
+  telefone: z.string().trim().max(20, 'Telefone muito longo').optional(),
+  email: z.string().trim().email('E-mail inválido').max(255, 'E-mail muito longo').optional().or(z.literal('')),
+  data_nascimento: z.string().optional(),
+  endereco: z.string().trim().max(300, 'Endereço muito longo').optional(),
+});
+
+type EleitoresFormData = z.infer<typeof eleitoresSchema>;
+
+interface Eleitor {
+  id: string;
+  nome_completo: string;
+  telefone: string | null;
+  email: string | null;
+  data_nascimento: string | null;
+  endereco: string | null;
+}
+
+interface EditEleitoresDialogProps {
+  eleitor: Eleitor | null;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onEleitoresUpdated: () => void;
+}
+
+export const EditEleitoresDialog = ({
+  eleitor,
+  open,
+  onOpenChange,
+  onEleitoresUpdated,
+}: EditEleitoresDialogProps) => {
+  const [loading, setLoading] = useState(false);
+  const { toast } = useToast();
+
+  const form = useForm<EleitoresFormData>({
+    resolver: zodResolver(eleitoresSchema),
+    defaultValues: {
+      nome_completo: '',
+      telefone: '',
+      email: '',
+      data_nascimento: '',
+      endereco: '',
+    },
+  });
+
+  useEffect(() => {
+    if (eleitor) {
+      form.reset({
+        nome_completo: eleitor.nome_completo,
+        telefone: eleitor.telefone || '',
+        email: eleitor.email || '',
+        data_nascimento: eleitor.data_nascimento || '',
+        endereco: eleitor.endereco || '',
+      });
+    }
+  }, [eleitor, form]);
+
+  const onSubmit = async (data: EleitoresFormData) => {
+    if (!eleitor) return;
+
+    setLoading(true);
+    try {
+      const { error } = await supabase
+        .from('eleitores')
+        .update({
+          nome_completo: data.nome_completo,
+          telefone: data.telefone || null,
+          email: data.email || null,
+          data_nascimento: data.data_nascimento || null,
+          endereco: data.endereco || null,
+        })
+        .eq('id', eleitor.id);
+
+      if (error) throw error;
+
+      toast({
+        title: 'Eleitor atualizado!',
+        description: 'As informações foram atualizadas com sucesso.',
+      });
+
+      onOpenChange(false);
+      onEleitoresUpdated();
+    } catch (error: any) {
+      toast({
+        title: 'Erro ao atualizar eleitor',
+        description: error.message,
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[500px]">
+        <DialogHeader>
+          <DialogTitle>Editar Eleitor</DialogTitle>
+          <DialogDescription>
+            Atualize os dados do eleitor
+          </DialogDescription>
+        </DialogHeader>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <FormField
+              control={form.control}
+              name="nome_completo"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Nome Completo *</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Ex: João da Silva" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="telefone"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Telefone</FormLabel>
+                    <FormControl>
+                      <Input placeholder="(11) 99999-9999" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="data_nascimento"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Data de Nascimento</FormLabel>
+                    <FormControl>
+                      <Input type="date" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <FormField
+              control={form.control}
+              name="email"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>E-mail</FormLabel>
+                  <FormControl>
+                    <Input type="email" placeholder="joao@exemplo.com" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="endereco"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Endereço</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Rua, número, bairro, cidade" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <div className="flex justify-end gap-3 pt-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => onOpenChange(false)}
+                disabled={loading}
+              >
+                Cancelar
+              </Button>
+              <Button type="submit" disabled={loading}>
+                {loading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Salvando...
+                  </>
+                ) : (
+                  'Salvar Alterações'
+                )}
+              </Button>
+            </div>
+          </form>
+        </Form>
+      </DialogContent>
+    </Dialog>
+  );
+};
