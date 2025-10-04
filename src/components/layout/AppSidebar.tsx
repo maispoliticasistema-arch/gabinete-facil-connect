@@ -150,7 +150,7 @@ export function AppSidebar() {
           </DropdownMenu>
         )}
 
-        <div className={`flex ${collapsed ? 'flex-col gap-1' : 'gap-2'}`}>
+        <div className={`flex ${collapsed ? 'flex-col gap-1 items-center' : 'gap-2'}`}>
           <Button
             variant="ghost"
             size="icon"
