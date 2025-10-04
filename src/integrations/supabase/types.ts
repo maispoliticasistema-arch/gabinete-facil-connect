@@ -365,6 +365,121 @@ export type Database = {
         }
         Relationships: []
       }
+      roteiro_pontos: {
+        Row: {
+          created_at: string
+          demanda_id: string | null
+          eleitor_id: string | null
+          endereco_manual: string | null
+          id: string
+          latitude: number | null
+          longitude: number | null
+          observacoes: string | null
+          ordem: number
+          roteiro_id: string
+          visitado: boolean | null
+          visitado_em: string | null
+        }
+        Insert: {
+          created_at?: string
+          demanda_id?: string | null
+          eleitor_id?: string | null
+          endereco_manual?: string | null
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
+          observacoes?: string | null
+          ordem: number
+          roteiro_id: string
+          visitado?: boolean | null
+          visitado_em?: string | null
+        }
+        Update: {
+          created_at?: string
+          demanda_id?: string | null
+          eleitor_id?: string | null
+          endereco_manual?: string | null
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
+          observacoes?: string | null
+          ordem?: number
+          roteiro_id?: string
+          visitado?: boolean | null
+          visitado_em?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "roteiro_pontos_demanda_id_fkey"
+            columns: ["demanda_id"]
+            isOneToOne: false
+            referencedRelation: "demandas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "roteiro_pontos_eleitor_id_fkey"
+            columns: ["eleitor_id"]
+            isOneToOne: false
+            referencedRelation: "eleitores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "roteiro_pontos_roteiro_id_fkey"
+            columns: ["roteiro_id"]
+            isOneToOne: false
+            referencedRelation: "roteiros"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      roteiros: {
+        Row: {
+          created_at: string
+          criado_por: string | null
+          data: string
+          distancia_total: number | null
+          gabinete_id: string
+          hora_inicio: string | null
+          id: string
+          nome: string
+          objetivo: string | null
+          responsavel_id: string | null
+          status: Database["public"]["Enums"]["roteiro_status"]
+          tempo_estimado: number | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          criado_por?: string | null
+          data: string
+          distancia_total?: number | null
+          gabinete_id: string
+          hora_inicio?: string | null
+          id?: string
+          nome: string
+          objetivo?: string | null
+          responsavel_id?: string | null
+          status?: Database["public"]["Enums"]["roteiro_status"]
+          tempo_estimado?: number | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          criado_por?: string | null
+          data?: string
+          distancia_total?: number | null
+          gabinete_id?: string
+          hora_inicio?: string | null
+          id?: string
+          nome?: string
+          objetivo?: string | null
+          responsavel_id?: string | null
+          status?: Database["public"]["Enums"]["roteiro_status"]
+          tempo_estimado?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       tags: {
         Row: {
           cor: string
@@ -453,6 +568,7 @@ export type Database = {
         | "senador"
       demanda_prioridade: "baixa" | "media" | "alta" | "urgente"
       demanda_status: "aberta" | "em_andamento" | "concluida" | "cancelada"
+      roteiro_status: "planejado" | "em_andamento" | "concluido" | "cancelado"
       user_role: "owner" | "admin" | "assessor"
     }
     CompositeTypes: {
@@ -590,6 +706,7 @@ export const Constants = {
       ],
       demanda_prioridade: ["baixa", "media", "alta", "urgente"],
       demanda_status: ["aberta", "em_andamento", "concluida", "cancelada"],
+      roteiro_status: ["planejado", "em_andamento", "concluido", "cancelado"],
       user_role: ["owner", "admin", "assessor"],
     },
   },

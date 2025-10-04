@@ -1,10 +1,324 @@
+import { useState, useEffect, useMemo } from 'react';
+import { useGabinete } from '@/contexts/GabineteContext';
+import { supabase } from '@/integrations/supabase/client';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Plus, Search, MapIcon } from 'lucide-react';
+import { RoteirosStats } from '@/components/roteiros/RoteirosStats';
+import { AddRoteiroDialog } from '@/components/roteiros/AddRoteiroDialog';
+import { RoteiroDetailsSheet } from '@/components/roteiros/RoteiroDetailsSheet';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet';
+import MarkerClusterGroup from 'react-leaflet-cluster';
+import 'leaflet/dist/leaflet.css';
+import L from 'leaflet';
+
+// Fix Leaflet default marker icon
+delete (L.Icon.Default.prototype as any)._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+});
+
+interface Roteiro {
+  id: string;
+  nome: string;
+  data: string;
+  hora_inicio: string | null;
+  status: string;
+  objetivo: string | null;
+  distancia_total: number | null;
+}
+
+interface Ponto {
+  id: string;
+  ordem: number;
+  latitude: number;
+  longitude: number;
+  eleitores: {
+    nome_completo: string;
+  } | null;
+}
+
+const MapController = ({ center }: { center: [number, number] }) => {
+  const map = useMap();
+  useEffect(() => {
+    map.setView(center, 13);
+  }, [center, map]);
+  return null;
+};
+
 const Roteiros = () => {
+  const { currentGabinete } = useGabinete();
+  const [roteiros, setRoteiros] = useState<Roteiro[]>([]);
+  const [selectedRoteiro, setSelectedRoteiro] = useState<string | null>(null);
+  const [showAddDialog, setShowAddDialog] = useState(false);
+  const [showDetailsSheet, setShowDetailsSheet] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedRoteiroForMap, setSelectedRoteiroForMap] = useState<string | null>(null);
+  const [pontos, setPontos] = useState<Ponto[]>([]);
+  const [mapCenter, setMapCenter] = useState<[number, number]>([-30.0346, -51.2177]);
+
+  useEffect(() => {
+    if (currentGabinete) {
+      fetchRoteiros();
+    }
+  }, [currentGabinete]);
+
+  useEffect(() => {
+    if (selectedRoteiroForMap) {
+      fetchPontos(selectedRoteiroForMap);
+    } else {
+      setPontos([]);
+    }
+  }, [selectedRoteiroForMap]);
+
+  const fetchRoteiros = async () => {
+    if (!currentGabinete) return;
+
+    const { data, error } = await supabase
+      .from('roteiros')
+      .select('*')
+      .eq('gabinete_id', currentGabinete.gabinete_id)
+      .order('data', { ascending: false });
+
+    if (error) {
+      console.error('Erro ao buscar roteiros:', error);
+      return;
+    }
+
+    setRoteiros(data || []);
+  };
+
+  const fetchPontos = async (roteiroId: string) => {
+    const { data, error } = await supabase
+      .from('roteiro_pontos')
+      .select('id, ordem, latitude, longitude, eleitores(nome_completo)')
+      .eq('roteiro_id', roteiroId)
+      .order('ordem');
+
+    if (error) {
+      console.error('Erro ao buscar pontos:', error);
+      return;
+    }
+
+    const validPontos = (data || []).filter(p => p.latitude && p.longitude);
+    setPontos(validPontos as Ponto[]);
+    
+    if (validPontos.length > 0) {
+      setMapCenter([validPontos[0].latitude, validPontos[0].longitude]);
+    }
+  };
+
+  const filteredRoteiros = useMemo(() => {
+    return roteiros.filter(r =>
+      r.nome.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [roteiros, searchTerm]);
+
+  const stats = useMemo(() => {
+    const now = new Date();
+    const thisMonth = roteiros.filter(r => {
+      const roteiroDate = new Date(r.data);
+      return roteiroDate.getMonth() === now.getMonth() &&
+             roteiroDate.getFullYear() === now.getFullYear();
+    });
+
+    const today = roteiros.filter(r => {
+      const roteiroDate = new Date(r.data);
+      return roteiroDate.toDateString() === now.toDateString() &&
+             r.status === 'em_andamento';
+    });
+
+    return {
+      totalRoteiros: thisMonth.length,
+      emAndamento: today.length,
+      locaisVisitados: 0,
+      distanciaTotal: roteiros.reduce((acc, r) => acc + (r.distancia_total || 0), 0)
+    };
+  }, [roteiros]);
+
+  const getStatusBadge = (status: string) => {
+    const variants: Record<string, any> = {
+      planejado: 'secondary',
+      em_andamento: 'default',
+      concluido: 'default',
+      cancelado: 'destructive'
+    };
+
+    const labels: Record<string, string> = {
+      planejado: 'Planejado',
+      em_andamento: 'Em Andamento',
+      concluido: 'Concluído',
+      cancelado: 'Cancelado'
+    };
+
+    return (
+      <Badge variant={variants[status] || 'secondary'}>
+        {labels[status] || status}
+      </Badge>
+    );
+  };
+
+  const createNumberIcon = (numero: number) => {
+    return L.divIcon({
+      html: `<div class="flex items-center justify-center w-8 h-8 rounded-full bg-primary text-primary-foreground font-bold text-sm shadow-lg">${numero}</div>`,
+      className: 'custom-marker',
+      iconSize: [32, 32],
+      iconAnchor: [16, 16]
+    });
+  };
+
   return (
     <div className="animate-fade-in space-y-6">
-      <h1 className="text-3xl font-bold">Roteiros</h1>
-      <p className="text-muted-foreground">
-        Planejamento de visitas em bairros e cidades
-      </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold">Roteiros</h1>
+          <p className="text-muted-foreground">
+            Planejamento de visitas em bairros e cidades
+          </p>
+        </div>
+        <Button onClick={() => setShowAddDialog(true)}>
+          <Plus className="mr-2 h-4 w-4" />
+          Novo Roteiro
+        </Button>
+      </div>
+
+      <RoteirosStats {...stats} />
+
+      <div className="grid lg:grid-cols-2 gap-6">
+        <div className="space-y-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Buscar roteiros..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+
+          <div className="space-y-3 max-h-[600px] overflow-y-auto">
+            {filteredRoteiros.map((roteiro) => (
+              <Card
+                key={roteiro.id}
+                className={`cursor-pointer transition-colors hover:bg-muted/50 ${
+                  selectedRoteiroForMap === roteiro.id ? 'ring-2 ring-primary' : ''
+                }`}
+                onClick={() => {
+                  setSelectedRoteiroForMap(roteiro.id);
+                }}
+              >
+                <CardHeader className="pb-3">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <CardTitle className="text-lg">{roteiro.nome}</CardTitle>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        {format(new Date(roteiro.data), "dd 'de' MMMM", { locale: ptBR })}
+                        {roteiro.hora_inicio && ` às ${roteiro.hora_inicio}`}
+                      </p>
+                    </div>
+                    {getStatusBadge(roteiro.status)}
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  {roteiro.objetivo && (
+                    <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
+                      {roteiro.objetivo}
+                    </p>
+                  )}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedRoteiro(roteiro.id);
+                      setShowDetailsSheet(true);
+                    }}
+                  >
+                    Ver Detalhes
+                  </Button>
+                </CardContent>
+              </Card>
+            ))}
+
+            {filteredRoteiros.length === 0 && (
+              <Card>
+                <CardContent className="p-6 text-center text-muted-foreground">
+                  Nenhum roteiro encontrado
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        </div>
+
+        <Card className="h-[600px]">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2">
+              <MapIcon className="h-5 w-5" />
+              Visualização do Roteiro
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-0 h-[calc(100%-4rem)]">
+            <MapContainer
+              center={mapCenter}
+              zoom={13}
+              className="h-full w-full"
+            >
+              <MapController center={mapCenter} />
+              <TileLayer
+                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              />
+
+              {pontos.length > 0 && (
+                <>
+                  <Polyline
+                    positions={pontos.map(p => [p.latitude, p.longitude] as [number, number])}
+                    color="#3b82f6"
+                    weight={3}
+                    opacity={0.7}
+                  />
+                  <MarkerClusterGroup>
+                    {pontos.map((ponto) => (
+                      <Marker
+                        key={ponto.id}
+                        position={[ponto.latitude, ponto.longitude]}
+                        icon={createNumberIcon(ponto.ordem)}
+                      >
+                        <Popup>
+                          <div className="text-sm">
+                            <strong>Parada {ponto.ordem}</strong>
+                            <br />
+                            {ponto.eleitores?.nome_completo || 'Local Manual'}
+                          </div>
+                        </Popup>
+                      </Marker>
+                    ))}
+                  </MarkerClusterGroup>
+                </>
+              )}
+            </MapContainer>
+          </CardContent>
+        </Card>
+      </div>
+
+      <AddRoteiroDialog
+        open={showAddDialog}
+        onOpenChange={setShowAddDialog}
+        onRoteiroAdded={fetchRoteiros}
+      />
+
+      <RoteiroDetailsSheet
+        open={showDetailsSheet}
+        onOpenChange={setShowDetailsSheet}
+        roteiroId={selectedRoteiro}
+        onRoteiroUpdated={fetchRoteiros}
+      />
     </div>
   );
 };
