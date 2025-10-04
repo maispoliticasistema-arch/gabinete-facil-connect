@@ -56,6 +56,7 @@ const Agenda = () => {
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [selectedEvento, setSelectedEvento] = useState<Evento | null>(null);
   const [detailsSheetOpen, setDetailsSheetOpen] = useState(false);
+  const [editingEvento, setEditingEvento] = useState<any>(null);
 
   useEffect(() => {
     if (currentGabinete) {
@@ -167,6 +168,11 @@ const Agenda = () => {
   const handleEventClick = (evento: Evento) => {
     setSelectedEvento(evento);
     setDetailsSheetOpen(true);
+  };
+
+  const handleEditEvento = (evento: Evento) => {
+    setEditingEvento(evento);
+    setAddDialogOpen(true);
   };
 
   return (
@@ -347,15 +353,23 @@ const Agenda = () => {
 
       <AddEventDialog
         open={addDialogOpen}
-        onOpenChange={setAddDialogOpen}
-        onEventAdded={fetchEventos}
+        onOpenChange={(open) => {
+          setAddDialogOpen(open);
+          if (!open) setEditingEvento(null);
+        }}
+        onEventAdded={() => {
+          fetchEventos();
+          setEditingEvento(null);
+        }}
         initialDate={selectedDate}
+        editEvento={editingEvento}
       />
 
       <EventDetailsSheet
         evento={selectedEvento}
         open={detailsSheetOpen}
         onOpenChange={setDetailsSheetOpen}
+        onEdit={handleEditEvento}
       />
     </div>
   );

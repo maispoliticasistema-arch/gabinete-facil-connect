@@ -31,6 +31,7 @@ interface EventDetailsSheetProps {
   evento: Evento | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onEdit: (evento: Evento) => void;
 }
 
 const tipoLabels: Record<string, string> = {
@@ -56,8 +57,13 @@ const statusVariants: Record<string, "default" | "secondary" | "destructive" | "
   cancelado: "destructive",
 };
 
-export function EventDetailsSheet({ evento, open, onOpenChange }: EventDetailsSheetProps) {
+export function EventDetailsSheet({ evento, open, onOpenChange, onEdit }: EventDetailsSheetProps) {
   if (!evento) return null;
+
+  const handleEdit = () => {
+    onEdit(evento);
+    onOpenChange(false);
+  };
 
   const dataInicio = new Date(evento.data_inicio);
   const dataFim = evento.data_fim ? new Date(evento.data_fim) : null;
@@ -178,7 +184,7 @@ export function EventDetailsSheet({ evento, open, onOpenChange }: EventDetailsSh
         </div>
 
         <div className="flex gap-2 mt-8">
-          <Button variant="outline" className="flex-1">
+          <Button variant="outline" className="flex-1" onClick={handleEdit}>
             Editar
           </Button>
           <Button variant="outline" className="flex-1">

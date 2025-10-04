@@ -27,6 +27,7 @@ interface AddEventDialogProps {
   onOpenChange: (open: boolean) => void;
   onEventAdded: () => void;
   initialDate?: Date;
+  editEvento?: any;
 }
 
 const tiposEvento = [
@@ -56,7 +57,7 @@ const cores = [
   { value: "#14b8a6", label: "Turquesa" },
 ];
 
-export function AddEventDialog({ open, onOpenChange, onEventAdded, initialDate }: AddEventDialogProps) {
+export function AddEventDialog({ open, onOpenChange, onEventAdded, initialDate, editEvento }: AddEventDialogProps) {
   const { user } = useAuth();
   const { currentGabinete } = useGabinete();
   
@@ -79,8 +80,36 @@ export function AddEventDialog({ open, onOpenChange, onEventAdded, initialDate }
   useEffect(() => {
     if (open && currentGabinete) {
       fetchAssessores();
+      
+      if (editEvento) {
+        setTitulo(editEvento.titulo || "");
+        setDescricao(editEvento.descricao || "");
+        setLocal(editEvento.local || "");
+        setLinkOnline(editEvento.link_online || "");
+        setTipo(editEvento.tipo || "reuniao");
+        setStatus(editEvento.status || "pendente");
+        setCor(editEvento.cor || "#6366f1");
+        
+        if (editEvento.data_inicio) {
+          const dataI = new Date(editEvento.data_inicio);
+          setDataInicio(dataI);
+          setHoraInicio(format(dataI, "HH:mm"));
+        }
+        
+        if (editEvento.data_fim) {
+          const dataF = new Date(editEvento.data_fim);
+          setDataFim(dataF);
+          setHoraFim(format(dataF, "HH:mm"));
+        }
+        
+        if (editEvento.agenda_participantes) {
+          setSelectedParticipantes(
+            editEvento.agenda_participantes.map((p: any) => p.user_id)
+          );
+        }
+      }
     }
-  }, [open, currentGabinete]);
+  }, [open, currentGabinete, editEvento]);
 
   const fetchAssessores = async () => {
     if (!currentGabinete) return;
@@ -137,43 +166,89 @@ export function AddEventDialog({ open, onOpenChange, onEventAdded, initialDate }
       const [horaF, minF] = horaFim.split(":");
       dataFimCompleta.setHours(parseInt(horaF), parseInt(minF));
 
-      const { data: evento, error: eventoError } = await supabase
-        .from("agenda")
-        .insert({
-          gabinete_id: currentGabinete.gabinete_id,
-          criado_por: user.id,
-          titulo,
-          descricao,
-          local,
-          link_online: linkOnline,
-          tipo,
-          status,
-          cor,
-          data_inicio: dataInicioCompleta.toISOString(),
-          data_fim: dataFimCompleta.toISOString(),
-        })
-        .select()
-        .single();
+      if (editEvento) {
+        // Atualizar evento existente
+        const { error: eventoError } = await supabase
+          .from("agenda")
+          .update({
+            titulo,
+            descricao,
+            local,
+            link_online: linkOnline,
+            tipo,
+            status,
+            cor,
+            data_inicio: dataInicioCompleta.toISOString(),
+            data_fim: dataFimCompleta.toISOString(),
+          })
+          .eq("id", editEvento.id);
 
-      if (eventoError) throw eventoError;
+        if (eventoError) throw eventoError;
 
-      if (selectedParticipantes.length > 0) {
-        const participantes = selectedParticipantes.map(userId => ({
-          evento_id: evento.id,
-          user_id: userId,
-        }));
-
-        const { error: participantesError } = await supabase
+        // Remover participantes antigos
+        await supabase
           .from("agenda_participantes")
-          .insert(participantes);
+          .delete()
+          .eq("evento_id", editEvento.id);
 
-        if (participantesError) throw participantesError;
+        // Adicionar novos participantes
+        if (selectedParticipantes.length > 0) {
+          const participantes = selectedParticipantes.map(userId => ({
+            evento_id: editEvento.id,
+            user_id: userId,
+          }));
+
+          const { error: participantesError } = await supabase
+            .from("agenda_participantes")
+            .insert(participantes);
+
+          if (participantesError) throw participantesError;
+        }
+
+        toast({
+          title: "Evento atualizado",
+          description: "O evento foi atualizado com sucesso",
+        });
+      } else {
+        // Criar novo evento
+        const { data: evento, error: eventoError } = await supabase
+          .from("agenda")
+          .insert({
+            gabinete_id: currentGabinete.gabinete_id,
+            criado_por: user.id,
+            titulo,
+            descricao,
+            local,
+            link_online: linkOnline,
+            tipo,
+            status,
+            cor,
+            data_inicio: dataInicioCompleta.toISOString(),
+            data_fim: dataFimCompleta.toISOString(),
+          })
+          .select()
+          .single();
+
+        if (eventoError) throw eventoError;
+
+        if (selectedParticipantes.length > 0) {
+          const participantes = selectedParticipantes.map(userId => ({
+            evento_id: evento.id,
+            user_id: userId,
+          }));
+
+          const { error: participantesError } = await supabase
+            .from("agenda_participantes")
+            .insert(participantes);
+
+          if (participantesError) throw participantesError;
+        }
+
+        toast({
+          title: "Evento criado",
+          description: "O evento foi adicionado à agenda",
+        });
       }
-
-      toast({
-        title: "Evento criado",
-        description: "O evento foi adicionado à agenda",
-      });
 
       resetForm();
       onEventAdded();
@@ -210,7 +285,7 @@ export function AddEventDialog({ open, onOpenChange, onEventAdded, initialDate }
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Novo Evento</DialogTitle>
+          <DialogTitle>{editEvento ? "Editar Evento" : "Novo Evento"}</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -435,7 +510,7 @@ export function AddEventDialog({ open, onOpenChange, onEventAdded, initialDate }
               Cancelar
             </Button>
             <Button type="submit" disabled={loading}>
-              {loading ? "Salvando..." : "Criar Evento"}
+              {loading ? "Salvando..." : editEvento ? "Salvar Alterações" : "Criar Evento"}
             </Button>
           </div>
         </form>
