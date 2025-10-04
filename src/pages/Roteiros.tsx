@@ -71,10 +71,12 @@ const Roteiros = () => {
   const [selectedRoteiroData, setSelectedRoteiroData] = useState<Roteiro | null>(null);
   const [mapCenter, setMapCenter] = useState<[number, number]>([-30.0346, -51.2177]);
   const [routeGeometry, setRouteGeometry] = useState<[number, number][]>([]);
+  const [locaisVisitados, setLocaisVisitados] = useState(0);
 
   useEffect(() => {
     if (currentGabinete) {
       fetchRoteiros();
+      fetchLocaisVisitados();
     }
   }, [currentGabinete]);
 
@@ -110,6 +112,23 @@ const Roteiros = () => {
     }
 
     setRoteiros(data || []);
+  };
+
+  const fetchLocaisVisitados = async () => {
+    if (!currentGabinete) return;
+
+    const { data, error } = await supabase
+      .from('roteiro_pontos')
+      .select('visitado, roteiros!inner(gabinete_id)')
+      .eq('roteiros.gabinete_id', currentGabinete.gabinete_id)
+      .eq('visitado', true);
+
+    if (error) {
+      console.error('Erro ao buscar locais visitados:', error);
+      return;
+    }
+
+    setLocaisVisitados(data?.length || 0);
   };
 
   const fetchPontos = async (roteiroId: string) => {
@@ -210,28 +229,28 @@ const Roteiros = () => {
     return {
       totalRoteiros: thisMonth.length,
       emAndamento: today.length,
-      locaisVisitados: 0,
+      locaisVisitados: locaisVisitados,
       distanciaTotal: roteiros.reduce((acc, r) => acc + (r.distancia_total || 0), 0)
     };
-  }, [roteiros]);
+  }, [roteiros, locaisVisitados]);
 
   const getStatusBadge = (status: string) => {
     const variants: Record<string, any> = {
       planejado: 'secondary',
       em_andamento: 'default',
-      concluido: 'default',
+      concluido: 'outline',
       cancelado: 'destructive'
     };
 
     const labels: Record<string, string> = {
       planejado: 'Planejado',
       em_andamento: 'Em Andamento',
-      concluido: 'Concluído',
+      concluido: '✓ Concluído',
       cancelado: 'Cancelado'
     };
 
     return (
-      <Badge variant={variants[status] || 'secondary'}>
+      <Badge variant={variants[status] || 'secondary'} className={status === 'concluido' ? 'border-green-500 text-green-700 bg-green-50' : ''}>
         {labels[status] || status}
       </Badge>
     );
@@ -438,14 +457,20 @@ const Roteiros = () => {
       <AddRoteiroDialog
         open={showAddDialog}
         onOpenChange={setShowAddDialog}
-        onRoteiroAdded={fetchRoteiros}
+        onRoteiroAdded={() => {
+          fetchRoteiros();
+          fetchLocaisVisitados();
+        }}
       />
 
       <RoteiroDetailsSheet
         open={showDetailsSheet}
         onOpenChange={setShowDetailsSheet}
         roteiroId={selectedRoteiro}
-        onRoteiroUpdated={fetchRoteiros}
+        onRoteiroUpdated={() => {
+          fetchRoteiros();
+          fetchLocaisVisitados();
+        }}
       />
     </div>
   );

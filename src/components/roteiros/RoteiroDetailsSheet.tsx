@@ -128,7 +128,36 @@ export const RoteiroDetailsSheet = ({
       return;
     }
 
-    fetchPontos();
+    // Recarregar pontos
+    await fetchPontos();
+    
+    // Verificar se todas as paradas foram visitadas
+    if (!visitado && roteiroId) {
+      const { data: pontosAtualizados } = await supabase
+        .from('roteiro_pontos')
+        .select('visitado')
+        .eq('roteiro_id', roteiroId);
+
+      if (pontosAtualizados) {
+        const todasVisitadas = pontosAtualizados.every(p => p.visitado);
+        
+        // Se todas as paradas foram visitadas, marcar roteiro como concluído
+        if (todasVisitadas) {
+          await supabase
+            .from('roteiros')
+            .update({ status: 'concluido' })
+            .eq('id', roteiroId);
+          
+          await fetchRoteiro();
+          
+          toast({
+            title: 'Roteiro concluído!',
+            description: 'Todas as paradas foram visitadas. O roteiro foi marcado como concluído.',
+          });
+        }
+      }
+    }
+    
     onRoteiroUpdated();
   };
 
@@ -166,19 +195,19 @@ export const RoteiroDetailsSheet = ({
     const variants: Record<string, any> = {
       planejado: 'secondary',
       em_andamento: 'default',
-      concluido: 'default',
+      concluido: 'outline',
       cancelado: 'destructive'
     };
 
     const labels: Record<string, string> = {
       planejado: 'Planejado',
       em_andamento: 'Em Andamento',
-      concluido: 'Concluído',
+      concluido: '✓ Concluído',
       cancelado: 'Cancelado'
     };
 
     return (
-      <Badge variant={variants[status] || 'secondary'}>
+      <Badge variant={variants[status] || 'secondary'} className={status === 'concluido' ? 'border-green-500 text-green-700 bg-green-50' : ''}>
         {labels[status] || status}
       </Badge>
     );
