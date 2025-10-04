@@ -40,6 +40,7 @@ const eleitoresSchema = z.object({
   email: z.string().trim().email('E-mail inválido').max(255, 'E-mail muito longo').optional().or(z.literal('')),
   data_nascimento: z.string().regex(/^(\d{2}\/\d{2}\/\d{4})?$/, 'Formato deve ser DD/MM/AAAA').optional(),
   endereco: z.string().trim().max(300, 'Endereço muito longo').optional(),
+  numero: z.string().trim().max(20, 'Número muito longo').optional(),
   bairro: z.string().trim().max(100, 'Bairro muito longo').optional(),
   cidade: z.string().trim().max(100, 'Cidade muito longa').optional(),
   estado: z.string().trim().max(2, 'Estado deve ter 2 caracteres').optional(),
@@ -69,6 +70,7 @@ export const AddEleitoresDialog = ({ onEleitoresAdded }: AddEleitoresDialogProps
       email: '',
       data_nascimento: '',
       endereco: '',
+      numero: '',
       bairro: '',
       cidade: '',
       estado: '',
@@ -127,6 +129,7 @@ export const AddEleitoresDialog = ({ onEleitoresAdded }: AddEleitoresDialogProps
           email: data.email || null,
           data_nascimento: dataNascimento,
           endereco: data.endereco || null,
+          numero: data.numero || null,
           bairro: data.bairro || null,
           cidade: data.cidade || null,
           estado: data.estado || null,
@@ -248,19 +251,35 @@ export const AddEleitoresDialog = ({ onEleitoresAdded }: AddEleitoresDialogProps
               )}
             />
 
-            <FormField
-              control={form.control}
-              name="endereco"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Endereço</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Rua, número, complemento" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <div className="grid grid-cols-3 gap-4">
+              <FormField
+                control={form.control}
+                name="endereco"
+                render={({ field }) => (
+                  <FormItem className="col-span-2">
+                    <FormLabel>Endereço</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Rua, Av, etc" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="numero"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Número</FormLabel>
+                    <FormControl>
+                      <Input placeholder="123" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
 
             <div className="grid grid-cols-2 gap-4">
               <FormField

@@ -23,6 +23,7 @@ interface Eleitor {
   email: string | null;
   data_nascimento: string | null;
   endereco: string | null;
+  numero: string | null;
   bairro: string | null;
   cidade: string | null;
   estado: string | null;

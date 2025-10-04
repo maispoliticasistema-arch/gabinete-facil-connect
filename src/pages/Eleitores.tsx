@@ -47,6 +47,7 @@ interface Eleitor {
   email: string | null;
   data_nascimento: string | null;
   endereco: string | null;
+  numero: string | null;
   bairro: string | null;
   cidade: string | null;
   estado: string | null;
@@ -127,7 +128,7 @@ const Eleitores = () => {
 
       if (error) throw error;
 
-      setEleitores(data || []);
+      setEleitores((data || []) as unknown as Eleitor[]);
       setTotalCount(count || 0);
     } catch (error: any) {
       toast({
