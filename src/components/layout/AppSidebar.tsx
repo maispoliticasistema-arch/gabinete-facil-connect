@@ -118,7 +118,10 @@ export function AppSidebar() {
         {!collapsed && gabinetes.length > 1 && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="mb-2 w-full justify-between">
+              <Button 
+                variant="ghost" 
+                className="mb-2 w-full justify-between bg-sidebar-accent text-sidebar-accent-foreground hover:bg-sidebar-accent/80"
+              >
                 <span className="truncate">{currentGabinete?.gabinetes.nome}</span>
                 <ChevronDown className="h-4 w-4" />
               </Button>
@@ -147,18 +150,18 @@ export function AppSidebar() {
 
         <div className="flex gap-2">
           <Button
-            variant="outline"
+            variant="ghost"
             size="icon"
             onClick={toggleTheme}
-            className="flex-1"
+            className="flex-1 bg-sidebar-accent text-sidebar-accent-foreground hover:bg-sidebar-accent/80"
           >
             {theme === 'light' ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
           </Button>
           <Button
-            variant="outline"
+            variant="ghost"
             size="icon"
             onClick={signOut}
-            className="flex-1"
+            className="flex-1 bg-sidebar-accent text-sidebar-accent-foreground hover:bg-sidebar-accent/80"
           >
             <LogOut className="h-4 w-4" />
           </Button>
