@@ -1,12 +1,14 @@
+import { useState } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { MoreHorizontal, UserX, UserCheck } from "lucide-react";
+import { MoreHorizontal, UserX, UserCheck, Edit } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { EditUserDialog } from "./EditUserDialog";
 
 interface UsersTableProps {
   users: any[];
@@ -16,6 +18,14 @@ interface UsersTableProps {
 }
 
 export function UsersTable({ users, loading, onRefresh, gabineteId }: UsersTableProps) {
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<{ userId: string; userGabineteId: string } | null>(null);
+
+  const handleEditUser = (userId: string, userGabineteId: string) => {
+    setSelectedUser({ userId, userGabineteId });
+    setEditDialogOpen(true);
+  };
+
   const handleToggleActive = async (userId: string, currentStatus: boolean) => {
     try {
       const { error } = await supabase
@@ -88,6 +98,10 @@ export function UsersTable({ users, loading, onRefresh, gabineteId }: UsersTable
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => handleEditUser(user.user_id, user.id)}>
+                        <Edit className="h-4 w-4 mr-2" />
+                        Editar
+                      </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => handleToggleActive(user.id, user.ativo)}>
                         {user.ativo ? (
                           <>
@@ -109,6 +123,20 @@ export function UsersTable({ users, loading, onRefresh, gabineteId }: UsersTable
           )}
         </TableBody>
       </Table>
+
+      {selectedUser && (
+        <EditUserDialog
+          open={editDialogOpen}
+          onOpenChange={setEditDialogOpen}
+          userId={selectedUser.userId}
+          userGabineteId={selectedUser.userGabineteId}
+          gabineteId={gabineteId}
+          onSuccess={() => {
+            onRefresh();
+            setEditDialogOpen(false);
+          }}
+        />
+      )}
     </div>
   );
 }
