@@ -81,7 +81,6 @@ const Mapa = () => {
   const mapRef = useRef<L.Map | null>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const markersLayerRef = useRef<L.LayerGroup | null>(null);
-  const [mapInitialized, setMapInitialized] = useState(false);
   
   const [eleitores, setEleitores] = useState<Eleitor[]>([]);
   const [demandas, setDemandas] = useState<Demanda[]>([]);
@@ -95,16 +94,13 @@ const Mapa = () => {
   const [selectedBairro, setSelectedBairro] = useState<string>('all');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
 
-  // Initialize map FIRST
+  // Initialize map
   useEffect(() => {
     if (!mapContainerRef.current || mapRef.current) return;
 
     console.log('Initializing map...');
     
-    // Direct initialization without timeout
     try {
-      if (!mapContainerRef.current) return;
-      
       const map = L.map(mapContainerRef.current, {
         center: [-15.7939, -47.8828],
         zoom: 4,
@@ -112,7 +108,7 @@ const Mapa = () => {
       });
       
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        attribution: '&copy; OpenStreetMap contributors',
         maxZoom: 19,
       }).addTo(map);
 
@@ -120,13 +116,8 @@ const Mapa = () => {
       markersLayerRef.current = markersLayer;
       mapRef.current = map;
       
-      // Force resize immediately and after a delay
-      map.invalidateSize();
-      setTimeout(() => {
-        map.invalidateSize();
-        setMapInitialized(true);
-        console.log('Map initialized successfully');
-      }, 200);
+      setTimeout(() => map.invalidateSize(), 100);
+      console.log('Map initialized successfully');
       
     } catch (error) {
       console.error('Error initializing map:', error);
@@ -143,10 +134,10 @@ const Mapa = () => {
 
   // Fetch data
   useEffect(() => {
-    if (currentGabinete && mapInitialized) {
+    if (currentGabinete) {
       fetchData();
     }
-  }, [currentGabinete, mapInitialized]);
+  }, [currentGabinete]);
 
   const fetchData = async () => {
     if (!currentGabinete) return;
@@ -256,7 +247,7 @@ const Mapa = () => {
 
   // Update markers when filters or data change
   useEffect(() => {
-    if (!markersLayerRef.current || !mapInitialized) return;
+    if (!markersLayerRef.current) return;
 
     console.log('Updating markers:', filteredEleitores.length, 'eleitores,', filteredDemandas.length, 'demandas');
 
@@ -329,7 +320,7 @@ const Mapa = () => {
         markersLayerRef.current?.addLayer(marker);
       });
     }
-  }, [filteredEleitores, filteredDemandas, showEleitores, showDemandas, mapInitialized]);
+  }, [filteredEleitores, filteredDemandas, showEleitores, showDemandas]);
 
   const clearFilters = () => {
     setSelectedCidade('all');
