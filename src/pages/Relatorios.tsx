@@ -24,6 +24,8 @@ const Relatorios = () => {
   const { currentGabinete } = useGabinete();
   const { hasPermission } = usePermissions();
   const [periodo, setPeriodo] = useState("30");
+  const [assessorId, setAssessorId] = useState<string>("todos");
+  const [assessores, setAssessores] = useState<{ id: string; nome: string }[]>([]);
   const [loading, setLoading] = useState(true);
 
   const [stats, setStats] = useState({
@@ -64,9 +66,28 @@ const Relatorios = () => {
 
   useEffect(() => {
     if (currentGabinete) {
+      fetchAssessores();
       fetchAllData();
     }
-  }, [currentGabinete, periodo]);
+  }, [currentGabinete, periodo, assessorId]);
+
+  const fetchAssessores = async () => {
+    if (!currentGabinete) return;
+
+    const { data } = await supabase
+      .from("user_gabinetes")
+      .select("user_id, profiles(nome_completo)")
+      .eq("gabinete_id", currentGabinete.gabinete_id)
+      .eq("ativo", true);
+
+    if (data) {
+      const assessoresList = data.map((item: any) => ({
+        id: item.user_id,
+        nome: item.profiles?.nome_completo || "Sem nome",
+      }));
+      setAssessores(assessoresList);
+    }
+  };
 
   const getDateRange = () => {
     const now = new Date();
@@ -116,51 +137,82 @@ const Relatorios = () => {
     if (!currentGabinete) return;
 
     const { startDate } = getDateRange();
+    const assessorFilter = assessorId !== "todos" ? assessorId : null;
 
     // Total de demandas
-    const { count: totalDemandas } = await supabase
+    let demandasQuery = supabase
       .from("demandas")
       .select("*", { count: "exact", head: true })
       .eq("gabinete_id", currentGabinete.gabinete_id)
       .gte("created_at", startDate.toISOString());
+    
+    if (assessorFilter) {
+      demandasQuery = demandasQuery.or(`criado_por.eq.${assessorFilter},responsavel_id.eq.${assessorFilter}`);
+    }
+    const { count: totalDemandas } = await demandasQuery;
 
     // Demandas concluídas
-    const { count: demandasConcluidas } = await supabase
+    let concluidasQuery = supabase
       .from("demandas")
       .select("*", { count: "exact", head: true })
       .eq("gabinete_id", currentGabinete.gabinete_id)
       .eq("status", "concluida")
       .gte("created_at", startDate.toISOString());
+    
+    if (assessorFilter) {
+      concluidasQuery = concluidasQuery.or(`criado_por.eq.${assessorFilter},responsavel_id.eq.${assessorFilter}`);
+    }
+    const { count: demandasConcluidas } = await concluidasQuery;
 
     // Demandas em andamento
-    const { count: demandasAndamento } = await supabase
+    let andamentoQuery = supabase
       .from("demandas")
       .select("*", { count: "exact", head: true })
       .eq("gabinete_id", currentGabinete.gabinete_id)
       .eq("status", "aberta")
       .gte("created_at", startDate.toISOString());
+    
+    if (assessorFilter) {
+      andamentoQuery = andamentoQuery.or(`criado_por.eq.${assessorFilter},responsavel_id.eq.${assessorFilter}`);
+    }
+    const { count: demandasAndamento } = await andamentoQuery;
 
     // Eleitores cadastrados
-    const { count: eleitoresCadastrados } = await supabase
+    let eleitoresQuery = supabase
       .from("eleitores")
       .select("*", { count: "exact", head: true })
       .eq("gabinete_id", currentGabinete.gabinete_id);
+    
+    if (assessorFilter) {
+      eleitoresQuery = eleitoresQuery.eq("cadastrado_por", assessorFilter);
+    }
+    const { count: eleitoresCadastrados } = await eleitoresQuery;
 
     // Eventos realizados
-    const { count: eventosRealizados } = await supabase
+    let eventosQuery = supabase
       .from("agenda")
       .select("*", { count: "exact", head: true })
       .eq("gabinete_id", currentGabinete.gabinete_id)
       .eq("status", "concluido")
       .gte("data_inicio", startDate.toISOString());
+    
+    if (assessorFilter) {
+      eventosQuery = eventosQuery.or(`criado_por.eq.${assessorFilter},responsavel_id.eq.${assessorFilter}`);
+    }
+    const { count: eventosRealizados } = await eventosQuery;
 
     // Roteiros executados
-    const { count: roteirosExecutados } = await supabase
+    let roteirosQuery = supabase
       .from("roteiros")
       .select("*", { count: "exact", head: true })
       .eq("gabinete_id", currentGabinete.gabinete_id)
       .eq("status", "concluido")
       .gte("data", startDate.toISOString().split("T")[0]);
+    
+    if (assessorFilter) {
+      roteirosQuery = roteirosQuery.or(`criado_por.eq.${assessorFilter},responsavel_id.eq.${assessorFilter}`);
+    }
+    const { count: roteirosExecutados } = await roteirosQuery;
 
     setStats({
       totalDemandas: totalDemandas || 0,
@@ -175,6 +227,8 @@ const Relatorios = () => {
   const fetchDemandasData = async () => {
     if (!currentGabinete) return;
 
+    const assessorFilter = assessorId !== "todos" ? assessorId : null;
+
     // Evolução mensal - últimos 6 meses
     const mesesPassados = Array.from({ length: 6 }, (_, i) => {
       const data = subMonths(new Date(), i);
@@ -187,31 +241,46 @@ const Relatorios = () => {
 
     const evolucaoMensal = await Promise.all(
       mesesPassados.map(async ({ mes, inicio, fim }) => {
-        const { count: abertas } = await supabase
+        let abertasQuery = supabase
           .from("demandas")
           .select("*", { count: "exact", head: true })
           .eq("gabinete_id", currentGabinete.gabinete_id)
           .gte("created_at", inicio.toISOString())
           .lte("created_at", fim.toISOString());
+        
+        if (assessorFilter) {
+          abertasQuery = abertasQuery.or(`criado_por.eq.${assessorFilter},responsavel_id.eq.${assessorFilter}`);
+        }
+        const { count: abertas } = await abertasQuery;
 
-        const { count: concluidas } = await supabase
+        let concluidasQuery = supabase
           .from("demandas")
           .select("*", { count: "exact", head: true })
           .eq("gabinete_id", currentGabinete.gabinete_id)
           .eq("status", "concluida")
           .gte("concluida_em", inicio.toISOString())
           .lte("concluida_em", fim.toISOString());
+        
+        if (assessorFilter) {
+          concluidasQuery = concluidasQuery.or(`criado_por.eq.${assessorFilter},responsavel_id.eq.${assessorFilter}`);
+        }
+        const { count: concluidas } = await concluidasQuery;
 
         return { mes, abertas: abertas || 0, concluidas: concluidas || 0 };
       })
     );
 
     // Por bairro - dos eleitores vinculados
-    const { data: demandas } = await supabase
+    let demandasQuery = supabase
       .from("demandas")
       .select("eleitor_id")
       .eq("gabinete_id", currentGabinete.gabinete_id)
       .not("eleitor_id", "is", null);
+    
+    if (assessorFilter) {
+      demandasQuery = demandasQuery.or(`criado_por.eq.${assessorFilter},responsavel_id.eq.${assessorFilter}`);
+    }
+    const { data: demandas } = await demandasQuery;
 
     const eleitorIds = demandas?.map(d => d.eleitor_id) || [];
     
@@ -244,10 +313,15 @@ const Relatorios = () => {
       .slice(0, 10);
 
     // Por status
-    const { data: statusData } = await supabase
+    let statusQuery = supabase
       .from("demandas")
       .select("status")
       .eq("gabinete_id", currentGabinete.gabinete_id);
+    
+    if (assessorFilter) {
+      statusQuery = statusQuery.or(`criado_por.eq.${assessorFilter},responsavel_id.eq.${assessorFilter}`);
+    }
+    const { data: statusData } = await statusQuery;
 
     const statusCount = (statusData || []).reduce((acc: any, d) => {
       const status = d.status === "aberta" ? "Aberta" : d.status === "concluida" ? "Concluída" : "Cancelada";
@@ -273,6 +347,8 @@ const Relatorios = () => {
   const fetchEleitoresData = async () => {
     if (!currentGabinete) return;
 
+    const assessorFilter = assessorId !== "todos" ? assessorId : null;
+
     // Crescimento mensal - últimos 6 meses
     const mesesPassados = Array.from({ length: 6 }, (_, i) => {
       const data = subMonths(new Date(), i);
@@ -284,22 +360,32 @@ const Relatorios = () => {
 
     const crescimentoMensal = await Promise.all(
       mesesPassados.map(async ({ mes, fim }) => {
-        const { count } = await supabase
+        let query = supabase
           .from("eleitores")
           .select("*", { count: "exact", head: true })
           .eq("gabinete_id", currentGabinete.gabinete_id)
           .lte("created_at", fim.toISOString());
+        
+        if (assessorFilter) {
+          query = query.eq("cadastrado_por", assessorFilter);
+        }
+        const { count } = await query;
 
         return { mes, total: count || 0 };
       })
     );
 
     // Por bairro
-    const { data: eleitores } = await supabase
+    let eleitoresQuery = supabase
       .from("eleitores")
       .select("bairro")
       .eq("gabinete_id", currentGabinete.gabinete_id)
       .not("bairro", "is", null);
+    
+    if (assessorFilter) {
+      eleitoresQuery = eleitoresQuery.eq("cadastrado_por", assessorFilter);
+    }
+    const { data: eleitores } = await eleitoresQuery;
 
     const bairroCount = (eleitores || []).reduce((acc: any, e) => {
       const bairro = e.bairro || "Não informado";
@@ -318,6 +404,8 @@ const Relatorios = () => {
   const fetchRoteirosData = async () => {
     if (!currentGabinete) return;
 
+    const assessorFilter = assessorId !== "todos" ? assessorId : null;
+
     // Evolução mensal - últimos 6 meses
     const mesesPassados = Array.from({ length: 6 }, (_, i) => {
       const data = subMonths(new Date(), i);
@@ -330,31 +418,46 @@ const Relatorios = () => {
 
     const evolucaoMensal = await Promise.all(
       mesesPassados.map(async ({ mes, inicio, fim }) => {
-        const { count: planejados } = await supabase
+        let planejadosQuery = supabase
           .from("roteiros")
           .select("*", { count: "exact", head: true })
           .eq("gabinete_id", currentGabinete.gabinete_id)
           .gte("data", inicio.toISOString().split("T")[0])
           .lte("data", fim.toISOString().split("T")[0]);
+        
+        if (assessorFilter) {
+          planejadosQuery = planejadosQuery.or(`criado_por.eq.${assessorFilter},responsavel_id.eq.${assessorFilter}`);
+        }
+        const { count: planejados } = await planejadosQuery;
 
-        const { count: concluidos } = await supabase
+        let concluidosQuery = supabase
           .from("roteiros")
           .select("*", { count: "exact", head: true })
           .eq("gabinete_id", currentGabinete.gabinete_id)
           .eq("status", "concluido")
           .gte("data", inicio.toISOString().split("T")[0])
           .lte("data", fim.toISOString().split("T")[0]);
+        
+        if (assessorFilter) {
+          concluidosQuery = concluidosQuery.or(`criado_por.eq.${assessorFilter},responsavel_id.eq.${assessorFilter}`);
+        }
+        const { count: concluidos } = await concluidosQuery;
 
         return { mes, planejados: planejados || 0, concluidos: concluidos || 0 };
       })
     );
 
     // Km total e médio
-    const { data: roteiros } = await supabase
+    let roteirosQuery = supabase
       .from("roteiros")
       .select("id, distancia_total")
       .eq("gabinete_id", currentGabinete.gabinete_id)
       .not("distancia_total", "is", null);
+    
+    if (assessorFilter) {
+      roteirosQuery = roteirosQuery.or(`criado_por.eq.${assessorFilter},responsavel_id.eq.${assessorFilter}`);
+    }
+    const { data: roteiros } = await roteirosQuery;
 
     const totalKm = (roteiros || []).reduce((acc, r) => acc + Number(r.distancia_total || 0), 0);
     const kmMedio = roteiros && roteiros.length > 0 ? totalKm / roteiros.length : 0;
@@ -375,10 +478,15 @@ const Relatorios = () => {
       .in("roteiro_id", roteiroIds);
 
     // Por status
-    const { data: statusData } = await supabase
+    let statusQuery = supabase
       .from("roteiros")
       .select("status")
       .eq("gabinete_id", currentGabinete.gabinete_id);
+    
+    if (assessorFilter) {
+      statusQuery = statusQuery.or(`criado_por.eq.${assessorFilter},responsavel_id.eq.${assessorFilter}`);
+    }
+    const { data: statusData } = await statusQuery;
 
     const statusCount = (statusData || []).reduce((acc: any, r) => {
       const status = r.status === "planejado" ? "Planejado" : 
@@ -414,6 +522,8 @@ const Relatorios = () => {
   const fetchAgendaData = async () => {
     if (!currentGabinete) return;
 
+    const assessorFilter = assessorId !== "todos" ? assessorId : null;
+
     // Evolução mensal - últimos 6 meses
     const mesesPassados = Array.from({ length: 6 }, (_, i) => {
       const data = subMonths(new Date(), i);
@@ -426,31 +536,46 @@ const Relatorios = () => {
 
     const evolucaoMensal = await Promise.all(
       mesesPassados.map(async ({ mes, inicio, fim }) => {
-        const { count: realizados } = await supabase
+        let realizadosQuery = supabase
           .from("agenda")
           .select("*", { count: "exact", head: true })
           .eq("gabinete_id", currentGabinete.gabinete_id)
           .eq("status", "concluido")
           .gte("data_inicio", inicio.toISOString())
           .lte("data_inicio", fim.toISOString());
+        
+        if (assessorFilter) {
+          realizadosQuery = realizadosQuery.or(`criado_por.eq.${assessorFilter},responsavel_id.eq.${assessorFilter}`);
+        }
+        const { count: realizados } = await realizadosQuery;
 
-        const { count: cancelados } = await supabase
+        let canceladosQuery = supabase
           .from("agenda")
           .select("*", { count: "exact", head: true })
           .eq("gabinete_id", currentGabinete.gabinete_id)
           .eq("status", "cancelado")
           .gte("data_inicio", inicio.toISOString())
           .lte("data_inicio", fim.toISOString());
+        
+        if (assessorFilter) {
+          canceladosQuery = canceladosQuery.or(`criado_por.eq.${assessorFilter},responsavel_id.eq.${assessorFilter}`);
+        }
+        const { count: cancelados } = await canceladosQuery;
 
         return { mes, realizados: realizados || 0, cancelados: cancelados || 0 };
       })
     );
 
     // Por tipo
-    const { data: eventos } = await supabase
+    let eventosQuery = supabase
       .from("agenda")
       .select("tipo")
       .eq("gabinete_id", currentGabinete.gabinete_id);
+    
+    if (assessorFilter) {
+      eventosQuery = eventosQuery.or(`criado_por.eq.${assessorFilter},responsavel_id.eq.${assessorFilter}`);
+    }
+    const { data: eventos } = await eventosQuery;
 
     const tipoCount = (eventos || []).reduce((acc: any, e) => {
       const tipo = e.tipo === "reuniao" ? "Reunião" : 
@@ -465,10 +590,15 @@ const Relatorios = () => {
       .sort((a, b) => b.total - a.total);
 
     // Por status
-    const { data: statusData } = await supabase
+    let statusQuery = supabase
       .from("agenda")
       .select("status")
       .eq("gabinete_id", currentGabinete.gabinete_id);
+    
+    if (assessorFilter) {
+      statusQuery = statusQuery.or(`criado_por.eq.${assessorFilter},responsavel_id.eq.${assessorFilter}`);
+    }
+    const { data: statusData } = await statusQuery;
 
     const statusCount = (statusData || []).reduce((acc: any, e) => {
       const status = e.status === "pendente" ? "Pendente" : 
@@ -536,12 +666,17 @@ const Relatorios = () => {
       doc.text(`Gerado em: ${format(new Date(), "dd/MM/yyyy HH:mm", { locale: ptBR })}`, 14, 28);
       doc.text(`Gabinete: ${currentGabinete?.gabinetes?.nome || ""}`, 14, 34);
       
+      if (assessorId !== "todos") {
+        const assessorNome = assessores.find(a => a.id === assessorId)?.nome || "Não identificado";
+        doc.text(`Assessor: ${assessorNome}`, 14, 40);
+      }
+      
       // Resumo Geral
       doc.setFontSize(14);
-      doc.text("Resumo Geral", 14, 45);
+      doc.text("Resumo Geral", 14, assessorId !== "todos" ? 51 : 45);
       
       autoTable(doc, {
-        startY: 50,
+        startY: assessorId !== "todos" ? 56 : 50,
         head: [["Indicador", "Valor"]],
         body: [
           ["Total de Demandas", stats.totalDemandas.toString()],
@@ -643,19 +778,38 @@ const Relatorios = () => {
           </p>
         </div>
 
-        <div className="w-48">
-          <Label>Período</Label>
-          <Select value={periodo} onValueChange={setPeriodo}>
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="7">Últimos 7 dias</SelectItem>
-              <SelectItem value="30">Últimos 30 dias</SelectItem>
-              <SelectItem value="90">Últimos 3 meses</SelectItem>
-              <SelectItem value="365">Último ano</SelectItem>
-            </SelectContent>
-          </Select>
+        <div className="flex items-center gap-4">
+          <div className="w-48">
+            <Label>Período</Label>
+            <Select value={periodo} onValueChange={setPeriodo}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="7">Últimos 7 dias</SelectItem>
+                <SelectItem value="30">Últimos 30 dias</SelectItem>
+                <SelectItem value="90">Últimos 3 meses</SelectItem>
+                <SelectItem value="365">Último ano</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="w-48">
+            <Label>Assessor</Label>
+            <Select value={assessorId} onValueChange={setAssessorId}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos</SelectItem>
+                {assessores.map((assessor) => (
+                  <SelectItem key={assessor.id} value={assessor.id}>
+                    {assessor.nome}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
       </div>
 
