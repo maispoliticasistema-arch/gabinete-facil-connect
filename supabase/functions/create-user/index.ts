@@ -51,20 +51,20 @@ serve(async (req) => {
 
     console.log("Usuário criado no Auth:", authData.user.id);
 
-    // 2. Aguardar um pouco para garantir que o trigger handle_new_user criou o perfil
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    // 2. Garantir que o perfil existe (usando upsert)
+    const { error: profileError } = await supabaseAdmin
+      .from("profiles")
+      .upsert({ 
+        id: authData.user.id,
+        nome_completo,
+        telefone
+      }, {
+        onConflict: 'id'
+      });
 
-    // 3. Atualizar perfil com telefone (o perfil já foi criado pelo trigger)
-    if (telefone) {
-      const { error: profileError } = await supabaseAdmin
-        .from("profiles")
-        .update({ telefone })
-        .eq("id", authData.user.id);
-
-      if (profileError) {
-        console.error("Erro ao atualizar perfil:", profileError);
-        throw profileError;
-      }
+    if (profileError) {
+      console.error("Erro ao criar/atualizar perfil:", profileError);
+      throw profileError;
     }
 
     // 4. Vincular ao gabinete (IMPORTANTE: ativo=true por padrão)

@@ -25,7 +25,7 @@ export function UsuariosPermissoes({ gabineteId }: UsuariosPermissoesProps) {
           role,
           ativo,
           created_at,
-          profiles!inner (
+          profiles (
             nome_completo,
             telefone
           )
