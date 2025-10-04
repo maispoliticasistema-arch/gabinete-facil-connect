@@ -374,6 +374,7 @@ export type Database = {
           id: string
           latitude: number | null
           longitude: number | null
+          nome_pessoa: string | null
           observacoes: string | null
           ordem: number
           roteiro_id: string
@@ -388,6 +389,7 @@ export type Database = {
           id?: string
           latitude?: number | null
           longitude?: number | null
+          nome_pessoa?: string | null
           observacoes?: string | null
           ordem: number
           roteiro_id: string
@@ -402,6 +404,7 @@ export type Database = {
           id?: string
           latitude?: number | null
           longitude?: number | null
+          nome_pessoa?: string | null
           observacoes?: string | null
           ordem?: number
           roteiro_id?: string
@@ -438,9 +441,15 @@ export type Database = {
           criado_por: string | null
           data: string
           distancia_total: number | null
+          endereco_final: string | null
+          endereco_partida: string | null
           gabinete_id: string
           hora_inicio: string | null
           id: string
+          latitude_final: number | null
+          latitude_partida: number | null
+          longitude_final: number | null
+          longitude_partida: number | null
           nome: string
           objetivo: string | null
           responsavel_id: string | null
@@ -453,9 +462,15 @@ export type Database = {
           criado_por?: string | null
           data: string
           distancia_total?: number | null
+          endereco_final?: string | null
+          endereco_partida?: string | null
           gabinete_id: string
           hora_inicio?: string | null
           id?: string
+          latitude_final?: number | null
+          latitude_partida?: number | null
+          longitude_final?: number | null
+          longitude_partida?: number | null
           nome: string
           objetivo?: string | null
           responsavel_id?: string | null
@@ -468,9 +483,15 @@ export type Database = {
           criado_por?: string | null
           data?: string
           distancia_total?: number | null
+          endereco_final?: string | null
+          endereco_partida?: string | null
           gabinete_id?: string
           hora_inicio?: string | null
           id?: string
+          latitude_final?: number | null
+          latitude_partida?: number | null
+          longitude_final?: number | null
+          longitude_partida?: number | null
           nome?: string
           objetivo?: string | null
           responsavel_id?: string | null

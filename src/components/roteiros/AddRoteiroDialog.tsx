@@ -31,10 +31,19 @@ const roteiroSchema = z.object({
   nome: z.string().min(3, 'Nome deve ter pelo menos 3 caracteres'),
   data: z.string().min(1, 'Data é obrigatória'),
   hora_inicio: z.string().optional(),
-  objetivo: z.string().optional()
+  objetivo: z.string().optional(),
+  endereco_partida: z.string().optional(),
+  endereco_final: z.string().optional()
 });
 
 type RoteiroFormData = z.infer<typeof roteiroSchema>;
+
+interface PontoManual {
+  id: string;
+  nome_pessoa: string;
+  endereco: string;
+  observacoes?: string;
+}
 
 interface Eleitor {
   id: string;
@@ -62,7 +71,12 @@ export const AddRoteiroDialog = ({
   const [loading, setLoading] = useState(false);
   const [eleitores, setEleitores] = useState<Eleitor[]>([]);
   const [selectedEleitores, setSelectedEleitores] = useState<Eleitor[]>([]);
+  const [pontosManual, setPontosManual] = useState<PontoManual[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [showManualForm, setShowManualForm] = useState(false);
+  const [manualNome, setManualNome] = useState('');
+  const [manualEndereco, setManualEndereco] = useState('');
+  const [manualObs, setManualObs] = useState('');
 
   const form = useForm<RoteiroFormData>({
     resolver: zodResolver(roteiroSchema),
@@ -70,7 +84,9 @@ export const AddRoteiroDialog = ({
       nome: '',
       data: new Date().toISOString().split('T')[0],
       hora_inicio: '',
-      objetivo: ''
+      objetivo: '',
+      endereco_partida: '',
+      endereco_final: ''
     }
   });
 
@@ -109,6 +125,34 @@ export const AddRoteiroDialog = ({
     });
   };
 
+  const addPontoManual = () => {
+    if (!manualNome || !manualEndereco) {
+      toast({
+        title: 'Atenção',
+        description: 'Preencha nome e endereço',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    const novoPonto: PontoManual = {
+      id: Math.random().toString(),
+      nome_pessoa: manualNome,
+      endereco: manualEndereco,
+      observacoes: manualObs
+    };
+
+    setPontosManual(prev => [...prev, novoPonto]);
+    setManualNome('');
+    setManualEndereco('');
+    setManualObs('');
+    setShowManualForm(false);
+  };
+
+  const removePontoManual = (id: string) => {
+    setPontosManual(prev => prev.filter(p => p.id !== id));
+  };
+
   const filteredEleitores = eleitores.filter(e =>
     e.nome_completo.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (e.endereco && e.endereco.toLowerCase().includes(searchTerm.toLowerCase()))
@@ -124,7 +168,7 @@ export const AddRoteiroDialog = ({
       return;
     }
 
-    if (selectedEleitores.length === 0) {
+    if (selectedEleitores.length === 0 && pontosManual.length === 0) {
       toast({
         title: 'Atenção',
         description: 'Adicione pelo menos um local ao roteiro',
@@ -144,6 +188,8 @@ export const AddRoteiroDialog = ({
           data: data.data,
           hora_inicio: data.hora_inicio || null,
           objetivo: data.objetivo || null,
+          endereco_partida: data.endereco_partida || null,
+          endereco_final: data.endereco_final || null,
           criado_por: user.id,
           status: 'planejado'
         })
@@ -152,18 +198,34 @@ export const AddRoteiroDialog = ({
 
       if (roteiroError) throw roteiroError;
 
-      const pontos = selectedEleitores.map((eleitor, index) => ({
+      // Combinar pontos de eleitores e manuais
+      const pontosEleitores = selectedEleitores.map((eleitor, index) => ({
         roteiro_id: roteiro.id,
         ordem: index + 1,
         eleitor_id: eleitor.id,
+        nome_pessoa: eleitor.nome_completo,
+        endereco_manual: null,
         latitude: eleitor.latitude,
         longitude: eleitor.longitude,
         observacoes: `${eleitor.endereco || ''}, ${eleitor.bairro || ''}`
       }));
 
+      const pontosManuais = pontosManual.map((ponto, index) => ({
+        roteiro_id: roteiro.id,
+        ordem: selectedEleitores.length + index + 1,
+        eleitor_id: null,
+        nome_pessoa: ponto.nome_pessoa,
+        endereco_manual: ponto.endereco,
+        latitude: null,
+        longitude: null,
+        observacoes: ponto.observacoes || null
+      }));
+
+      const todosPontos = [...pontosEleitores, ...pontosManuais];
+
       const { error: pontosError } = await supabase
         .from('roteiro_pontos')
-        .insert(pontos);
+        .insert(todosPontos);
 
       if (pontosError) throw pontosError;
 
@@ -174,6 +236,7 @@ export const AddRoteiroDialog = ({
 
       form.reset();
       setSelectedEleitores([]);
+      setPontosManual([]);
       setSearchTerm('');
       onOpenChange(false);
       onRoteiroAdded();
@@ -247,6 +310,34 @@ export const AddRoteiroDialog = ({
 
             <FormField
               control={form.control}
+              name="endereco_partida"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Endereço de Partida</FormLabel>
+                  <FormControl>
+                    <Input placeholder="De onde você vai sair" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="endereco_final"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Endereço Final</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Onde você vai terminar" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
               name="objetivo"
               render={({ field }) => (
                 <FormItem>
@@ -263,23 +354,91 @@ export const AddRoteiroDialog = ({
             />
 
             <div className="space-y-2">
-              <FormLabel>Locais do Roteiro ({selectedEleitores.length})</FormLabel>
+              <div className="flex items-center justify-between">
+                <FormLabel>Locais do Roteiro ({selectedEleitores.length + pontosManual.length})</FormLabel>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowManualForm(!showManualForm)}
+                >
+                  <Plus className="h-4 w-4 mr-1" />
+                  Endereço Manual
+                </Button>
+              </div>
+
+              {showManualForm && (
+                <div className="p-3 border rounded-md space-y-2 bg-muted/30">
+                  <Input
+                    placeholder="Nome da pessoa"
+                    value={manualNome}
+                    onChange={(e) => setManualNome(e.target.value)}
+                  />
+                  <Input
+                    placeholder="Endereço do local"
+                    value={manualEndereco}
+                    onChange={(e) => setManualEndereco(e.target.value)}
+                  />
+                  <Textarea
+                    placeholder="Observações (opcional)"
+                    value={manualObs}
+                    onChange={(e) => setManualObs(e.target.value)}
+                    rows={2}
+                  />
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={addPontoManual}
+                    className="w-full"
+                  >
+                    Adicionar Local
+                  </Button>
+                </div>
+              )}
               
-              {selectedEleitores.length > 0 && (
+              {(selectedEleitores.length > 0 || pontosManual.length > 0) && (
                 <div className="space-y-1 mb-2">
                   {selectedEleitores.map((eleitor, index) => (
                     <div
                       key={eleitor.id}
-                      className="flex items-center justify-between p-2 bg-muted rounded-md text-sm"
+                      className="flex items-center justify-between p-2 bg-primary/10 rounded-md text-sm"
                     >
-                      <span>
-                        {index + 1}. {eleitor.nome_completo}
-                      </span>
+                      <div>
+                        <div className="font-medium">
+                          {index + 1}. {eleitor.nome_completo}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          {eleitor.endereco}
+                        </div>
+                      </div>
                       <Button
                         type="button"
                         variant="ghost"
                         size="sm"
                         onClick={() => toggleEleitor(eleitor)}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                  {pontosManual.map((ponto, index) => (
+                    <div
+                      key={ponto.id}
+                      className="flex items-center justify-between p-2 bg-secondary/50 rounded-md text-sm"
+                    >
+                      <div>
+                        <div className="font-medium">
+                          {selectedEleitores.length + index + 1}. {ponto.nome_pessoa}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          {ponto.endereco}
+                        </div>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removePontoManual(ponto.id)}
                       >
                         <X className="h-4 w-4" />
                       </Button>

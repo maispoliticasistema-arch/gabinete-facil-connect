@@ -37,8 +37,10 @@ interface Roteiro {
 interface Ponto {
   id: string;
   ordem: number;
-  latitude: number;
-  longitude: number;
+  latitude: number | null;
+  longitude: number | null;
+  nome_pessoa: string | null;
+  endereco_manual: string | null;
   eleitores: {
     nome_completo: string;
   } | null;
@@ -97,7 +99,7 @@ const Roteiros = () => {
   const fetchPontos = async (roteiroId: string) => {
     const { data, error } = await supabase
       .from('roteiro_pontos')
-      .select('id, ordem, latitude, longitude, eleitores(nome_completo)')
+      .select('id, ordem, latitude, longitude, nome_pessoa, endereco_manual, eleitores(nome_completo)')
       .eq('roteiro_id', roteiroId)
       .order('ordem');
 
@@ -109,7 +111,7 @@ const Roteiros = () => {
     const validPontos = (data || []).filter(p => p.latitude && p.longitude);
     setPontos(validPontos as Ponto[]);
     
-    if (validPontos.length > 0) {
+    if (validPontos.length > 0 && validPontos[0].latitude && validPontos[0].longitude) {
       setMapCenter([validPontos[0].latitude, validPontos[0].longitude]);
     }
   };
@@ -285,19 +287,27 @@ const Roteiros = () => {
                   />
                   <MarkerClusterGroup>
                     {pontos.map((ponto) => (
-                      <Marker
-                        key={ponto.id}
-                        position={[ponto.latitude, ponto.longitude]}
-                        icon={createNumberIcon(ponto.ordem)}
-                      >
-                        <Popup>
-                          <div className="text-sm">
-                            <strong>Parada {ponto.ordem}</strong>
-                            <br />
-                            {ponto.eleitores?.nome_completo || 'Local Manual'}
-                          </div>
-                        </Popup>
-                      </Marker>
+                      ponto.latitude && ponto.longitude && (
+                        <Marker
+                          key={ponto.id}
+                          position={[ponto.latitude, ponto.longitude]}
+                          icon={createNumberIcon(ponto.ordem)}
+                        >
+                          <Popup>
+                            <div className="text-sm">
+                              <strong>Parada {ponto.ordem}</strong>
+                              <br />
+                              {ponto.nome_pessoa || ponto.eleitores?.nome_completo || 'Local Manual'}
+                              {ponto.endereco_manual && (
+                                <>
+                                  <br />
+                                  <span className="text-muted-foreground">{ponto.endereco_manual}</span>
+                                </>
+                              )}
+                            </div>
+                          </Popup>
+                        </Marker>
+                      )
                     ))}
                   </MarkerClusterGroup>
                 </>

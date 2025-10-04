@@ -28,6 +28,7 @@ interface Ponto {
   id: string;
   ordem: number;
   eleitor_id: string | null;
+  nome_pessoa: string | null;
   endereco_manual: string | null;
   observacoes: string | null;
   visitado: boolean;
@@ -46,6 +47,8 @@ interface Roteiro {
   objetivo: string | null;
   status: string;
   distancia_total: number | null;
+  endereco_partida: string | null;
+  endereco_final: string | null;
 }
 
 interface RoteiroDetailsSheetProps {
@@ -207,6 +210,23 @@ export const RoteiroDetailsSheet = ({
               </div>
             </div>
 
+            {(roteiro.endereco_partida || roteiro.endereco_final) && (
+              <div className="grid grid-cols-2 gap-4">
+                {roteiro.endereco_partida && (
+                  <div>
+                    <h4 className="text-sm font-medium mb-1">Partida</h4>
+                    <p className="text-sm text-muted-foreground">{roteiro.endereco_partida}</p>
+                  </div>
+                )}
+                {roteiro.endereco_final && (
+                  <div>
+                    <h4 className="text-sm font-medium mb-1">Destino Final</h4>
+                    <p className="text-sm text-muted-foreground">{roteiro.endereco_final}</p>
+                  </div>
+                )}
+              </div>
+            )}
+
             {roteiro.objetivo && (
               <div>
                 <h4 className="text-sm font-medium mb-2">Objetivo</h4>
@@ -231,7 +251,7 @@ export const RoteiroDetailsSheet = ({
                             {ponto.ordem}
                           </span>
                           <span className="font-medium">
-                            {ponto.eleitores?.nome_completo || 'Local Manual'}
+                            {ponto.nome_pessoa || ponto.eleitores?.nome_completo || 'Local Manual'}
                           </span>
                         </div>
                         {(ponto.eleitores?.endereco || ponto.endereco_manual) && (
