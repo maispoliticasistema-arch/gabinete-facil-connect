@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Progress } from '@/components/ui/progress';
 import { 
   Users, 
   MapPin, 
@@ -53,8 +54,11 @@ const Mapa = () => {
   const markersLayerRef = useRef<L.LayerGroup | null>(null);
   
   const [eleitores, setEleitores] = useState<any[]>([]);
+  const [totalEleitores, setTotalEleitores] = useState(0);
   const [demandas, setDemandas] = useState<any[]>([]);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [loadingProgress, setLoadingProgress] = useState(0);
+  const [isLoadingMarkers, setIsLoadingMarkers] = useState(false);
   
   const [showEleitores, setShowEleitores] = useState(true);
   const [showDemandas, setShowDemandas] = useState(true);
@@ -110,6 +114,8 @@ const Mapa = () => {
 
         const eleitoresComCoords = (eleitoresData || []).filter(e => e.latitude && e.longitude);
         console.log('Eleitores fetched:', eleitoresData?.length || 0, 'com coordenadas:', eleitoresComCoords.length);
+        
+        setTotalEleitores(eleitoresData?.length || 0);
 
         const { data: demandasData, error: demandasError } = await supabase
           .from('demandas')
@@ -190,11 +196,29 @@ const Mapa = () => {
   useEffect(() => {
     if (!markersLayerRef.current) return;
 
+    setIsLoadingMarkers(true);
+    setLoadingProgress(0);
     markersLayerRef.current.clearLayers();
+
+    const totalMarkers = (showEleitores ? filteredEleitores.length : 0) + (showDemandas ? filteredDemandas.length : 0);
+    let loadedMarkers = 0;
+
+    const updateProgress = () => {
+      loadedMarkers++;
+      const progress = (loadedMarkers / totalMarkers) * 100;
+      setLoadingProgress(progress);
+      
+      if (loadedMarkers >= totalMarkers) {
+        setTimeout(() => setIsLoadingMarkers(false), 300);
+      }
+    };
 
     if (showEleitores) {
       filteredEleitores.forEach(eleitor => {
-        if (!eleitor.latitude || !eleitor.longitude) return;
+        if (!eleitor.latitude || !eleitor.longitude) {
+          updateProgress();
+          return;
+        }
         
         const marker = L.marker([eleitor.latitude, eleitor.longitude], { icon: eleitorIcon });
         marker.bindPopup(`
@@ -209,12 +233,16 @@ const Mapa = () => {
           </div>
         `);
         markersLayerRef.current?.addLayer(marker);
+        updateProgress();
       });
     }
 
     if (showDemandas) {
       filteredDemandas.forEach(demanda => {
-        if (!demanda.eleitores || !demanda.eleitores.latitude || !demanda.eleitores.longitude) return;
+        if (!demanda.eleitores || !demanda.eleitores.latitude || !demanda.eleitores.longitude) {
+          updateProgress();
+          return;
+        }
         
         const isOpen = demanda.status === 'aberta' || demanda.status === 'em_andamento';
         const icon = isOpen ? demandaAbertaIcon : demandaConcluidaIcon;
@@ -232,7 +260,13 @@ const Mapa = () => {
           </div>
         `);
         markersLayerRef.current?.addLayer(marker);
+        updateProgress();
       });
+    }
+    
+    if (totalMarkers === 0) {
+      setIsLoadingMarkers(false);
+      setLoadingProgress(0);
     }
   }, [filteredEleitores, filteredDemandas, showEleitores, showDemandas]);
 
@@ -242,12 +276,24 @@ const Mapa = () => {
       <div style={{ position: 'absolute', top: '16px', left: '16px', right: '16px', zIndex: 500, pointerEvents: 'none' }}>
         <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', flexWrap: 'wrap', pointerEvents: 'auto' }}>
           <Card className="shadow-lg border-2">
-            <CardContent className="flex items-center gap-2 p-3">
-              <Users className="h-5 w-5 text-blue-500" />
-              <div>
-                <p className="text-xs text-muted-foreground">Eleitores</p>
-                <p className="text-lg font-bold">{filteredEleitores.length}</p>
+            <CardContent className="p-3 space-y-2">
+              <div className="flex items-center gap-2">
+                <Users className="h-5 w-5 text-blue-500" />
+                <div className="flex-1">
+                  <p className="text-xs text-muted-foreground">Eleitores</p>
+                  <p className="text-lg font-bold">
+                    {filteredEleitores.length} / {totalEleitores}
+                  </p>
+                </div>
               </div>
+              {isLoadingMarkers && (
+                <div className="space-y-1">
+                  <Progress value={loadingProgress} className="h-1" />
+                  <p className="text-[10px] text-muted-foreground text-center">
+                    Carregando pins... {Math.round(loadingProgress)}%
+                  </p>
+                </div>
+              )}
             </CardContent>
           </Card>
           
