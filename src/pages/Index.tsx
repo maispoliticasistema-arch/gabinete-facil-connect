@@ -158,11 +158,11 @@ const Index = () => {
 
       {/* Tabs */}
       <Tabs defaultValue="demandas" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="demandas">Demandas</TabsTrigger>
-          <TabsTrigger value="eleitores">Eleitores</TabsTrigger>
-          <TabsTrigger value="agenda">Agenda</TabsTrigger>
-          <TabsTrigger value="ranking">Ranking</TabsTrigger>
+        <TabsList className="h-12 p-1.5 w-full sm:w-auto">
+          <TabsTrigger value="demandas" className="text-base px-6">Demandas</TabsTrigger>
+          <TabsTrigger value="eleitores" className="text-base px-6">Eleitores</TabsTrigger>
+          <TabsTrigger value="agenda" className="text-base px-6">Agenda</TabsTrigger>
+          <TabsTrigger value="ranking" className="text-base px-6">Ranking</TabsTrigger>
         </TabsList>
 
         <TabsContent value="demandas" className="space-y-4">
