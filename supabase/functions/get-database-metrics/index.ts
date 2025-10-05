@@ -5,12 +5,9 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-interface DbMetrics {
-  size?: number;
-  active_connections?: number;
-  cache_hit_rate?: number;
-  cpu_percent?: number;
-  memory_percent?: number;
+interface SystemStats {
+  cpu_percent: number;
+  memory_percent: number;
 }
 
 Deno.serve(async (req) => {
@@ -25,59 +22,64 @@ Deno.serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     // Buscar tamanho do banco de dados
-    const { data: dbSizeData } = await supabase.rpc('exec_sql', {
-      query: "SELECT pg_database_size('postgres') as size"
-    }).single();
+    const { data: dbSizeData, error: dbSizeError } = await supabase
+      .rpc('get_database_size')
+      .single();
+
+    if (dbSizeError) {
+      console.error('Erro ao buscar tamanho do banco:', dbSizeError);
+    }
 
     // Buscar conexões ativas
-    const { data: connectionsData } = await supabase.rpc('exec_sql', {
-      query: `SELECT count(*) as active_connections 
-              FROM pg_stat_activity 
-              WHERE state = 'active' AND pid != pg_backend_pid()`
-    }).single();
+    const { data: connectionsData, error: connectionsError } = await supabase
+      .rpc('get_active_connections')
+      .single();
+
+    if (connectionsError) {
+      console.error('Erro ao buscar conexões ativas:', connectionsError);
+    }
 
     // Buscar taxa de cache
-    const { data: cacheData } = await supabase.rpc('exec_sql', {
-      query: `SELECT 
-                CASE 
-                  WHEN (blks_hit + blks_read) > 0 
-                  THEN ROUND((blks_hit::numeric / (blks_hit + blks_read)::numeric) * 100, 2)
-                  ELSE 0 
-                END as cache_hit_rate
-              FROM pg_stat_database 
-              WHERE datname = 'postgres'`
-    }).single();
+    const { data: cacheData, error: cacheError } = await supabase
+      .rpc('get_cache_hit_rate')
+      .single();
 
-    // Buscar uso de CPU e memória (estimativa baseada em pg_stat_statements se disponível)
-    const { data: systemStats } = await supabase.rpc('exec_sql', {
-      query: `SELECT 
-                ROUND(RANDOM() * 20 + 15)::integer as cpu_percent,
-                ROUND(RANDOM() * 15 + 30)::integer as memory_percent`
-    }).single();
+    if (cacheError) {
+      console.error('Erro ao buscar taxa de cache:', cacheError);
+    }
 
-    const dbSize = (dbSizeData as DbMetrics)?.size || 0;
-    const activeConns = (connectionsData as DbMetrics)?.active_connections || 0;
-    const cacheHit = (cacheData as DbMetrics)?.cache_hit_rate || 0;
-    const cpuPct = (systemStats as DbMetrics)?.cpu_percent || 0;
-    const memPct = (systemStats as DbMetrics)?.memory_percent || 0;
+    // Buscar estatísticas do sistema
+    const { data: systemStatsData, error: systemStatsError } = await supabase
+      .rpc('get_system_stats')
+      .single();
+
+    if (systemStatsError) {
+      console.error('Erro ao buscar estatísticas do sistema:', systemStatsError);
+    }
+
+    const systemStats = systemStatsData as SystemStats | null;
 
     const metrics = {
-      databaseSizeBytes: dbSize,
-      activeConnections: activeConns,
-      cacheHitRate: cacheHit,
-      cpuPercent: cpuPct,
-      memoryPercent: memPct,
+      databaseSizeBytes: (dbSizeData as number) || 0,
+      activeConnections: (connectionsData as number) || 0,
+      cacheHitRate: (cacheData as number) || 0,
+      cpuPercent: systemStats?.cpu_percent || 0,
+      memoryPercent: systemStats?.memory_percent || 0,
       timestamp: new Date().toISOString()
     };
 
     // Salvar métricas na tabela infrastructure_metrics
-    await supabase.from('infrastructure_metrics').insert({
+    const { error: insertError } = await supabase.from('infrastructure_metrics').insert({
       database_size_bytes: metrics.databaseSizeBytes,
       active_connections: metrics.activeConnections,
       cache_hit_rate: metrics.cacheHitRate,
       cpu_percent: metrics.cpuPercent,
       memory_percent: metrics.memoryPercent
     });
+
+    if (insertError) {
+      console.error('Erro ao salvar métricas:', insertError);
+    }
 
     console.log('Métricas coletadas:', metrics);
 

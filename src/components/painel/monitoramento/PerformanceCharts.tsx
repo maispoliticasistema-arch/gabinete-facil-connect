@@ -23,15 +23,80 @@ export function PerformanceCharts() {
 
   async function loadHourlyMetrics() {
     try {
-      const { data, error } = await supabase
+      // Primeiro tenta buscar dados agregados
+      const { data: hourlyData, error: hourlyError } = await supabase
         .from('system_metrics_hourly')
         .select('*')
         .order('hour_timestamp', { ascending: true })
-        .limit(24); // Últimas 24 horas
+        .limit(24);
 
-      if (error) throw error;
+      if (hourlyError) throw hourlyError;
 
-      setHourlyData(data || []);
+      // Se houver dados agregados, usa eles
+      if (hourlyData && hourlyData.length > 0) {
+        setHourlyData(hourlyData);
+        setLoading(false);
+        return;
+      }
+
+      // Se não houver dados agregados, busca métricas brutas e agrega na hora
+      const vinteQuatroHorasAtras = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+      const { data: rawMetrics, error: rawError } = await supabase
+        .from('performance_metrics')
+        .select('*')
+        .gte('created_at', vinteQuatroHorasAtras)
+        .order('created_at', { ascending: true });
+
+      if (rawError) throw rawError;
+
+      // Agregar métricas por hora
+      const aggregatedByHour = new Map<string, {
+        count: number;
+        totalDuration: number;
+        errors: number;
+      }>();
+
+      rawMetrics?.forEach(metric => {
+        const hour = new Date(metric.created_at).toISOString().slice(0, 13) + ':00:00.000Z';
+        
+        if (!aggregatedByHour.has(hour)) {
+          aggregatedByHour.set(hour, {
+            count: 0,
+            totalDuration: 0,
+            errors: 0
+          });
+        }
+
+        const hourData = aggregatedByHour.get(hour)!;
+        hourData.count++;
+        hourData.totalDuration += metric.duration_ms;
+        if (metric.status_code && metric.status_code >= 400) {
+          hourData.errors++;
+        }
+      });
+
+      // Buscar queries lentas por hora
+      const { data: slowQueries } = await supabase
+        .from('slow_queries')
+        .select('created_at')
+        .gte('created_at', vinteQuatroHorasAtras);
+
+      const slowQueriesByHour = new Map<string, number>();
+      slowQueries?.forEach(query => {
+        const hour = new Date(query.created_at).toISOString().slice(0, 13) + ':00:00.000Z';
+        slowQueriesByHour.set(hour, (slowQueriesByHour.get(hour) || 0) + 1);
+      });
+
+      // Converter para formato de hourlyData
+      const aggregatedData: HourlyMetric[] = Array.from(aggregatedByHour.entries()).map(([hour, data]) => ({
+        hour_timestamp: hour,
+        avg_response_time_ms: Math.round(data.totalDuration / data.count),
+        total_requests: data.count,
+        error_count: data.errors,
+        slow_query_count: slowQueriesByHour.get(hour) || 0
+      }));
+
+      setHourlyData(aggregatedData);
     } catch (error) {
       console.error('Erro ao carregar métricas horárias:', error);
     } finally {

@@ -1296,6 +1296,25 @@ export type Database = {
         Args: { gabinete_nome: string }
         Returns: string
       }
+      get_active_connections: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
+      get_cache_hit_rate: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
+      get_database_size: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
+      get_system_stats: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          cpu_percent: number
+          memory_percent: number
+        }[]
+      }
       get_user_gabinetes_ids: {
         Args: { _user_id: string }
         Returns: {

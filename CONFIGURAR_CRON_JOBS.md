@@ -1,6 +1,8 @@
-# Configuração de Cron Jobs para Monitoramento
+# Configuração de Cron Jobs para Monitoramento (OPCIONAL)
 
-Para que o sistema de monitoramento funcione completamente, é necessário configurar jobs agendados no Supabase.
+O sistema de monitoramento funciona sem cron jobs, mas para melhor performance, é recomendado configurá-los no Supabase.
+
+**IMPORTANTE:** Os gráficos e métricas funcionam mesmo sem os cron jobs! O sistema agrega os dados em tempo real quando necessário. Os cron jobs apenas otimizam o desempenho pré-agregando os dados.
 
 ## 1. Habilitar extensões necessárias
 
