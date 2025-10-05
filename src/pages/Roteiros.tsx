@@ -14,7 +14,6 @@ import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { MapContainer, TileLayer, Marker, Popup, Polyline } from 'react-leaflet';
-import MarkerClusterGroup from 'react-leaflet-cluster';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 
@@ -90,7 +89,7 @@ const RoteirosMap = ({
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
 
-      {selectedRoteiroData && selectedRoteiroData.latitude_partida && selectedRoteiroData.longitude_partida && (
+      {selectedRoteiroData?.latitude_partida && selectedRoteiroData?.longitude_partida && (
         <Marker
           position={[selectedRoteiroData.latitude_partida, selectedRoteiroData.longitude_partida]}
           icon={roteiroPartidaIcon}
@@ -105,7 +104,7 @@ const RoteirosMap = ({
         </Marker>
       )}
 
-      {selectedRoteiroData && selectedRoteiroData.latitude_final && selectedRoteiroData.longitude_final && (
+      {selectedRoteiroData?.latitude_final && selectedRoteiroData?.longitude_final && (
         <Marker
           position={[selectedRoteiroData.latitude_final, selectedRoteiroData.longitude_final]}
           icon={roteiroFimIcon}
@@ -129,34 +128,30 @@ const RoteirosMap = ({
         />
       )}
 
-      {pontos.length > 0 && (
-        <MarkerClusterGroup>
-          {pontos.map((ponto) => (
-            ponto.latitude && ponto.longitude && (
-              <Marker
-                key={ponto.id}
-                position={[ponto.latitude, ponto.longitude]}
-                icon={createNumberIcon(ponto.ordem)}
-              >
-                <Popup>
-                  <div className="text-sm">
-                    <strong>Parada {ponto.ordem}</strong>
+      {pontos.map((ponto) => 
+        ponto.latitude && ponto.longitude ? (
+          <Marker
+            key={ponto.id}
+            position={[ponto.latitude, ponto.longitude]}
+            icon={createNumberIcon(ponto.ordem)}
+          >
+            <Popup>
+              <div className="text-sm">
+                <strong>Parada {ponto.ordem}</strong>
+                <br />
+                {ponto.eleitores?.nome_completo || 'Eleitor não encontrado'}
+                {ponto.endereco_manual && (
+                  <>
                     <br />
-                    {ponto.eleitores?.nome_completo || 'Eleitor não encontrado'}
-                    {ponto.endereco_manual && (
-                      <>
-                        <br />
-                        <span className="text-xs bg-secondary px-1 rounded">Endereço alternativo:</span>
-                        <br />
-                        <span className="text-muted-foreground">{ponto.endereco_manual}</span>
-                      </>
-                    )}
-                  </div>
-                </Popup>
-              </Marker>
-            )
-          ))}
-        </MarkerClusterGroup>
+                    <span className="text-xs bg-secondary px-1 rounded">Endereço alternativo:</span>
+                    <br />
+                    <span className="text-muted-foreground">{ponto.endereco_manual}</span>
+                  </>
+                )}
+              </div>
+            </Popup>
+          </Marker>
+        ) : null
       )}
     </MapContainer>
   );
