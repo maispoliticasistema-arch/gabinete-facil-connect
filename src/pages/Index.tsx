@@ -146,10 +146,7 @@ const Index = () => {
 
       {/* Stats Cards */}
       <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-        <StatsCard title="Total de Eleitores" value={stats.totalEleitores} icon={Users} description="Cadastrados no sistema" trend={{
-        value: 12,
-        isPositive: true
-      }} />
+        <StatsCard title="Total de Eleitores" value={stats.totalEleitores} icon={Users} description="Cadastrados no sistema" />
         <StatsCard title="Aniversariantes Hoje" value={stats.aniversariantes} icon={Calendar} description="Envie suas felicitações!" onClick={() => setAniversariantesDialogOpen(true)} />
         <StatsCard title="Demandas Abertas" value={stats.demandasAbertas} icon={FileText} description="Aguardando atendimento" />
         <StatsCard title="Prazo para Hoje" value={stats.demandasHoje} icon={AlertCircle} description="Demandas com vencimento" />
