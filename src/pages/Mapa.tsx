@@ -57,15 +57,6 @@ const Mapa = () => {
   const mapRef = useRef<L.Map | null>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const markersLayerRef = useRef<L.LayerGroup | null>(null);
-
-  // Verificar permissão
-  if (permissionsLoading) {
-    return <div className="flex items-center justify-center h-screen">Carregando...</div>;
-  }
-
-  if (!hasPermission('view_mapa')) {
-    return <NoPermissionMessage />;
-  }
   
   const [eleitores, setEleitores] = useState<any[]>([]);
   const [totalEleitores, setTotalEleitores] = useState(0);
@@ -81,6 +72,15 @@ const Mapa = () => {
   const [selectedCidade, setSelectedCidade] = useState<string>('all');
   const [selectedBairro, setSelectedBairro] = useState<string>('all');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
+
+  // Verificar permissão
+  if (permissionsLoading) {
+    return <div className="flex items-center justify-center h-screen">Carregando...</div>;
+  }
+
+  if (!hasPermission('view_mapa')) {
+    return <NoPermissionMessage />;
+  }
 
   // Initialize map
   useEffect(() => {
