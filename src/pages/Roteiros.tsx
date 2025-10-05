@@ -229,11 +229,16 @@ const Roteiros = () => {
              r.status === 'em_andamento';
     });
 
+    const distanciaTotal = roteiros.reduce((acc, r) => {
+      const distancia = typeof r.distancia_total === 'number' ? r.distancia_total : 0;
+      return acc + distancia;
+    }, 0);
+
     return {
       totalRoteiros: thisMonth.length,
       emAndamento: today.length,
       locaisVisitados: locaisVisitados,
-      distanciaTotal: roteiros.reduce((acc, r) => acc + (r.distancia_total || 0), 0)
+      distanciaTotal: distanciaTotal
     };
   }, [roteiros, locaisVisitados]);
 

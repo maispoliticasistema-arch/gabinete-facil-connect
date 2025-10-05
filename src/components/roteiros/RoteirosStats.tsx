@@ -35,7 +35,7 @@ export const RoteirosStats = ({
     },
     {
       label: 'Km Total',
-      value: `${distanciaTotal.toFixed(1)} km`,
+      value: typeof distanciaTotal === 'number' && !isNaN(distanciaTotal) ? `${distanciaTotal.toFixed(1)} km` : '0.0 km',
       icon: MapPin,
       color: 'text-chart-3'
     }
