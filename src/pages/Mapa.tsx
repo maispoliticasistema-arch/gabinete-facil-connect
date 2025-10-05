@@ -74,22 +74,25 @@ const Mapa = () => {
   const [selectedBairro, setSelectedBairro] = useState<string>('all');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
 
-  // Initialize map - wait for container to be ready
-  useEffect(() => {
-    // Don't initialize if no permission or already initialized
-    if (permissionsLoading || !hasPermission('view_mapa')) {
-      console.log('Aguardando permissões ou sem permissão para mapa');
-      return;
-    }
+  // Verificar permissão primeiro - se não tiver, não renderiza nada
+  if (permissionsLoading) {
+    return <div className="flex items-center justify-center h-screen">Carregando permissões...</div>;
+  }
 
+  if (!hasPermission('view_mapa')) {
+    return <NoPermissionMessage />;
+  }
+  
+  // Initialize map - only once, independent of permissions
+  useEffect(() => {
     const container = mapContainerRef.current;
     if (!container) {
-      console.log('Container ainda não está montado, aguardando...');
+      console.log('Container ainda não está montado');
       return;
     }
     
     if (mapRef.current) {
-      console.log('Mapa já existe, não reinicializar');
+      console.log('Mapa já existe');
       return;
     }
 
@@ -114,32 +117,18 @@ const Mapa = () => {
       
       console.log('Mapa inicializado com sucesso!');
       
-      // Force resize multiple times to ensure visibility
-      const resizeMap = () => {
+      // Force resize
+      setTimeout(() => {
         if (mapRef.current) {
           mapRef.current.invalidateSize();
+          console.log('Resize do mapa');
         }
-      };
-      
-      setTimeout(resizeMap, 100);
-      setTimeout(resizeMap, 300);
-      setTimeout(resizeMap, 500);
-      setTimeout(resizeMap, 1000);
+      }, 250);
       
     } catch (error) {
       console.error('Erro ao inicializar mapa:', error);
     }
-
-    return () => {
-      console.log('Componente desmontando, limpando mapa...');
-      if (mapRef.current) {
-        mapRef.current.remove();
-        mapRef.current = null;
-      }
-      markersLayerRef.current = null;
-      setMapInitialized(false);
-    };
-  }, [permissionsLoading, hasPermission]); // Removi mapInitialized das dependências
+  }, []); // SEM DEPENDÊNCIAS - roda apenas uma vez
 
   // Fetch data
   useEffect(() => {
@@ -276,6 +265,7 @@ const Mapa = () => {
     };
 
     if (showEleitores) {
+      console.log('Adicionando eleitores ao mapa:', filteredEleitores.length);
       filteredEleitores.forEach(eleitor => {
         if (!eleitor.latitude || !eleitor.longitude) {
           updateProgress();
@@ -300,6 +290,7 @@ const Mapa = () => {
     }
 
     if (showDemandas) {
+      console.log('Adicionando demandas ao mapa:', filteredDemandas.length);
       filteredDemandas.forEach(demanda => {
         if (!demanda.eleitores || !demanda.eleitores.latitude || !demanda.eleitores.longitude) {
           updateProgress();
@@ -327,6 +318,7 @@ const Mapa = () => {
     }
 
     if (showRoteiros) {
+      console.log('Adicionando roteiros ao mapa:', roteiros.length);
       roteiros.forEach(roteiro => {
         // Marcador de partida
         if (roteiro.latitude_partida && roteiro.longitude_partida) {
@@ -368,18 +360,7 @@ const Mapa = () => {
       setIsLoadingMarkers(false);
       setLoadingProgress(0);
     }
-  }, [filteredEleitores, filteredDemandas, roteiros, showEleitores, showDemandas, showRoteiros]);
-
-  // Verificar permissão - não bloqueia a renderização do mapa
-  const hasMapPermission = !permissionsLoading && hasPermission('view_mapa');
-  
-  if (permissionsLoading) {
-    return <div className="flex items-center justify-center h-screen">Carregando permissões...</div>;
-  }
-
-  if (!hasMapPermission) {
-    return <NoPermissionMessage />;
-  }
+  }, [filteredEleitores, filteredDemandas, roteiros, showEleitores, showDemandas, showRoteiros, mapInitialized]);
 
   return (
     <div style={{ position: 'relative', width: '100%', height: '100vh', overflow: 'hidden' }}>
