@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet';
 import { MapPin } from 'lucide-react';
 import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 
 interface Ponto {
   id: string;
@@ -32,44 +32,17 @@ interface RoteirosMapProps {
   pontos: Ponto[];
 }
 
-// Componente para atualizar o centro do mapa
-const MapUpdater = ({ center }: { center: [number, number] }) => {
-  const map = useMap();
-  
-  useEffect(() => {
-    map.setView(center, 13);
-  }, [center, map]);
-  
-  return null;
+// Ícones customizados para marcadores
+const createIcon = (color: string) => {
+  return L.icon({
+    iconUrl: `https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-${color}.png`,
+    shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+    iconSize: [25, 41],
+    iconAnchor: [12, 41],
+    popupAnchor: [1, -34],
+    shadowSize: [41, 41]
+  });
 };
-
-// Ícones customizados
-const startIcon = new L.Icon({
-  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
-  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  shadowSize: [41, 41]
-});
-
-const endIcon = new L.Icon({
-  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
-  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  shadowSize: [41, 41]
-});
-
-const stopIcon = new L.Icon({
-  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png',
-  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  shadowSize: [41, 41]
-});
 
 const RoteirosMapComponent = ({
   mapCenter,
@@ -77,6 +50,108 @@ const RoteirosMapComponent = ({
   routeGeometry,
   pontos,
 }: RoteirosMapProps) => {
+  const mapRef = useRef<L.Map | null>(null);
+  const mapContainerRef = useRef<HTMLDivElement>(null);
+  const markersRef = useRef<L.Marker[]>([]);
+  const polylineRef = useRef<L.Polyline | null>(null);
+
+  useEffect(() => {
+    if (!mapContainerRef.current || !selectedRoteiroData) return;
+
+    // Inicializar o mapa apenas uma vez
+    if (!mapRef.current) {
+      mapRef.current = L.map(mapContainerRef.current).setView(mapCenter, 13);
+      
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+      }).addTo(mapRef.current);
+    }
+
+    // Limpar marcadores e polyline anteriores
+    markersRef.current.forEach(marker => marker.remove());
+    markersRef.current = [];
+    if (polylineRef.current) {
+      polylineRef.current.remove();
+      polylineRef.current = null;
+    }
+
+    const map = mapRef.current;
+
+    // Adicionar ponto de partida
+    if (selectedRoteiroData.latitude_partida && selectedRoteiroData.longitude_partida) {
+      const marker = L.marker(
+        [selectedRoteiroData.latitude_partida, selectedRoteiroData.longitude_partida],
+        { icon: createIcon('green') }
+      )
+        .bindPopup(`<strong>🚀 Ponto de Partida</strong><br/>${selectedRoteiroData.endereco_partida || ''}`)
+        .addTo(map);
+      markersRef.current.push(marker);
+    }
+
+    // Adicionar pontos de parada
+    pontos.forEach((ponto) => {
+      if (ponto.latitude && ponto.longitude) {
+        const marker = L.marker(
+          [ponto.latitude, ponto.longitude],
+          { icon: createIcon('blue') }
+        )
+          .bindPopup(
+            `<strong>Parada #${ponto.ordem}</strong><br/>` +
+            `${ponto.eleitores?.nome_completo || 'Eleitor não encontrado'}<br/>` +
+            `${ponto.endereco_manual ? `<small>${ponto.endereco_manual}</small>` : ''}`
+          )
+          .addTo(map);
+        markersRef.current.push(marker);
+      }
+    });
+
+    // Adicionar ponto final
+    if (selectedRoteiroData.latitude_final && selectedRoteiroData.longitude_final) {
+      const marker = L.marker(
+        [selectedRoteiroData.latitude_final, selectedRoteiroData.longitude_final],
+        { icon: createIcon('red') }
+      )
+        .bindPopup(`<strong>🏁 Ponto de Chegada</strong><br/>${selectedRoteiroData.endereco_final || ''}`)
+        .addTo(map);
+      markersRef.current.push(marker);
+    }
+
+    // Adicionar rota
+    if (routeGeometry.length > 0) {
+      polylineRef.current = L.polyline(routeGeometry, {
+        color: '#3b82f6',
+        weight: 4,
+        opacity: 0.7
+      }).addTo(map);
+      
+      // Ajustar visualização para mostrar toda a rota
+      map.fitBounds(polylineRef.current.getBounds(), { padding: [50, 50] });
+    } else if (markersRef.current.length > 0) {
+      // Se não houver rota, centralizar no primeiro marcador
+      map.setView(mapCenter, 13);
+    }
+
+    // Cleanup
+    return () => {
+      if (mapRef.current) {
+        markersRef.current.forEach(marker => marker.remove());
+        if (polylineRef.current) {
+          polylineRef.current.remove();
+        }
+      }
+    };
+  }, [selectedRoteiroData, pontos, routeGeometry, mapCenter]);
+
+  // Cleanup ao desmontar o componente
+  useEffect(() => {
+    return () => {
+      if (mapRef.current) {
+        mapRef.current.remove();
+        mapRef.current = null;
+      }
+    };
+  }, []);
+
   if (!selectedRoteiroData) {
     return (
       <div className="h-full w-full flex flex-col items-center justify-center text-muted-foreground gap-4 p-8">
@@ -89,82 +164,7 @@ const RoteirosMapComponent = ({
     );
   }
 
-  return (
-    <MapContainer
-      center={mapCenter}
-      zoom={13}
-      style={{ height: '100%', width: '100%' }}
-      className="z-0"
-    >
-      <TileLayer
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-      />
-      
-      <MapUpdater center={mapCenter} />
-
-      {/* Ponto de Partida */}
-      {selectedRoteiroData.latitude_partida && selectedRoteiroData.longitude_partida && (
-        <Marker 
-          position={[selectedRoteiroData.latitude_partida, selectedRoteiroData.longitude_partida]}
-          icon={startIcon}
-        >
-          <Popup>
-            <div>
-              <strong>🚀 Ponto de Partida</strong>
-              <p className="text-sm">{selectedRoteiroData.endereco_partida}</p>
-            </div>
-          </Popup>
-        </Marker>
-      )}
-
-      {/* Pontos de Parada */}
-      {pontos.map((ponto) => (
-        ponto.latitude && ponto.longitude && (
-          <Marker 
-            key={ponto.id}
-            position={[ponto.latitude, ponto.longitude]}
-            icon={stopIcon}
-          >
-            <Popup>
-              <div>
-                <strong>Parada #{ponto.ordem}</strong>
-                <p className="text-sm">{ponto.eleitores?.nome_completo || 'Eleitor não encontrado'}</p>
-                {ponto.endereco_manual && (
-                  <p className="text-xs text-muted-foreground">{ponto.endereco_manual}</p>
-                )}
-              </div>
-            </Popup>
-          </Marker>
-        )
-      ))}
-
-      {/* Ponto Final */}
-      {selectedRoteiroData.latitude_final && selectedRoteiroData.longitude_final && (
-        <Marker 
-          position={[selectedRoteiroData.latitude_final, selectedRoteiroData.longitude_final]}
-          icon={endIcon}
-        >
-          <Popup>
-            <div>
-              <strong>🏁 Ponto de Chegada</strong>
-              <p className="text-sm">{selectedRoteiroData.endereco_final}</p>
-            </div>
-          </Popup>
-        </Marker>
-      )}
-
-      {/* Rota */}
-      {routeGeometry.length > 0 && (
-        <Polyline 
-          positions={routeGeometry} 
-          color="#3b82f6"
-          weight={4}
-          opacity={0.7}
-        />
-      )}
-    </MapContainer>
-  );
+  return <div ref={mapContainerRef} className="h-full w-full" />;
 };
 
 export const RoteirosMap = React.memo(RoteirosMapComponent);
