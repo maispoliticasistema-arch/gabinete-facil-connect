@@ -6,11 +6,11 @@ export const MainLayout = ({ children }: { children: React.ReactNode }) => {
     <SidebarProvider>
       <div className="flex min-h-screen w-full">
         <AppSidebar />
-        <main className="flex-1 flex flex-col">
-          <header className="sticky top-0 z-10 flex h-14 items-center border-b bg-background px-4 shrink-0">
+        <main className="flex-1 flex flex-col relative">
+          <header className="sticky top-0 z-40 flex h-14 items-center border-b bg-background px-4 shrink-0">
             <SidebarTrigger />
           </header>
-          <div className="flex-1 p-6">{children}</div>
+          <div className="flex-1 p-6 relative z-0 overflow-auto">{children}</div>
         </main>
       </div>
     </SidebarProvider>
