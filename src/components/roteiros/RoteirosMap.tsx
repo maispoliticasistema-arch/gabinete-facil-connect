@@ -1,5 +1,7 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
+import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet';
 import { MapPin } from 'lucide-react';
+import L from 'leaflet';
 
 interface Ponto {
   id: string;
@@ -30,6 +32,45 @@ interface RoteirosMapProps {
   pontos: Ponto[];
 }
 
+// Componente para atualizar o centro do mapa
+const MapUpdater = ({ center }: { center: [number, number] }) => {
+  const map = useMap();
+  
+  useEffect(() => {
+    map.setView(center, 13);
+  }, [center, map]);
+  
+  return null;
+};
+
+// Ícones customizados
+const startIcon = new L.Icon({
+  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
+  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41]
+});
+
+const endIcon = new L.Icon({
+  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
+  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41]
+});
+
+const stopIcon = new L.Icon({
+  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png',
+  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41]
+});
+
 const RoteirosMapComponent = ({
   mapCenter,
   selectedRoteiroData,
@@ -49,72 +90,80 @@ const RoteirosMapComponent = ({
   }
 
   return (
-    <div className="h-full w-full flex flex-col p-6 gap-4 overflow-y-auto">
-      <div className="space-y-4">
-        <div>
-          <h3 className="font-semibold mb-2">Roteiro: {selectedRoteiroData.nome}</h3>
-        </div>
+    <MapContainer
+      center={mapCenter}
+      zoom={13}
+      style={{ height: '100%', width: '100%' }}
+      className="z-0"
+    >
+      <TileLayer
+        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+      />
+      
+      <MapUpdater center={mapCenter} />
 
-        {selectedRoteiroData.endereco_partida && (
-          <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
-            <div className="flex items-start gap-2">
-              <span className="text-xl">🚀</span>
-              <div>
-                <p className="font-medium text-sm">Ponto de Partida</p>
-                <p className="text-sm text-muted-foreground">{selectedRoteiroData.endereco_partida}</p>
-              </div>
+      {/* Ponto de Partida */}
+      {selectedRoteiroData.latitude_partida && selectedRoteiroData.longitude_partida && (
+        <Marker 
+          position={[selectedRoteiroData.latitude_partida, selectedRoteiroData.longitude_partida]}
+          icon={startIcon}
+        >
+          <Popup>
+            <div>
+              <strong>🚀 Ponto de Partida</strong>
+              <p className="text-sm">{selectedRoteiroData.endereco_partida}</p>
             </div>
-          </div>
-        )}
+          </Popup>
+        </Marker>
+      )}
 
-        {pontos.length > 0 && (
-          <div className="space-y-2">
-            <h4 className="font-medium text-sm">Paradas ({pontos.length})</h4>
-            {pontos.map((ponto) => (
-              <div key={ponto.id} className="p-3 bg-primary/5 border rounded-lg">
-                <div className="flex items-start gap-2">
-                  <div className="flex items-center justify-center w-6 h-6 rounded-full bg-primary text-primary-foreground text-xs font-bold">
-                    {ponto.ordem}
-                  </div>
-                  <div className="flex-1">
-                    <p className="font-medium text-sm">{ponto.eleitores?.nome_completo || 'Eleitor não encontrado'}</p>
-                    {ponto.endereco_manual && (
-                      <p className="text-xs text-muted-foreground mt-1">📍 {ponto.endereco_manual}</p>
-                    )}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {selectedRoteiroData.endereco_final && (
-          <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-            <div className="flex items-start gap-2">
-              <span className="text-xl">🏁</span>
+      {/* Pontos de Parada */}
+      {pontos.map((ponto) => (
+        ponto.latitude && ponto.longitude && (
+          <Marker 
+            key={ponto.id}
+            position={[ponto.latitude, ponto.longitude]}
+            icon={stopIcon}
+          >
+            <Popup>
               <div>
-                <p className="font-medium text-sm">Ponto de Chegada</p>
-                <p className="text-sm text-muted-foreground">{selectedRoteiroData.endereco_final}</p>
+                <strong>Parada #{ponto.ordem}</strong>
+                <p className="text-sm">{ponto.eleitores?.nome_completo || 'Eleitor não encontrado'}</p>
+                {ponto.endereco_manual && (
+                  <p className="text-xs text-muted-foreground">{ponto.endereco_manual}</p>
+                )}
               </div>
+            </Popup>
+          </Marker>
+        )
+      ))}
+
+      {/* Ponto Final */}
+      {selectedRoteiroData.latitude_final && selectedRoteiroData.longitude_final && (
+        <Marker 
+          position={[selectedRoteiroData.latitude_final, selectedRoteiroData.longitude_final]}
+          icon={endIcon}
+        >
+          <Popup>
+            <div>
+              <strong>🏁 Ponto de Chegada</strong>
+              <p className="text-sm">{selectedRoteiroData.endereco_final}</p>
             </div>
-          </div>
-        )}
+          </Popup>
+        </Marker>
+      )}
 
-        {routeGeometry.length > 0 && (
-          <div className="p-3 bg-muted rounded-lg">
-            <p className="text-sm text-muted-foreground">
-              Rota calculada com {routeGeometry.length} pontos
-            </p>
-          </div>
-        )}
-      </div>
-
-      <div className="mt-auto pt-4 border-t">
-        <p className="text-xs text-muted-foreground text-center">
-          Visualização em mapa será adicionada em breve
-        </p>
-      </div>
-    </div>
+      {/* Rota */}
+      {routeGeometry.length > 0 && (
+        <Polyline 
+          positions={routeGeometry} 
+          color="#3b82f6"
+          weight={4}
+          opacity={0.7}
+        />
+      )}
+    </MapContainer>
   );
 };
 
