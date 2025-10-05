@@ -21,6 +21,7 @@ import Relatorios from "./pages/Relatorios";
 import MinhaConta from "./pages/MinhaConta";
 import NotFound from "./pages/NotFound";
 import Inicio from "./pages/Inicio";
+import CadastroPublico from "./pages/CadastroPublico";
 
 const queryClient = new QueryClient();
 
@@ -34,6 +35,7 @@ const App = () => (
           <GabineteProvider>
             <Routes>
               <Route path="/inicio" element={<Inicio />} />
+              <Route path="/cadastro-publico" element={<CadastroPublico />} />
               <Route path="/auth" element={<Auth />} />
               <Route
                 path="/setup-gabinete"

@@ -542,6 +542,7 @@ export type Database = {
       profiles: {
         Row: {
           avatar_url: string | null
+          codigo_indicacao: string | null
           created_at: string | null
           id: string
           nome_completo: string
@@ -550,6 +551,7 @@ export type Database = {
         }
         Insert: {
           avatar_url?: string | null
+          codigo_indicacao?: string | null
           created_at?: string | null
           id: string
           nome_completo: string
@@ -558,6 +560,7 @@ export type Database = {
         }
         Update: {
           avatar_url?: string | null
+          codigo_indicacao?: string | null
           created_at?: string | null
           id?: string
           nome_completo?: string
@@ -882,6 +885,10 @@ export type Database = {
           _type: Database["public"]["Enums"]["notification_type"]
           _user_id: string
         }
+        Returns: string
+      }
+      generate_codigo_indicacao: {
+        Args: Record<PropertyKey, never>
         Returns: string
       }
       get_user_gabinetes_ids: {

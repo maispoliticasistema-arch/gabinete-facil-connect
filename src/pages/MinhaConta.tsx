@@ -9,6 +9,7 @@ import { Separator } from '@/components/ui/separator';
 import { User, Lock, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { z } from 'zod';
+import { LinkLideranca } from '@/components/minhaconta/LinkLideranca';
 
 const profileSchema = z.object({
   nome_completo: z.string().trim().min(3, 'Nome deve ter no mínimo 3 caracteres').max(100, 'Nome deve ter no máximo 100 caracteres'),
@@ -278,6 +279,9 @@ const MinhaConta = () => {
           </Button>
         </CardContent>
       </Card>
+
+      {/* Link de Liderança */}
+      <LinkLideranca />
 
       {/* Alterar Senha */}
       <Card>
