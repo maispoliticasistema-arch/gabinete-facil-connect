@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useGabinete } from '@/contexts/GabineteContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { createNotification } from '@/lib/notifications';
 import {
   Sheet,
   SheetContent,
@@ -155,6 +156,19 @@ export const DemandaDetailsSheet = ({
         tipo: 'status_change',
       });
 
+      // Notificar responsável se houver e não for o próprio usuário
+      if (demanda.responsavel_id && demanda.responsavel_id !== user.id && currentGabinete) {
+        await createNotification({
+          userId: demanda.responsavel_id,
+          gabineteId: currentGabinete.gabinete_id,
+          type: newStatus === 'concluida' ? 'demanda_concluida' : 'demanda_atualizada',
+          title: newStatus === 'concluida' ? 'Demanda concluída' : 'Status de demanda alterado',
+          message: `A demanda "${demanda.titulo}" foi ${newStatus === 'concluida' ? 'marcada como concluída' : `alterada para: ${newStatus.replace('_', ' ')}`}`,
+          entityType: 'demanda',
+          entityId: demanda.id,
+        });
+      }
+
       setSelectedStatus(newStatus);
       fetchComentarios();
       onDemandaUpdated();
@@ -197,6 +211,32 @@ export const DemandaDetailsSheet = ({
         tipo: 'responsavel_change',
       });
 
+      // Notificar novo responsável se não for o próprio usuário
+      if (newResponsavel !== user.id && currentGabinete) {
+        await createNotification({
+          userId: newResponsavel,
+          gabineteId: currentGabinete.gabinete_id,
+          type: 'demanda_atribuida',
+          title: 'Você foi designado responsável',
+          message: `Você foi designado(a) como responsável pela demanda: "${demanda.titulo}"`,
+          entityType: 'demanda',
+          entityId: demanda.id,
+        });
+      }
+
+      // Notificar responsável anterior se houver e não for o próprio usuário
+      if (demanda.responsavel_id && demanda.responsavel_id !== user.id && demanda.responsavel_id !== newResponsavel && currentGabinete) {
+        await createNotification({
+          userId: demanda.responsavel_id,
+          gabineteId: currentGabinete.gabinete_id,
+          type: 'demanda_atualizada',
+          title: 'Responsável de demanda alterado',
+          message: `A demanda "${demanda.titulo}" foi reatribuída para ${responsavelNome}`,
+          entityType: 'demanda',
+          entityId: demanda.id,
+        });
+      }
+
       setSelectedResponsavel(newResponsavel);
       fetchComentarios();
       onDemandaUpdated();
@@ -229,6 +269,19 @@ export const DemandaDetailsSheet = ({
       });
 
       if (error) throw error;
+
+      // Notificar responsável se houver e não for o próprio usuário
+      if (demanda.responsavel_id && demanda.responsavel_id !== user.id && currentGabinete) {
+        await createNotification({
+          userId: demanda.responsavel_id,
+          gabineteId: currentGabinete.gabinete_id,
+          type: 'demanda_comentario',
+          title: 'Novo comentário em demanda',
+          message: `Novo comentário na demanda "${demanda.titulo}": ${novoComentario.substring(0, 50)}${novoComentario.length > 50 ? '...' : ''}`,
+          entityType: 'demanda',
+          entityId: demanda.id,
+        });
+      }
 
       setNovoComentario('');
       fetchComentarios();

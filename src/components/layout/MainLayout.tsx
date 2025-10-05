@@ -1,6 +1,6 @@
 import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { AppSidebar } from './AppSidebar';
-import { NotificationsButton } from '@/components/notifications/NotificationsButton';
+import { NotificationBell } from '@/components/notifications/NotificationBell';
 
 export const MainLayout = ({ children }: { children: React.ReactNode }) => {
   return (
@@ -10,7 +10,7 @@ export const MainLayout = ({ children }: { children: React.ReactNode }) => {
         <main className="flex-1 flex flex-col relative overflow-x-hidden">
           <header className="sticky top-0 left-0 right-0 z-40 flex h-14 items-center justify-between border-b bg-background px-4 shrink-0">
             <SidebarTrigger />
-            <NotificationsButton />
+            <NotificationBell />
           </header>
           <div className="flex-1 p-6 overflow-auto">{children}</div>
         </main>
