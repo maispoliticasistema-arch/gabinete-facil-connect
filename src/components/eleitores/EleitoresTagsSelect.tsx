@@ -113,50 +113,19 @@ export const EleitoresTagsSelect = ({
 
   return (
     <div className="flex items-center gap-1 flex-wrap">
-      {selectedTagsData.map((tag) => (
-        <Badge
-          key={tag.id}
-          style={{ backgroundColor: tag.cor }}
-          className="text-white text-xs px-2 py-0.5"
-        >
-          {tag.nome}
-        </Badge>
-      ))}
-      <Popover>
-        <PopoverTrigger asChild>
-          <Button variant="outline" size="sm" className="h-6 px-2 text-xs">
-            +
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-56 p-2" align="start">
-          <div className="space-y-1">
-            {availableTags.length === 0 ? (
-              <p className="text-xs text-muted-foreground py-2 text-center">
-                Nenhuma tag criada
-              </p>
-            ) : (
-              availableTags.map((tag) => (
-                <button
-                  key={tag.id}
-                  onClick={() => toggleTag(tag.id)}
-                  disabled={loading}
-                  className="w-full flex items-center justify-between px-2 py-1.5 text-sm hover:bg-accent rounded-sm transition-colors"
-                >
-                  <Badge
-                    style={{ backgroundColor: tag.cor }}
-                    className="text-white text-xs"
-                  >
-                    {tag.nome}
-                  </Badge>
-                  {selectedTags.includes(tag.id) && (
-                    <Check className="h-4 w-4 text-primary" />
-                  )}
-                </button>
-              ))
-            )}
-          </div>
-        </PopoverContent>
-      </Popover>
+      {selectedTagsData.length > 0 ? (
+        selectedTagsData.map((tag) => (
+          <Badge
+            key={tag.id}
+            style={{ backgroundColor: tag.cor }}
+            className="text-white text-xs px-2 py-0.5"
+          >
+            {tag.nome}
+          </Badge>
+        ))
+      ) : (
+        <span className="text-muted-foreground text-xs">-</span>
+      )}
     </div>
   );
 };
