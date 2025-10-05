@@ -489,6 +489,56 @@ export type Database = {
         }
         Relationships: []
       }
+      notifications: {
+        Row: {
+          created_at: string
+          entity_id: string | null
+          entity_type: string | null
+          gabinete_id: string
+          id: string
+          message: string
+          read: boolean
+          read_at: string | null
+          title: string
+          type: Database["public"]["Enums"]["notification_type"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string | null
+          gabinete_id: string
+          id?: string
+          message: string
+          read?: boolean
+          read_at?: string | null
+          title: string
+          type: Database["public"]["Enums"]["notification_type"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string | null
+          gabinete_id?: string
+          id?: string
+          message?: string
+          read?: boolean
+          read_at?: string | null
+          title?: string
+          type?: Database["public"]["Enums"]["notification_type"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_gabinete_id_fkey"
+            columns: ["gabinete_id"]
+            isOneToOne: false
+            referencedRelation: "gabinetes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -822,6 +872,18 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      create_notification: {
+        Args: {
+          _entity_id?: string
+          _entity_type?: string
+          _gabinete_id: string
+          _message: string
+          _title: string
+          _type: Database["public"]["Enums"]["notification_type"]
+          _user_id: string
+        }
+        Returns: string
+      }
       get_user_gabinetes_ids: {
         Args: { _user_id: string }
         Returns: {
@@ -890,6 +952,13 @@ export type Database = {
         | "senador"
       demanda_prioridade: "baixa" | "media" | "alta" | "urgente"
       demanda_status: "aberta" | "em_andamento" | "concluida" | "cancelada"
+      notification_type:
+        | "demanda_atribuida"
+        | "demanda_atualizada"
+        | "demanda_comentario"
+        | "demanda_concluida"
+        | "evento_proximo"
+        | "roteiro_atribuido"
       permission_type:
         | "view_eleitores"
         | "create_eleitores"
@@ -1070,6 +1139,14 @@ export const Constants = {
       ],
       demanda_prioridade: ["baixa", "media", "alta", "urgente"],
       demanda_status: ["aberta", "em_andamento", "concluida", "cancelada"],
+      notification_type: [
+        "demanda_atribuida",
+        "demanda_atualizada",
+        "demanda_comentario",
+        "demanda_concluida",
+        "evento_proximo",
+        "roteiro_atribuido",
+      ],
       permission_type: [
         "view_eleitores",
         "create_eleitores",

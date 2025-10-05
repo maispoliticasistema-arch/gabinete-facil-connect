@@ -6,6 +6,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useGabinete } from '@/contexts/GabineteContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { createNotification } from '@/lib/notifications';
+import { logAudit } from '@/lib/auditLog';
 import {
   Dialog,
   DialogContent,
@@ -175,19 +177,45 @@ export const AddDemandaDialog = ({
         }
       }
 
-      const { error } = await supabase.from('demandas').insert({
-        titulo: data.titulo,
-        descricao: data.descricao || null,
-        eleitor_id: data.eleitor_id,
-        responsavel_id: data.responsavel_id,
-        status: data.status,
-        prioridade: data.prioridade,
-        prazo: prazo,
-        gabinete_id: currentGabinete.gabinete_id,
-        criado_por: user.id,
-      });
+      const { data: demandaData, error } = await supabase
+        .from('demandas')
+        .insert({
+          titulo: data.titulo,
+          descricao: data.descricao || null,
+          eleitor_id: data.eleitor_id,
+          responsavel_id: data.responsavel_id,
+          status: data.status,
+          prioridade: data.prioridade,
+          prazo: prazo,
+          gabinete_id: currentGabinete.gabinete_id,
+          criado_por: user.id,
+        })
+        .select()
+        .single();
 
       if (error) throw error;
+
+      // Criar notificação para o responsável se não for o próprio usuário
+      if (data.responsavel_id && data.responsavel_id !== user.id) {
+        await createNotification({
+          userId: data.responsavel_id,
+          gabineteId: currentGabinete.gabinete_id,
+          type: 'demanda_atribuida',
+          title: 'Nova demanda atribuída',
+          message: `Você foi designado(a) responsável pela demanda: ${data.titulo}`,
+          entityType: 'demanda',
+          entityId: demandaData.id
+        });
+      }
+
+      // Registrar log de auditoria
+      await logAudit({
+        gabineteId: currentGabinete.gabinete_id,
+        action: 'create',
+        entityType: 'demanda',
+        entityId: demandaData.id,
+        details: { titulo: data.titulo }
+      });
 
       toast({
         title: 'Demanda criada!',
