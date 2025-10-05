@@ -204,6 +204,32 @@ All colors MUST be HSL.
   }
 }
 
+/* Scrollbar minimalista */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--border) / 0.4);
+  border-radius: 9999px;
+  transition: var(--transition-smooth);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--border) / 0.6);
+}
+
+/* Firefox scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--border) / 0.4) transparent;
+}
+
 /* Leaflet map container styles */
 .leaflet-container {
   width: 100% !important;
