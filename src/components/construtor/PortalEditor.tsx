@@ -101,6 +101,7 @@ function SortableBlock({
 export function PortalEditor({ blocks, onChange, colors }: PortalEditorProps) {
   const [selectedBlock, setSelectedBlock] = useState<Block | null>(null);
   const [newBlockType, setNewBlockType] = useState<BlockType>('hero');
+  const [isEditorOpen, setIsEditorOpen] = useState(false);
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -137,16 +138,30 @@ export function PortalEditor({ blocks, onChange, colors }: PortalEditorProps) {
     onChange(blocks.filter((b) => b.id !== id));
     if (selectedBlock?.id === id) {
       setSelectedBlock(null);
+      setIsEditorOpen(false);
     }
   };
 
+  const openEditor = (block: Block) => {
+    setSelectedBlock(block);
+    setIsEditorOpen(true);
+  };
+
+  const closeEditor = () => {
+    setIsEditorOpen(false);
+  };
+
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-      {/* Blocks List */}
+    <>
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle className="text-lg">Lista de Blocos</CardTitle>
+            <div>
+              <CardTitle className="text-lg">Blocos do Portal</CardTitle>
+              <p className="text-sm text-muted-foreground mt-1">
+                Arraste para reordenar • Clique em Editar para customizar
+              </p>
+            </div>
             <Dialog>
               <DialogTrigger asChild>
                 <Button size="sm">
@@ -186,70 +201,65 @@ export function PortalEditor({ blocks, onChange, colors }: PortalEditorProps) {
           </div>
         </CardHeader>
         <CardContent>
-          <ScrollArea className="h-[calc(100vh-300px)]">
-            {blocks.length === 0 ? (
-              <div className="text-center py-12">
-                <p className="text-sm text-muted-foreground mb-4">
-                  Nenhum bloco adicionado ainda
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  Clique em "Adicionar Bloco" para começar a construir seu portal
-                </p>
-              </div>
-            ) : (
-              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-                <SortableContext items={blocks.map((b) => b.id)} strategy={verticalListSortingStrategy}>
+          {blocks.length === 0 ? (
+            <div className="text-center py-12 border-2 border-dashed rounded-lg">
+              <p className="text-sm text-muted-foreground mb-4">
+                Nenhum bloco adicionado ainda
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Clique em "Adicionar Bloco" para começar a construir seu portal
+              </p>
+            </div>
+          ) : (
+            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+              <SortableContext items={blocks.map((b) => b.id)} strategy={verticalListSortingStrategy}>
+                <div className="space-y-3">
                   {blocks.map((block) => (
                     <SortableBlock
                       key={block.id}
                       block={block}
-                      onEdit={() => setSelectedBlock(block)}
+                      onEdit={() => openEditor(block)}
                       onDelete={() => deleteBlock(block.id)}
                     />
                   ))}
-                </SortableContext>
-              </DndContext>
-            )}
-          </ScrollArea>
+                </div>
+              </SortableContext>
+            </DndContext>
+          )}
         </CardContent>
       </Card>
 
-      {/* Block Editor */}
-      <div>
-        {selectedBlock ? (
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <Badge variant="default">
-                Editando: {blockTypeLabels[selectedBlock.type]}
-              </Badge>
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => setSelectedBlock(null)}
-              >
-                Fechar Editor
-              </Button>
-            </div>
-            <ScrollArea className="h-[calc(100vh-300px)]">
+      {/* Editor Modal */}
+      <Dialog open={isEditorOpen} onOpenChange={setIsEditorOpen}>
+        <DialogContent className="max-w-3xl max-h-[90vh]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              Editar Bloco
+              {selectedBlock && (
+                <Badge variant="secondary">
+                  {blockTypeLabels[selectedBlock.type]}
+                </Badge>
+              )}
+            </DialogTitle>
+            <DialogDescription>
+              Personalize o conteúdo e aparência do bloco
+            </DialogDescription>
+          </DialogHeader>
+          <ScrollArea className="max-h-[calc(90vh-150px)] pr-4">
+            {selectedBlock && (
               <BlockEditor block={selectedBlock} onChange={updateBlock} />
-            </ScrollArea>
+            )}
+          </ScrollArea>
+          <div className="flex justify-end gap-2 pt-4 border-t">
+            <Button variant="outline" onClick={closeEditor}>
+              Fechar
+            </Button>
+            <Button onClick={closeEditor}>
+              Salvar e Fechar
+            </Button>
           </div>
-        ) : (
-          <Card>
-            <CardContent className="pt-6">
-              <div className="text-center py-12">
-                <Eye className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                <p className="text-sm text-muted-foreground mb-2">
-                  Selecione um bloco para editar
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  Clique em "Editar" em qualquer bloco da lista ao lado
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-      </div>
-    </div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
