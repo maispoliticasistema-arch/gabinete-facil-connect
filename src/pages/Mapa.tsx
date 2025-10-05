@@ -316,8 +316,8 @@ const Mapa = () => {
             </div>
           `);
           markersLayerRef.current?.addLayer(markerPartida);
+          updateProgress();
         }
-        updateProgress();
 
         // Marcador de chegada
         if (roteiro.latitude_final && roteiro.longitude_final) {
@@ -333,8 +333,8 @@ const Mapa = () => {
             </div>
           `);
           markersLayerRef.current?.addLayer(markerFim);
+          updateProgress();
         }
-        updateProgress();
       });
     }
     
