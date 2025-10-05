@@ -5,7 +5,7 @@ import { PermissionGuard, NoPermissionMessage } from '@/components/PermissionGua
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Plus, Search, MapIcon } from 'lucide-react';
+import { Plus, Search, Map } from 'lucide-react';
 import { RoteirosStats } from '@/components/roteiros/RoteirosStats';
 import { AddRoteiroDialog } from '@/components/roteiros/AddRoteiroDialog';
 import { RoteiroDetailsSheet } from '@/components/roteiros/RoteiroDetailsSheet';
@@ -374,7 +374,7 @@ const Roteiros = () => {
         <Card className="h-[600px]">
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2">
-              <MapIcon className="h-5 w-5" />
+              <Map className="h-5 w-5" />
               Visualização do Roteiro
             </CardTitle>
           </CardHeader>
