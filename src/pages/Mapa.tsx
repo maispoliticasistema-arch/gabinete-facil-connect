@@ -73,15 +73,6 @@ const Mapa = () => {
   const [selectedBairro, setSelectedBairro] = useState<string>('all');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
 
-  // Verificar permissão
-  if (permissionsLoading) {
-    return <div className="flex items-center justify-center h-screen">Carregando...</div>;
-  }
-
-  if (!hasPermission('view_mapa')) {
-    return <NoPermissionMessage />;
-  }
-
   // Initialize map
   useEffect(() => {
     const container = mapContainerRef.current;
@@ -338,6 +329,15 @@ const Mapa = () => {
       setLoadingProgress(0);
     }
   }, [filteredEleitores, filteredDemandas, roteiros, showEleitores, showDemandas, showRoteiros]);
+
+  // Verificar permissão
+  if (permissionsLoading) {
+    return <div className="flex items-center justify-center h-screen">Carregando...</div>;
+  }
+
+  if (!hasPermission('view_mapa')) {
+    return <NoPermissionMessage />;
+  }
 
   return (
     <div style={{ position: 'relative', width: '100%', height: '100vh', overflow: 'hidden' }}>
