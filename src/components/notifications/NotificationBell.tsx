@@ -19,12 +19,13 @@ export function NotificationBell() {
   const [open, setOpen] = useState(false);
 
   const fetchUnreadCount = async () => {
-    if (!user) return;
+    if (!user || !currentGabinete) return;
 
     const { count, error } = await supabase
       .from("notifications")
       .select("*", { count: "exact", head: true })
       .eq("user_id", user.id)
+      .eq("gabinete_id", currentGabinete.gabinete_id)
       .eq("read", false);
 
     if (!error && count !== null) {
@@ -35,6 +36,8 @@ export function NotificationBell() {
   useEffect(() => {
     fetchUnreadCount();
 
+    if (!user || !currentGabinete) return;
+
     // Realtime para atualizar contador quando novas notificações chegam
     const channel = supabase
       .channel('notifications-updates')
@@ -44,7 +47,7 @@ export function NotificationBell() {
           event: 'INSERT',
           schema: 'public',
           table: 'notifications',
-          filter: `user_id=eq.${user?.id}`
+          filter: `user_id=eq.${user.id}`
         },
         () => {
           fetchUnreadCount();
@@ -56,7 +59,7 @@ export function NotificationBell() {
           event: 'UPDATE',
           schema: 'public',
           table: 'notifications',
-          filter: `user_id=eq.${user?.id}`
+          filter: `user_id=eq.${user.id}`
         },
         () => {
           fetchUnreadCount();
@@ -67,7 +70,7 @@ export function NotificationBell() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user?.id]);
+  }, [user?.id, currentGabinete?.gabinete_id]);
 
   if (!user || !currentGabinete) return null;
 
