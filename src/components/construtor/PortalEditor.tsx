@@ -145,74 +145,102 @@ export function PortalEditor({ blocks, onChange, colors }: PortalEditorProps) {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       {/* Editor Panel */}
-      <div className="lg:col-span-1 space-y-4">
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-lg">Blocos</CardTitle>
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button size="sm">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Adicionar
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Adicionar Bloco</DialogTitle>
-                    <DialogDescription>
-                      Escolha o tipo de bloco que deseja adicionar ao portal
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="space-y-3 mt-4">
-                    <Select value={newBlockType} onValueChange={(v) => setNewBlockType(v as BlockType)}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {Object.entries(blockTypeLabels).map(([type, label]) => (
-                          <SelectItem key={type} value={type}>
-                            {label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <p className="text-sm text-muted-foreground">
-                      {blockTypeDescriptions[newBlockType]}
-                    </p>
-                    <Button className="w-full" onClick={() => addBlock(newBlockType)}>
-                      Adicionar Bloco
+      <div className="lg:col-span-1">
+        <div className="sticky top-4 space-y-4">
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-lg">Blocos</CardTitle>
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button size="sm">
+                      <Plus className="h-4 w-4 mr-2" />
+                      Adicionar
                     </Button>
-                  </div>
-                </DialogContent>
-              </Dialog>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {blocks.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-8">
-                Nenhum bloco adicionado. Clique em "Adicionar" para começar.
-              </p>
-            ) : (
-              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-                <SortableContext items={blocks.map((b) => b.id)} strategy={verticalListSortingStrategy}>
-                  {blocks.map((block) => (
-                    <SortableBlock
-                      key={block.id}
-                      block={block}
-                      onEdit={() => setSelectedBlock(block)}
-                      onDelete={() => deleteBlock(block.id)}
-                    />
-                  ))}
-                </SortableContext>
-              </DndContext>
-            )}
-          </CardContent>
-        </Card>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Adicionar Bloco</DialogTitle>
+                      <DialogDescription>
+                        Escolha o tipo de bloco que deseja adicionar ao portal
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-3 mt-4">
+                      <Select value={newBlockType} onValueChange={(v) => setNewBlockType(v as BlockType)}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {Object.entries(blockTypeLabels).map(([type, label]) => (
+                            <SelectItem key={type} value={type}>
+                              {label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <p className="text-sm text-muted-foreground">
+                        {blockTypeDescriptions[newBlockType]}
+                      </p>
+                      <Button className="w-full" onClick={() => addBlock(newBlockType)}>
+                        Adicionar Bloco
+                      </Button>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <ScrollArea className="h-[300px]">
+                {blocks.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-8">
+                    Nenhum bloco adicionado. Clique em "Adicionar" para começar.
+                  </p>
+                ) : (
+                  <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                    <SortableContext items={blocks.map((b) => b.id)} strategy={verticalListSortingStrategy}>
+                      {blocks.map((block) => (
+                        <SortableBlock
+                          key={block.id}
+                          block={block}
+                          onEdit={() => setSelectedBlock(block)}
+                          onDelete={() => deleteBlock(block.id)}
+                        />
+                      ))}
+                    </SortableContext>
+                  </DndContext>
+                )}
+              </ScrollArea>
+            </CardContent>
+          </Card>
 
-        {selectedBlock && (
-          <BlockEditor block={selectedBlock} onChange={updateBlock} />
-        )}
+          {selectedBlock ? (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Badge variant="default" className="text-xs">
+                  Editando: {blockTypeLabels[selectedBlock.type]}
+                </Badge>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => setSelectedBlock(null)}
+                >
+                  Fechar
+                </Button>
+              </div>
+              <ScrollArea className="h-[calc(100vh-550px)]">
+                <BlockEditor block={selectedBlock} onChange={updateBlock} />
+              </ScrollArea>
+            </div>
+          ) : (
+            <Card>
+              <CardContent className="pt-6">
+                <p className="text-sm text-muted-foreground text-center">
+                  Selecione um bloco para editar
+                </p>
+              </CardContent>
+            </Card>
+          )}
+        </div>
       </div>
 
       {/* Preview Panel */}
