@@ -76,30 +76,61 @@ const Mapa = () => {
   // Initialize map - only once
   useEffect(() => {
     const container = mapContainerRef.current;
-    if (!container || mapRef.current) return;
+    if (!container) {
+      console.log('Container não encontrado');
+      return;
+    }
+    
+    if (mapRef.current) {
+      console.log('Mapa já existe, invalidando tamanho...');
+      mapRef.current.invalidateSize();
+      return;
+    }
 
-    console.log('Inicializando mapa...');
-    const map = L.map(container, {
-      zoomControl: true,
-      attributionControl: true,
-    }).setView([-15.7939, -47.8828], 4);
+    console.log('Inicializando mapa...', { container });
     
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; OpenStreetMap contributors',
-      maxZoom: 19,
-    }).addTo(map);
+    try {
+      const map = L.map(container, {
+        zoomControl: true,
+        attributionControl: true,
+        preferCanvas: true,
+      }).setView([-15.7939, -47.8828], 4);
+      
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors',
+        maxZoom: 19,
+      }).addTo(map);
 
-    const markersLayer = L.layerGroup().addTo(map);
-    markersLayerRef.current = markersLayer;
-    mapRef.current = map;
-    
-    console.log('Mapa inicializado com sucesso!');
-    
-    // Force resize after a short delay
-    setTimeout(() => {
-      map.invalidateSize();
-      console.log('Mapa redimensionado');
-    }, 100);
+      const markersLayer = L.layerGroup().addTo(map);
+      markersLayerRef.current = markersLayer;
+      mapRef.current = map;
+      
+      console.log('Mapa inicializado com sucesso!', { map, markersLayer });
+      
+      // Force resize multiple times to ensure visibility
+      setTimeout(() => {
+        if (mapRef.current) {
+          mapRef.current.invalidateSize();
+          console.log('Mapa redimensionado (100ms)');
+        }
+      }, 100);
+      
+      setTimeout(() => {
+        if (mapRef.current) {
+          mapRef.current.invalidateSize();
+          console.log('Mapa redimensionado (500ms)');
+        }
+      }, 500);
+      
+      setTimeout(() => {
+        if (mapRef.current) {
+          mapRef.current.invalidateSize();
+          console.log('Mapa redimensionado (1000ms)');
+        }
+      }, 1000);
+    } catch (error) {
+      console.error('Erro ao inicializar mapa:', error);
+    }
 
     return () => {
       console.log('Limpando mapa...');
@@ -548,7 +579,8 @@ const Mapa = () => {
 
       {/* Map */}
       <div 
-        ref={mapContainerRef} 
+        ref={mapContainerRef}
+        id="map-container"
         style={{
           position: 'absolute',
           top: 0,
@@ -560,7 +592,22 @@ const Mapa = () => {
           zIndex: 0,
           backgroundColor: '#e5e7eb'
         }}
-      />
+      >
+        {!mapRef.current && (
+          <div style={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            padding: '20px',
+            background: 'white',
+            borderRadius: '8px',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+          }}>
+            Carregando mapa...
+          </div>
+        )}
+      </div>
     </div>
   );
 };
