@@ -6,7 +6,8 @@ import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { AlertCircle, CheckCircle, AlertTriangle } from 'lucide-react';
+import { AlertCircle, CheckCircle, AlertTriangle, Bug } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 import {
   Dialog,
   DialogContent,
@@ -34,6 +35,41 @@ export function ErrosSection() {
   const [loading, setLoading] = useState(true);
   const [selectedError, setSelectedError] = useState<SystemError | null>(null);
   const [filter, setFilter] = useState<'all' | 'unresolved'>('unresolved');
+  const { toast } = useToast();
+
+  async function simulateError() {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      const { error } = await supabase.from('system_errors').insert({
+        error_message: '🔴 ERRO DE TESTE - Este é um erro simulado para testar o sistema de monitoramento',
+        error_code: 'TEST_ERROR',
+        severity: 'warning',
+        user_id: user?.id,
+        context: {
+          teste: true,
+          timestamp: new Date().toISOString(),
+          simulacao: 'Erro gerado pelo botão de teste no painel'
+        }
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Erro simulado criado!",
+        description: "O erro de teste foi registrado no sistema."
+      });
+
+      loadErrors();
+    } catch (error) {
+      console.error('Erro ao simular:', error);
+      toast({
+        title: "Erro ao simular",
+        description: "Não foi possível criar o erro de teste.",
+        variant: "destructive"
+      });
+    }
+  }
 
   useEffect(() => {
     loadErrors();
@@ -169,6 +205,15 @@ export function ErrosSection() {
           </p>
         </div>
         <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={simulateError}
+            className="gap-2"
+          >
+            <Bug className="h-4 w-4" />
+            Simular Erro
+          </Button>
           <Button
             variant={filter === 'unresolved' ? 'default' : 'outline'}
             size="sm"
