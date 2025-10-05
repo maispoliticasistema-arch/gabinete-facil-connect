@@ -1012,6 +1012,14 @@ export type Database = {
         }
         Returns: undefined
       }
+      unaccent: {
+        Args: { "": string }
+        Returns: string
+      }
+      unaccent_init: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
       user_gabinete_role: {
         Args: { _gabinete_id: string; _user_id: string }
         Returns: string

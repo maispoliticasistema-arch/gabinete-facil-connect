@@ -46,24 +46,8 @@ const ConstrutorDeSites = () => {
   useEffect(() => {
     if (currentGabinete) {
       loadSites();
-      generateGabineteSlug();
     }
   }, [currentGabinete]);
-
-  const generateGabineteSlug = async () => {
-    if (!currentGabinete) return;
-    
-    try {
-      const { data } = await supabase.rpc(
-        'generate_gabinete_slug',
-        { gabinete_nome: currentGabinete.gabinetes.nome }
-      );
-      
-      setGabineteSlug(data || '');
-    } catch (error) {
-      console.error('Erro ao gerar slug:', error);
-    }
-  };
 
   const loadSites = async () => {
     if (!currentGabinete) return;
@@ -79,6 +63,14 @@ const ConstrutorDeSites = () => {
       if (error) throw error;
 
       setSites(data || []);
+      
+      // Carregar o slug do primeiro site (todos compartilham o mesmo slug)
+      if (data && data.length > 0 && data[0].slug) {
+        setGabineteSlug(data[0].slug);
+      } else {
+        // Se não houver sites, gerar slug baseado no nome do gabinete
+        await generateGabineteSlug();
+      }
     } catch (error) {
       console.error('Erro ao carregar sites:', error);
       toast({
@@ -324,6 +316,23 @@ const ConstrutorDeSites = () => {
         description: error.message || 'Não foi possível atualizar o slug.',
         variant: 'destructive',
       });
+    }
+  };
+
+  const generateGabineteSlug = async () => {
+    if (!currentGabinete) return;
+    
+    try {
+      const { data, error } = await supabase.rpc(
+        'generate_gabinete_slug',
+        { gabinete_nome: currentGabinete.gabinetes.nome }
+      );
+      
+      if (error) throw error;
+      
+      setGabineteSlug(data || '');
+    } catch (error) {
+      console.error('Erro ao gerar slug:', error);
     }
   };
 
