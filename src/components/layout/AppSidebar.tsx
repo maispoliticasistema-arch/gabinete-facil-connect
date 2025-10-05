@@ -51,6 +51,7 @@ const menuItems: MenuItem[] = [
   { title: 'Mapa', url: '/mapa', icon: Map, permission: 'view_mapa' },
   { title: 'Roteiros', url: '/roteiros', icon: Route, permission: 'view_roteiros' },
   { title: 'Relatórios', url: '/relatorios', icon: BarChart3, permission: 'view_relatorios' },
+  { title: 'Minha Conta', url: '/minha-conta', icon: UserCircle },
   { title: 'Configurações', url: '/configuracoes', icon: Settings, permission: 'manage_settings' },
 ];
 
@@ -183,17 +184,6 @@ export function AppSidebar() {
         )}
 
         <div className={`flex ${collapsed ? 'flex-col gap-1 items-center' : 'gap-2'}`}>
-          <Button
-            variant="ghost"
-            size="icon"
-            asChild
-            className={`${!collapsed ? 'flex-1' : 'w-10 h-10'} bg-sidebar-accent text-sidebar-accent-foreground hover:bg-sidebar-accent/80`}
-          >
-            <NavLink to="/minha-conta">
-              <UserCircle className="h-4 w-4" />
-              {!collapsed && <span className="ml-2">Minha Conta</span>}
-            </NavLink>
-          </Button>
           <Button
             variant="ghost"
             size="icon"
