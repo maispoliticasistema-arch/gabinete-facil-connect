@@ -23,6 +23,7 @@ import NotFound from "./pages/NotFound";
 import Inicio from "./pages/Inicio";
 import CadastroPublico from "./pages/CadastroPublico";
 import ConstrutorDeSites from "./pages/ConstrutorDeSites";
+import PortalPublico from "./pages/PortalPublico";
 
 const queryClient = new QueryClient();
 
@@ -37,6 +38,7 @@ const App = () => (
             <Routes>
               <Route path="/inicio" element={<Inicio />} />
               <Route path="/cadastro-publico" element={<CadastroPublico />} />
+              <Route path="/portal/:slug" element={<PortalPublico />} />
               <Route path="/auth" element={<Auth />} />
               <Route
                 path="/setup-gabinete"

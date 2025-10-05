@@ -221,7 +221,7 @@ export function PortalEditor({ blocks, onChange, colors }: PortalEditorProps) {
           <CardHeader>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <CardTitle className="text-lg">Preview</CardTitle>
+                <CardTitle className="text-lg">Preview em Tempo Real</CardTitle>
                 {!showPreview && <Badge variant="secondary">Oculto</Badge>}
               </div>
               <Button
@@ -236,7 +236,13 @@ export function PortalEditor({ blocks, onChange, colors }: PortalEditorProps) {
           </CardHeader>
           {showPreview && (
             <CardContent className="p-0">
-              <ScrollArea className="h-[calc(100vh-200px)]">
+              <div className="border-t border-border">
+                <div className="bg-muted/30 p-2 flex items-center justify-center gap-2 text-xs text-muted-foreground">
+                  <Eye className="h-3 w-3" />
+                  Preview - as alterações aparecem em tempo real
+                </div>
+              </div>
+              <ScrollArea className="h-[calc(100vh-250px)]">
                 <div className="bg-background">
                   {blocks.length === 0 ? (
                     <div className="flex items-center justify-center h-64 text-muted-foreground">

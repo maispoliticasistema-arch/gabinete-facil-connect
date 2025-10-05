@@ -217,24 +217,49 @@ const ConstrutorDeSites = () => {
         </div>
       </div>
 
-      {/* URL Preview */}
+      {/* URL Preview & Publication Status */}
       {portal && (
-        <Card className="bg-primary/5 border-primary/20">
+        <Card className={portal.publicado ? "bg-primary/5 border-primary/20" : "bg-muted border-muted"}>
           <CardContent className="pt-6">
-            <div className="flex items-center justify-between gap-4">
-              <div className="flex-1">
-                <Label className="text-xs text-muted-foreground">URL do Portal</Label>
-                <p className="text-sm font-mono mt-1 break-all">{portalUrl}</p>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex-1">
+                  <Label className="text-xs text-muted-foreground">URL do Portal</Label>
+                  <p className="text-sm font-mono mt-1 break-all">{portalUrl}</p>
+                  {!portal.publicado && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      ⚠️ Portal não publicado - apenas você pode ver este link
+                    </p>
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => window.open(portalUrl, '_blank')}
+                    disabled={!portal.publicado}
+                  >
+                    <ExternalLink className="h-4 w-4 mr-2" />
+                    Abrir
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant={portal.publicado ? "secondary" : "default"}
+                    onClick={handlePublish}
+                  >
+                    <Globe className="h-4 w-4 mr-2" />
+                    {portal.publicado ? 'Despublicar' : 'Publicar Agora'}
+                  </Button>
+                </div>
               </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => window.open(portalUrl, '_blank')}
-                disabled={!portal.publicado}
-              >
-                <ExternalLink className="h-4 w-4 mr-2" />
-                Abrir
-              </Button>
+              {portal.publicado && (
+                <div className="bg-primary/10 border border-primary/20 rounded p-3 text-sm">
+                  <p className="font-semibold text-primary mb-1">✓ Portal Público</p>
+                  <p className="text-xs text-muted-foreground">
+                    Seu portal está visível publicamente. Qualquer pessoa com o link pode acessá-lo.
+                  </p>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
