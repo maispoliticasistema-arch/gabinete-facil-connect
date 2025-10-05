@@ -8,6 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
+import { logAudit } from "@/lib/auditLog";
 
 interface AddUserDialogProps {
   open: boolean;
@@ -67,6 +68,18 @@ export function AddUserDialog({ open, onOpenChange, gabineteId, onSuccess }: Add
       if (functionData?.error) throw new Error(functionData.error);
 
       const userGabinete = functionData.userGabinete;
+
+      // Registrar log de auditoria
+      await logAudit({
+        gabineteId: gabineteId,
+        action: 'user_created',
+        entityType: 'user',
+        details: { 
+          email: formData.email,
+          nome: formData.nome_completo,
+          role: formData.role 
+        }
+      });
 
       toast.success("Usuário criado com sucesso!");
       onSuccess();

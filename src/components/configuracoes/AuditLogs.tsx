@@ -59,6 +59,28 @@ export function AuditLogs({ gabineteId }: AuditLogsProps) {
 
   useEffect(() => {
     fetchLogs();
+
+    // Configurar realtime para atualizar logs automaticamente
+    const channel = supabase
+      .channel('audit-logs-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'audit_logs',
+          filter: `gabinete_id=eq.${gabineteId}`
+        },
+        (payload) => {
+          console.log('Novo log de auditoria:', payload);
+          fetchLogs();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [gabineteId]);
 
   if (loading) {

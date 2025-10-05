@@ -6,6 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useGabinete } from '@/contexts/GabineteContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { logAudit } from '@/lib/auditLog';
 import {
   Dialog,
   DialogContent,
@@ -176,6 +177,15 @@ export const AddEleitoresDialog = ({
           // Não bloquear o cadastro se a geocodificação falhar
         }
       }
+
+      // Registrar log de auditoria
+      await logAudit({
+        gabineteId: currentGabinete.gabinete_id,
+        action: 'create',
+        entityType: 'eleitor',
+        entityId: eleitorData.id,
+        details: { nome: data.nome_completo }
+      });
 
       toast({
         title: 'Eleitor cadastrado!',
