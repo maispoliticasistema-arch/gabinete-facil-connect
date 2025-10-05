@@ -542,6 +542,62 @@ export type Database = {
           },
         ]
       }
+      portal_gabinete: {
+        Row: {
+          cor_primaria: string | null
+          cor_secundaria: string | null
+          created_at: string | null
+          descricao: string | null
+          gabinete_id: string
+          id: string
+          layout_json: Json | null
+          logo_url: string | null
+          publicado: boolean | null
+          slug: string
+          subtitulo: string | null
+          titulo: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          cor_primaria?: string | null
+          cor_secundaria?: string | null
+          created_at?: string | null
+          descricao?: string | null
+          gabinete_id: string
+          id?: string
+          layout_json?: Json | null
+          logo_url?: string | null
+          publicado?: boolean | null
+          slug: string
+          subtitulo?: string | null
+          titulo?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          cor_primaria?: string | null
+          cor_secundaria?: string | null
+          created_at?: string | null
+          descricao?: string | null
+          gabinete_id?: string
+          id?: string
+          layout_json?: Json | null
+          logo_url?: string | null
+          publicado?: boolean | null
+          slug?: string
+          subtitulo?: string | null
+          titulo?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "portal_gabinete_gabinete_id_fkey"
+            columns: ["gabinete_id"]
+            isOneToOne: true
+            referencedRelation: "gabinetes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -892,6 +948,10 @@ export type Database = {
       }
       generate_codigo_indicacao: {
         Args: Record<PropertyKey, never>
+        Returns: string
+      }
+      generate_portal_slug: {
+        Args: { gabinete_nome: string }
         Returns: string
       }
       get_user_gabinetes_ids: {

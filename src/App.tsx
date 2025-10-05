@@ -22,6 +22,7 @@ import MinhaConta from "./pages/MinhaConta";
 import NotFound from "./pages/NotFound";
 import Inicio from "./pages/Inicio";
 import CadastroPublico from "./pages/CadastroPublico";
+import ConstrutorDeSites from "./pages/ConstrutorDeSites";
 
 const queryClient = new QueryClient();
 
@@ -148,6 +149,18 @@ const App = () => (
                     <MainLayout>
                       <MinhaConta />
                     </MainLayout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/construtor-de-sites"
+                element={
+                  <ProtectedRoute>
+                    <RequiresGabinete>
+                      <MainLayout>
+                        <ConstrutorDeSites />
+                      </MainLayout>
+                    </RequiresGabinete>
                   </ProtectedRoute>
                 }
               />

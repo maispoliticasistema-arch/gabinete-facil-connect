@@ -1,4 +1,4 @@
-import { Building2, Calendar, FileText, Home, Map, Route, Users, ChevronDown, LogOut, Moon, Sun, Settings, BarChart3, UserCircle } from 'lucide-react';
+import { Building2, Calendar, FileText, Home, Map, Route, Users, ChevronDown, LogOut, Moon, Sun, Settings, BarChart3, UserCircle, Layout } from 'lucide-react';
 import { NavLink, useLocation } from 'react-router-dom';
 import {
   Sidebar,
@@ -51,6 +51,7 @@ const menuItems: MenuItem[] = [
   { title: 'Mapa', url: '/mapa', icon: Map, permission: 'view_mapa' },
   { title: 'Roteiros', url: '/roteiros', icon: Route, permission: 'view_roteiros' },
   { title: 'Relatórios', url: '/relatorios', icon: BarChart3, permission: 'view_relatorios' },
+  { title: 'Construtor de Sites', url: '/construtor-de-sites', icon: Layout, permission: 'manage_settings' },
   { title: 'Minha Conta', url: '/minha-conta', icon: UserCircle },
   { title: 'Configurações', url: '/configuracoes', icon: Settings, permission: 'manage_settings' },
 ];
