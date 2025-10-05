@@ -55,12 +55,128 @@ interface Ponto {
 
 const MapController = ({ center }: { center: [number, number] }) => {
   const map = useMap();
+  
   useEffect(() => {
-    if (map && center) {
+    if (!map || !center || center.length !== 2) return;
+    
+    try {
       map.setView(center, 13);
+    } catch (error) {
+      console.error('Erro ao atualizar vista do mapa:', error);
     }
   }, [center, map]);
+  
   return null;
+};
+
+const RoteirosMap = ({
+  mapCenter,
+  selectedRoteiroData,
+  routeGeometry,
+  pontos,
+  roteiroPartidaIcon,
+  roteiroFimIcon,
+  createNumberIcon
+}: {
+  mapCenter: [number, number];
+  selectedRoteiroData: Roteiro | null;
+  routeGeometry: [number, number][];
+  pontos: Ponto[];
+  roteiroPartidaIcon: L.DivIcon;
+  roteiroFimIcon: L.DivIcon;
+  createNumberIcon: (numero: number) => L.DivIcon;
+}) => {
+  if (!mapCenter || mapCenter.length !== 2) {
+    return (
+      <div className="h-full w-full flex items-center justify-center text-muted-foreground">
+        Carregando mapa...
+      </div>
+    );
+  }
+
+  return (
+    <MapContainer
+      center={mapCenter}
+      zoom={13}
+      className="h-full w-full"
+      key={`map-${mapCenter[0]}-${mapCenter[1]}`}
+    >
+      <MapController center={mapCenter} />
+      <TileLayer
+        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+      />
+
+      {selectedRoteiroData && selectedRoteiroData.latitude_partida && selectedRoteiroData.longitude_partida && (
+        <Marker
+          position={[selectedRoteiroData.latitude_partida, selectedRoteiroData.longitude_partida]}
+          icon={roteiroPartidaIcon}
+        >
+          <Popup>
+            <div className="text-sm">
+              <strong>🚀 Ponto de Partida</strong>
+              <br />
+              {selectedRoteiroData.endereco_partida || 'Endereço de partida'}
+            </div>
+          </Popup>
+        </Marker>
+      )}
+
+      {selectedRoteiroData && selectedRoteiroData.latitude_final && selectedRoteiroData.longitude_final && (
+        <Marker
+          position={[selectedRoteiroData.latitude_final, selectedRoteiroData.longitude_final]}
+          icon={roteiroFimIcon}
+        >
+          <Popup>
+            <div className="text-sm">
+              <strong>🏁 Ponto de Chegada</strong>
+              <br />
+              {selectedRoteiroData.endereco_final || 'Endereço final'}
+            </div>
+          </Popup>
+        </Marker>
+      )}
+
+      {routeGeometry.length > 0 && (
+        <Polyline
+          positions={routeGeometry}
+          color="#3b82f6"
+          weight={4}
+          opacity={0.8}
+        />
+      )}
+
+      {pontos.length > 0 && (
+        <MarkerClusterGroup>
+          {pontos.map((ponto) => (
+            ponto.latitude && ponto.longitude && (
+              <Marker
+                key={ponto.id}
+                position={[ponto.latitude, ponto.longitude]}
+                icon={createNumberIcon(ponto.ordem)}
+              >
+                <Popup>
+                  <div className="text-sm">
+                    <strong>Parada {ponto.ordem}</strong>
+                    <br />
+                    {ponto.eleitores?.nome_completo || 'Eleitor não encontrado'}
+                    {ponto.endereco_manual && (
+                      <>
+                        <br />
+                        <span className="text-xs bg-secondary px-1 rounded">Endereço alternativo:</span>
+                        <br />
+                        <span className="text-muted-foreground">{ponto.endereco_manual}</span>
+                      </>
+                    )}
+                  </div>
+                </Popup>
+              </Marker>
+            )
+          ))}
+        </MarkerClusterGroup>
+      )}
+    </MapContainer>
+  );
 };
 
 const Roteiros = () => {
@@ -390,90 +506,15 @@ const Roteiros = () => {
             </CardTitle>
           </CardHeader>
           <CardContent className="p-0 h-[calc(100%-4rem)]">
-            {mapCenter && mapCenter.length === 2 && (
-              <MapContainer
-                center={mapCenter}
-                zoom={13}
-                className="h-full w-full"
-                key={`map-${mapCenter[0]}-${mapCenter[1]}`}
-              >
-                <MapController center={mapCenter} />
-                <TileLayer
-                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                />
-
-              {selectedRoteiroData && selectedRoteiroData.latitude_partida && selectedRoteiroData.longitude_partida && (
-                <Marker
-                  position={[selectedRoteiroData.latitude_partida, selectedRoteiroData.longitude_partida]}
-                  icon={roteiroPartidaIcon}
-                >
-                  <Popup>
-                    <div className="text-sm">
-                      <strong>🚀 Ponto de Partida</strong>
-                      <br />
-                      {selectedRoteiroData.endereco_partida || 'Endereço de partida'}
-                    </div>
-                  </Popup>
-                </Marker>
-              )}
-
-              {selectedRoteiroData && selectedRoteiroData.latitude_final && selectedRoteiroData.longitude_final && (
-                <Marker
-                  position={[selectedRoteiroData.latitude_final, selectedRoteiroData.longitude_final]}
-                  icon={roteiroFimIcon}
-                >
-                  <Popup>
-                    <div className="text-sm">
-                      <strong>🏁 Ponto de Chegada</strong>
-                      <br />
-                      {selectedRoteiroData.endereco_final || 'Endereço final'}
-                    </div>
-                  </Popup>
-                </Marker>
-              )}
-
-              {/* Rota completa calculada pelo OSRM */}
-              {routeGeometry.length > 0 && (
-                <Polyline
-                  positions={routeGeometry}
-                  color="#3b82f6"
-                  weight={4}
-                  opacity={0.8}
-                />
-              )}
-
-              {pontos.length > 0 && (
-                <MarkerClusterGroup>
-                  {pontos.map((ponto) => (
-                    ponto.latitude && ponto.longitude && (
-                      <Marker
-                        key={ponto.id}
-                        position={[ponto.latitude, ponto.longitude]}
-                        icon={createNumberIcon(ponto.ordem)}
-                      >
-                        <Popup>
-                          <div className="text-sm">
-                            <strong>Parada {ponto.ordem}</strong>
-                            <br />
-                            {ponto.eleitores?.nome_completo || 'Eleitor não encontrado'}
-                            {ponto.endereco_manual && (
-                              <>
-                                <br />
-                                <span className="text-xs bg-secondary px-1 rounded">Endereço alternativo:</span>
-                                <br />
-                                <span className="text-muted-foreground">{ponto.endereco_manual}</span>
-                              </>
-                            )}
-                          </div>
-                        </Popup>
-                      </Marker>
-                    )
-                  ))}
-                </MarkerClusterGroup>
-              )}
-            </MapContainer>
-            )}
+            <RoteirosMap
+              mapCenter={mapCenter}
+              selectedRoteiroData={selectedRoteiroData}
+              routeGeometry={routeGeometry}
+              pontos={pontos}
+              roteiroPartidaIcon={roteiroPartidaIcon}
+              roteiroFimIcon={roteiroFimIcon}
+              createNumberIcon={createNumberIcon}
+            />
           </CardContent>
         </Card>
       </div>
