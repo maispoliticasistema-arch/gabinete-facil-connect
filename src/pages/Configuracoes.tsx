@@ -28,64 +28,67 @@ export default function Configuracoes() {
   }
 
   return (
-    <div className="container mx-auto py-6 space-y-6">
+    <div className="container mx-auto py-4 sm:py-6 space-y-4 md:space-y-6 px-3 sm:px-4">
       <div>
-        <h1 className="text-3xl font-bold">Configurações</h1>
-        <p className="text-muted-foreground mt-2">
+        <h1 className="text-2xl sm:text-3xl font-bold">Configurações</h1>
+        <p className="text-sm sm:text-base text-muted-foreground mt-2">
           Gerencie as configurações e preferências do gabinete
         </p>
       </div>
 
-      <Tabs defaultValue="info" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5 lg:w-auto lg:inline-grid">
-          <TabsTrigger value="info" className="flex items-center gap-2">
-            <Building2 className="h-4 w-4" />
-            <span className="hidden sm:inline">Gabinete</span>
+      <Tabs defaultValue="info" className="space-y-4 md:space-y-6">
+        <TabsList className="grid w-full grid-cols-5 h-auto">
+          <TabsTrigger value="info" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 py-2 text-xs sm:text-sm">
+            <Building2 className="h-3 w-3 sm:h-4 sm:w-4" />
+            <span className="truncate">Gabinete</span>
           </TabsTrigger>
-          <TabsTrigger value="usuarios" className="flex items-center gap-2">
-            <Users className="h-4 w-4" />
-            <span className="hidden sm:inline">Usuários</span>
+          <TabsTrigger value="usuarios" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 py-2 text-xs sm:text-sm">
+            <Users className="h-3 w-3 sm:h-4 sm:w-4" />
+            <span className="truncate">Usuários</span>
           </TabsTrigger>
-          <TabsTrigger value="integracoes" className="flex items-center gap-2">
-            <Plug className="h-4 w-4" />
-            <span className="hidden sm:inline">Integrações</span>
+          <TabsTrigger value="integracoes" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 py-2 text-xs sm:text-sm">
+            <Plug className="h-3 w-3 sm:h-4 sm:w-4" />
+            <span className="hidden lg:inline truncate">Integrações</span>
+            <span className="lg:hidden truncate">Integr.</span>
           </TabsTrigger>
-          <TabsTrigger value="notificacoes" className="flex items-center gap-2">
-            <Bell className="h-4 w-4" />
-            <span className="hidden sm:inline">Notificações</span>
+          <TabsTrigger value="notificacoes" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 py-2 text-xs sm:text-sm">
+            <Bell className="h-3 w-3 sm:h-4 sm:w-4" />
+            <span className="hidden lg:inline truncate">Notificações</span>
+            <span className="lg:hidden truncate">Notif.</span>
           </TabsTrigger>
-          <TabsTrigger value="seguranca" className="flex items-center gap-2">
-            <Shield className="h-4 w-4" />
-            <span className="hidden sm:inline">Segurança</span>
+          <TabsTrigger value="seguranca" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 py-2 text-xs sm:text-sm">
+            <Shield className="h-3 w-3 sm:h-4 sm:w-4" />
+            <span className="hidden lg:inline truncate">Segurança</span>
+            <span className="lg:hidden truncate">Segur.</span>
           </TabsTrigger>
         </TabsList>
 
         <TabsContent value="info">
-          <Card className="p-6">
+          <Card className="p-3 sm:p-6">
             <InfoGabinete gabinete={currentGabinete.gabinetes} />
           </Card>
         </TabsContent>
 
         <TabsContent value="usuarios">
-          <Card className="p-6">
+          <Card className="p-3 sm:p-6">
             <UsuariosPermissoes gabineteId={currentGabinete.gabinete_id} />
           </Card>
         </TabsContent>
 
         <TabsContent value="integracoes">
-          <Card className="p-6">
+          <Card className="p-3 sm:p-6">
             <Integracoes gabineteId={currentGabinete.gabinete_id} />
           </Card>
         </TabsContent>
 
         <TabsContent value="notificacoes">
-          <Card className="p-6">
+          <Card className="p-3 sm:p-6">
             <Notificacoes gabineteId={currentGabinete.gabinete_id} />
           </Card>
         </TabsContent>
 
         <TabsContent value="seguranca">
-          <Card className="p-6">
+          <Card className="p-3 sm:p-6">
             <Seguranca gabineteId={currentGabinete.gabinete_id} />
           </Card>
         </TabsContent>

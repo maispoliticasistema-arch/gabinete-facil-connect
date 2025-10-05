@@ -273,37 +273,38 @@ const Roteiros = () => {
   }
 
   return (
-    <div className="animate-fade-in space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="animate-fade-in space-y-4 md:space-y-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Roteiros</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-2xl sm:text-3xl font-bold">Roteiros</h1>
+          <p className="text-sm sm:text-base text-muted-foreground">
             Planejamento de visitas em bairros e cidades
           </p>
         </div>
         <PermissionGuard permission="create_roteiros">
-          <Button onClick={() => setShowAddDialog(true)}>
+          <Button onClick={() => setShowAddDialog(true)} className="w-full sm:w-auto">
             <Plus className="mr-2 h-4 w-4" />
-            Novo Roteiro
+            <span className="hidden sm:inline">Novo Roteiro</span>
+            <span className="sm:hidden">Novo</span>
           </Button>
         </PermissionGuard>
       </div>
 
       <RoteirosStats {...stats} />
 
-      <div className="grid lg:grid-cols-2 gap-6">
-        <div className="space-y-4">
+      <div className="grid lg:grid-cols-2 gap-4 md:gap-6">
+        <div className="space-y-3 md:space-y-4">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Buscar roteiros..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
+              className="pl-10 w-full"
             />
           </div>
 
-          <div className="space-y-3 max-h-[600px] overflow-y-auto">
+          <div className="space-y-2 md:space-y-3 max-h-[500px] sm:max-h-[600px] overflow-y-auto">
             {filteredRoteiros.map((roteiro) => (
               <Card
                 key={roteiro.id}
@@ -357,14 +358,15 @@ const Roteiros = () => {
           </div>
         </div>
 
-        <Card className="h-[600px]">
-          <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2">
-              <Map className="h-5 w-5" />
-              Visualização do Roteiro
+        <Card className="h-[400px] sm:h-[500px] lg:h-[600px]">
+          <CardHeader className="pb-3 px-3 sm:px-6">
+            <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+              <Map className="h-4 w-4 sm:h-5 sm:w-5" />
+              <span className="hidden sm:inline">Visualização do Roteiro</span>
+              <span className="sm:hidden">Mapa</span>
             </CardTitle>
           </CardHeader>
-          <CardContent className="p-0 h-[calc(100%-4rem)]">
+          <CardContent className="p-0 h-[calc(100%-3.5rem)] sm:h-[calc(100%-4rem)]">
             <RoteirosMap
               mapCenter={mapCenter}
               selectedRoteiroData={selectedRoteiroData}

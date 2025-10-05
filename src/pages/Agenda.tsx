@@ -213,38 +213,39 @@ const Agenda = () => {
   }
 
   return (
-    <div className="animate-fade-in space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="animate-fade-in space-y-4 md:space-y-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Agenda do Gabinete</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-2xl sm:text-3xl font-bold">Agenda do Gabinete</h1>
+          <p className="text-sm sm:text-base text-muted-foreground">
             Organize compromissos, reuniões e eventos
           </p>
         </div>
         <PermissionGuard permission="create_agenda">
-          <Button onClick={() => setAddDialogOpen(true)}>
+          <Button onClick={() => setAddDialogOpen(true)} className="w-full sm:w-auto">
             <Plus className="h-4 w-4 mr-2" />
-            Novo Evento
+            <span className="hidden sm:inline">Novo Evento</span>
+            <span className="sm:hidden">Novo</span>
           </Button>
         </PermissionGuard>
       </div>
 
       <AgendaStats {...stats} />
 
-      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
-        <div className="relative flex-1 max-w-sm">
+      <div className="flex flex-col gap-3 sm:gap-4">
+        <div className="relative w-full">
           <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Buscar eventos..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
+            className="pl-10 w-full"
           />
         </div>
 
-        <div className="flex gap-2 flex-wrap">
+        <div className="flex flex-col sm:flex-row gap-2 flex-wrap">
           <Select value={viewMode} onValueChange={(v: any) => setViewMode(v)}>
-            <SelectTrigger className="w-[140px]">
+            <SelectTrigger className="w-full sm:w-[140px]">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -255,7 +256,7 @@ const Agenda = () => {
           </Select>
 
           <Select value={filtroTipo} onValueChange={setFiltroTipo}>
-            <SelectTrigger className="w-[160px]">
+            <SelectTrigger className="w-full sm:w-[160px]">
               <Filter className="h-4 w-4 mr-2" />
               <SelectValue placeholder="Tipo" />
             </SelectTrigger>
@@ -271,7 +272,7 @@ const Agenda = () => {
           </Select>
 
           <Select value={filtroStatus} onValueChange={setFiltroStatus}>
-            <SelectTrigger className="w-[160px]">
+            <SelectTrigger className="w-full sm:w-[160px]">
               <SelectValue placeholder="Status" />
             </SelectTrigger>
             <SelectContent>
@@ -323,8 +324,8 @@ const Agenda = () => {
           )}
         </div>
       ) : (
-        <div className="grid lg:grid-cols-[1fr_300px] gap-6">
-          <Card className="p-6">
+        <div className="grid lg:grid-cols-[1fr_300px] gap-4 md:gap-6">
+          <Card className="p-4 sm:p-6">
             <div className="flex items-center justify-center w-full">
               <div className="w-full max-w-2xl">
                 <Calendar

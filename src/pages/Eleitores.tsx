@@ -246,15 +246,15 @@ const Eleitores = () => {
   }
 
   return (
-    <div className="animate-fade-in space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="animate-fade-in space-y-4 md:space-y-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Eleitores</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-2xl sm:text-3xl font-bold">Eleitores</h1>
+          <p className="text-sm sm:text-base text-muted-foreground">
             Cadastro completo de eleitores e apoiadores
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <PermissionGuard permission="edit_eleitores">
             <GeocodeAllDialog onComplete={fetchEleitores} />
           </PermissionGuard>
@@ -265,9 +265,10 @@ const Eleitores = () => {
             <ImportEleitoresDialog onEleitoresImported={fetchEleitores} />
           </PermissionGuard>
           <PermissionGuard permission="create_eleitores">
-            <Button onClick={() => setAddEleitorOpen(true)}>
+            <Button onClick={() => setAddEleitorOpen(true)} className="w-full sm:w-auto">
               <UserPlus className="mr-2 h-4 w-4" />
-              Novo Eleitor
+              <span className="hidden sm:inline">Novo Eleitor</span>
+              <span className="sm:hidden">Novo</span>
             </Button>
           </PermissionGuard>
         </div>
@@ -275,19 +276,19 @@ const Eleitores = () => {
 
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-2">
               <Users className="h-5 w-5 text-primary" />
-              <CardTitle>Lista de Eleitores</CardTitle>
+              <CardTitle className="text-lg sm:text-xl">Lista de Eleitores</CardTitle>
             </div>
-            <div className="flex items-center gap-2">
-              <div className="relative w-64">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
+              <div className="relative flex-1 sm:flex-initial sm:w-64">
                 <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Buscar por nome, telefone, email..."
+                  placeholder="Buscar por nome, telefone..."
                   value={searchTerm}
                   onChange={(e) => handleSearch(e.target.value)}
-                  className="pl-8"
+                  className="pl-8 w-full"
                 />
               </div>
               <Popover>

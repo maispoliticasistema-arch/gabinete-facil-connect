@@ -777,20 +777,20 @@ const Relatorios = () => {
   }
 
   return (
-    <div className="animate-fade-in space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="animate-fade-in space-y-4 md:space-y-6">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Relatórios</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-2xl sm:text-3xl font-bold">Relatórios</h1>
+          <p className="text-sm sm:text-base text-muted-foreground">
             Análises e prestação de contas do gabinete
           </p>
         </div>
 
-        <div className="flex items-center gap-4">
-          <div className="w-48">
-            <Label>Período</Label>
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-end gap-3 w-full lg:w-auto">
+          <div className="flex-1 sm:flex-initial sm:w-40 lg:w-48">
+            <Label className="text-xs sm:text-sm">Período</Label>
             <Select value={periodo} onValueChange={setPeriodo}>
-              <SelectTrigger>
+              <SelectTrigger className="w-full">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -802,10 +802,10 @@ const Relatorios = () => {
             </Select>
           </div>
 
-          <div className="w-48">
-            <Label>Assessor</Label>
+          <div className="flex-1 sm:flex-initial sm:w-40 lg:w-48">
+            <Label className="text-xs sm:text-sm">Assessor</Label>
             <Select value={assessorId} onValueChange={setAssessorId}>
-              <SelectTrigger>
+              <SelectTrigger className="w-full">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -823,12 +823,12 @@ const Relatorios = () => {
 
       <RelatoriosStats stats={stats} />
 
-      <Tabs defaultValue="demandas" className="space-y-6">
-        <TabsList>
-          <TabsTrigger value="demandas">Demandas</TabsTrigger>
-          <TabsTrigger value="eleitores">Eleitores</TabsTrigger>
-          <TabsTrigger value="agenda">Agenda</TabsTrigger>
-          <TabsTrigger value="roteiros">Roteiros</TabsTrigger>
+      <Tabs defaultValue="demandas" className="space-y-4 md:space-y-6">
+        <TabsList className="w-full grid grid-cols-2 sm:grid-cols-4 h-auto">
+          <TabsTrigger value="demandas" className="text-xs sm:text-sm">Demandas</TabsTrigger>
+          <TabsTrigger value="eleitores" className="text-xs sm:text-sm">Eleitores</TabsTrigger>
+          <TabsTrigger value="agenda" className="text-xs sm:text-sm">Agenda</TabsTrigger>
+          <TabsTrigger value="roteiros" className="text-xs sm:text-sm">Roteiros</TabsTrigger>
         </TabsList>
 
         <TabsContent value="demandas">

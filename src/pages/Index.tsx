@@ -129,11 +129,11 @@ const Index = () => {
         <div className="h-12 w-12 animate-spin rounded-full border-b-2 border-primary"></div>
       </div>;
   }
-  return <div className="animate-fade-in space-y-6">
-      <div className="flex items-center justify-between">
+  return <div className="animate-fade-in space-y-4 md:space-y-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Dashboard</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-2xl sm:text-3xl font-bold">Dashboard</h1>
+          <p className="text-sm sm:text-base text-muted-foreground">
             Bem-vindo ao painel de controle do {currentGabinete?.gabinetes.nome}
           </p>
         </div>
@@ -144,7 +144,7 @@ const Index = () => {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
         <StatsCard title="Total de Eleitores" value={stats.totalEleitores} icon={Users} description="Cadastrados no sistema" trend={{
         value: 12,
         isPositive: true

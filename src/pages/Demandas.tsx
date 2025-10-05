@@ -193,18 +193,19 @@ const Demandas = () => {
   }
 
   return (
-    <div className="animate-fade-in space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="animate-fade-in space-y-4 md:space-y-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Demandas</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-2xl sm:text-3xl font-bold">Demandas</h1>
+          <p className="text-sm sm:text-base text-muted-foreground">
             Gerencie todas as solicitações e atendimentos
           </p>
         </div>
         <PermissionGuard permission="create_demandas">
-          <Button onClick={() => setAddDemandaOpen(true)}>
+          <Button onClick={() => setAddDemandaOpen(true)} className="w-full sm:w-auto">
             <Plus className="mr-2 h-4 w-4" />
-            Nova Demanda
+            <span className="hidden sm:inline">Nova Demanda</span>
+            <span className="sm:hidden">Nova</span>
           </Button>
         </PermissionGuard>
       </div>
@@ -226,21 +227,21 @@ const Demandas = () => {
         }}
       />
 
-      <Card className="p-6">
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-6">
-          <div className="relative flex-1 max-w-md">
+      <Card className="p-4 sm:p-6">
+        <div className="flex flex-col gap-3 sm:gap-4 mb-4 sm:mb-6">
+          <div className="relative w-full">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
-              placeholder="Buscar por título ou descrição..."
+              placeholder="Buscar por título..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
+              className="pl-10 w-full"
             />
           </div>
 
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-col sm:flex-row flex-wrap gap-2">
             <Select value={selectedStatus} onValueChange={setSelectedStatus}>
-              <SelectTrigger className="w-[160px]">
+              <SelectTrigger className="w-full sm:w-[160px]">
                 <Filter className="mr-2 h-4 w-4" />
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
@@ -254,7 +255,7 @@ const Demandas = () => {
             </Select>
 
             <Select value={selectedPrioridade} onValueChange={setSelectedPrioridade}>
-              <SelectTrigger className="w-[160px]">
+              <SelectTrigger className="w-full sm:w-[160px]">
                 <Filter className="mr-2 h-4 w-4" />
                 <SelectValue placeholder="Prioridade" />
               </SelectTrigger>
