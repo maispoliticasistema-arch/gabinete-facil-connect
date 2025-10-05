@@ -910,6 +910,7 @@ export type Database = {
         | "view_relatorios"
         | "manage_users"
         | "manage_settings"
+        | "view_mapa"
       roteiro_status: "planejado" | "em_andamento" | "concluido" | "cancelado"
       user_role: "owner" | "admin" | "assessor"
     }
@@ -1089,6 +1090,7 @@ export const Constants = {
         "view_relatorios",
         "manage_users",
         "manage_settings",
+        "view_mapa",
       ],
       roteiro_status: ["planejado", "em_andamento", "concluido", "cancelado"],
       user_role: ["owner", "admin", "assessor"],
