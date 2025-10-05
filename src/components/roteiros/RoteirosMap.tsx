@@ -32,16 +32,50 @@ interface RoteirosMapProps {
   pontos: Ponto[];
 }
 
-// Usar ícone padrão do Leaflet (azul elegante)
-const defaultIcon = L.icon({
-  iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
-  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  shadowSize: [41, 41]
-});
+// Criar ícones customizados circulares com emojis
+const createCustomIcon = (emoji: string, bgColor: string) => {
+  return L.divIcon({
+    html: `<div style="
+      width: 36px;
+      height: 36px;
+      background: ${bgColor};
+      border: 3px solid white;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    ">${emoji}</div>`,
+    className: '',
+    iconSize: [36, 36],
+    iconAnchor: [18, 18],
+    popupAnchor: [0, -18]
+  });
+};
+
+const createNumberIcon = (number: number) => {
+  return L.divIcon({
+    html: `<div style="
+      width: 36px;
+      height: 36px;
+      background: #3b82f6;
+      border: 3px solid white;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      font-weight: bold;
+      color: white;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    ">${number}</div>`,
+    className: '',
+    iconSize: [36, 36],
+    iconAnchor: [18, 18],
+    popupAnchor: [0, -18]
+  });
+};
 
 const RoteirosMapComponent = ({
   mapCenter,
@@ -76,23 +110,23 @@ const RoteirosMapComponent = ({
 
     const map = mapRef.current;
 
-    // Adicionar ponto de partida
+    // Adicionar ponto de partida (foguete verde)
     if (selectedRoteiroData.latitude_partida && selectedRoteiroData.longitude_partida) {
       const marker = L.marker(
         [selectedRoteiroData.latitude_partida, selectedRoteiroData.longitude_partida],
-        { icon: defaultIcon }
+        { icon: createCustomIcon('🚀', '#22c55e') }
       )
         .bindPopup(`<strong>🚀 Ponto de Partida</strong><br/>${selectedRoteiroData.endereco_partida || ''}`)
         .addTo(map);
       markersRef.current.push(marker);
     }
 
-    // Adicionar pontos de parada
+    // Adicionar pontos de parada (números azuis)
     pontos.forEach((ponto) => {
       if (ponto.latitude && ponto.longitude) {
         const marker = L.marker(
           [ponto.latitude, ponto.longitude],
-          { icon: defaultIcon }
+          { icon: createNumberIcon(ponto.ordem) }
         )
           .bindPopup(
             `<strong>Parada #${ponto.ordem}</strong><br/>` +
@@ -104,11 +138,11 @@ const RoteirosMapComponent = ({
       }
     });
 
-    // Adicionar ponto final
+    // Adicionar ponto final (bandeira vermelha)
     if (selectedRoteiroData.latitude_final && selectedRoteiroData.longitude_final) {
       const marker = L.marker(
         [selectedRoteiroData.latitude_final, selectedRoteiroData.longitude_final],
-        { icon: defaultIcon }
+        { icon: createCustomIcon('🏁', '#ef4444') }
       )
         .bindPopup(`<strong>🏁 Ponto de Chegada</strong><br/>${selectedRoteiroData.endereco_final || ''}`)
         .addTo(map);
