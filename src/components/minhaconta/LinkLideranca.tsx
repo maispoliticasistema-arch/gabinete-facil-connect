@@ -31,11 +31,12 @@ export function LinkLideranca() {
 
         setCodigoIndicacao(profile?.codigo_indicacao || '');
 
-        // Buscar total de indicados
+        // Buscar total de indicados via link
         const { count } = await supabase
           .from('eleitores')
           .select('*', { count: 'exact', head: true })
-          .eq('cadastrado_por', user.id);
+          .eq('cadastrado_por', user.id)
+          .eq('via_link_indicacao', true);
 
         setTotalIndicados(count || 0);
       } catch (error) {

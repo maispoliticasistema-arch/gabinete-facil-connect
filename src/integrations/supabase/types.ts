@@ -348,6 +348,7 @@ export type Database = {
           rg: string | null
           telefone: string | null
           updated_at: string | null
+          via_link_indicacao: boolean | null
         }
         Insert: {
           bairro?: string | null
@@ -371,6 +372,7 @@ export type Database = {
           rg?: string | null
           telefone?: string | null
           updated_at?: string | null
+          via_link_indicacao?: boolean | null
         }
         Update: {
           bairro?: string | null
@@ -394,6 +396,7 @@ export type Database = {
           rg?: string | null
           telefone?: string | null
           updated_at?: string | null
+          via_link_indicacao?: boolean | null
         }
         Relationships: [
           {

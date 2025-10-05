@@ -149,6 +149,7 @@ const CadastroPublico = () => {
       const { error } = await supabase.from('eleitores').insert({
         gabinete_id: gabineteId,
         cadastrado_por: indicadorId,
+        via_link_indicacao: true,
         nome_completo: formData.nome_completo.trim(),
         telefone: formData.telefone.trim() || null,
         email: formData.email.trim() || null,
