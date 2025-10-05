@@ -158,7 +158,7 @@ const Index = () => {
 
       {/* Tabs */}
       <Tabs defaultValue="demandas" className="space-y-4">
-        <TabsList className="px-[194px] mx-0 my-[14px] py-0">
+        <TabsList>
           <TabsTrigger value="demandas">Demandas</TabsTrigger>
           <TabsTrigger value="eleitores">Eleitores</TabsTrigger>
           <TabsTrigger value="agenda">Agenda</TabsTrigger>
