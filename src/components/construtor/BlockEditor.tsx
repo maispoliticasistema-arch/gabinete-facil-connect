@@ -5,7 +5,9 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
-import { Plus, Trash2, Upload } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Separator } from '@/components/ui/separator';
+import { Plus, Trash2, Palette } from 'lucide-react';
 
 interface BlockEditorProps {
   block: Block;
@@ -17,6 +19,13 @@ export function BlockEditor({ block, onChange }: BlockEditorProps) {
     onChange({
       ...block,
       data: { ...block.data, [key]: value },
+    });
+  };
+
+  const updateStyle = (key: string, value: any) => {
+    onChange({
+      ...block,
+      styles: { ...block.styles, [key]: value },
     });
   };
 
@@ -38,6 +47,175 @@ export function BlockEditor({ block, onChange }: BlockEditorProps) {
   };
 
   const renderEditor = () => {
+    return (
+      <Tabs defaultValue="content" className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="content">Conteúdo</TabsTrigger>
+          <TabsTrigger value="styles">
+            <Palette className="h-4 w-4 mr-2" />
+            Estilos
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="content" className="space-y-4 mt-4">
+          {renderContentEditor()}
+        </TabsContent>
+
+        <TabsContent value="styles" className="space-y-4 mt-4">
+          {renderStylesEditor()}
+        </TabsContent>
+      </Tabs>
+    );
+  };
+
+  const renderStylesEditor = () => {
+    const styles = block.styles || {};
+    
+    return (
+      <div className="space-y-4">
+        <div className="space-y-3">
+          <Label className="text-base font-semibold">Cores do Bloco</Label>
+          <Separator />
+          
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label className="text-sm">Cor de Fundo</Label>
+              <div className="flex gap-2">
+                <Input
+                  type="color"
+                  value={styles.backgroundColor || '#ffffff'}
+                  onChange={(e) => updateStyle('backgroundColor', e.target.value)}
+                  className="w-16 h-10 p-1"
+                />
+                <Input
+                  value={styles.backgroundColor || '#ffffff'}
+                  onChange={(e) => updateStyle('backgroundColor', e.target.value)}
+                  placeholder="#ffffff"
+                  className="flex-1"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-sm">Cor do Texto</Label>
+              <div className="flex gap-2">
+                <Input
+                  type="color"
+                  value={styles.textColor || '#000000'}
+                  onChange={(e) => updateStyle('textColor', e.target.value)}
+                  className="w-16 h-10 p-1"
+                />
+                <Input
+                  value={styles.textColor || '#000000'}
+                  onChange={(e) => updateStyle('textColor', e.target.value)}
+                  placeholder="#000000"
+                  className="flex-1"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-sm">Cor do Título</Label>
+              <div className="flex gap-2">
+                <Input
+                  type="color"
+                  value={styles.titleColor || '#000000'}
+                  onChange={(e) => updateStyle('titleColor', e.target.value)}
+                  className="w-16 h-10 p-1"
+                />
+                <Input
+                  value={styles.titleColor || '#000000'}
+                  onChange={(e) => updateStyle('titleColor', e.target.value)}
+                  placeholder="#000000"
+                  className="flex-1"
+                />
+              </div>
+            </div>
+
+            {(block.type === 'hero' || block.type === 'contact') && (
+              <>
+                <div className="space-y-2">
+                  <Label className="text-sm">Cor do Botão</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      type="color"
+                      value={styles.buttonColor || '#6366f1'}
+                      onChange={(e) => updateStyle('buttonColor', e.target.value)}
+                      className="w-16 h-10 p-1"
+                    />
+                    <Input
+                      value={styles.buttonColor || '#6366f1'}
+                      onChange={(e) => updateStyle('buttonColor', e.target.value)}
+                      placeholder="#6366f1"
+                      className="flex-1"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-sm">Cor do Texto do Botão</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      type="color"
+                      value={styles.buttonTextColor || '#ffffff'}
+                      onChange={(e) => updateStyle('buttonTextColor', e.target.value)}
+                      className="w-16 h-10 p-1"
+                    />
+                    <Input
+                      value={styles.buttonTextColor || '#ffffff'}
+                      onChange={(e) => updateStyle('buttonTextColor', e.target.value)}
+                      placeholder="#ffffff"
+                      className="flex-1"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-sm">Cor Hover do Botão</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      type="color"
+                      value={styles.buttonHoverColor || '#4f46e5'}
+                      onChange={(e) => updateStyle('buttonHoverColor', e.target.value)}
+                      className="w-16 h-10 p-1"
+                    />
+                    <Input
+                      value={styles.buttonHoverColor || '#4f46e5'}
+                      onChange={(e) => updateStyle('buttonHoverColor', e.target.value)}
+                      placeholder="#4f46e5"
+                      className="flex-1"
+                    />
+                  </div>
+                </div>
+              </>
+            )}
+
+            {block.type !== 'hero' && block.type !== 'footer' && (
+              <div className="space-y-2">
+                <Label className="text-sm">Cor de Destaque</Label>
+                <div className="flex gap-2">
+                  <Input
+                    type="color"
+                    value={styles.accentColor || '#6366f1'}
+                    onChange={(e) => updateStyle('accentColor', e.target.value)}
+                    className="w-16 h-10 p-1"
+                  />
+                  <Input
+                    value={styles.accentColor || '#6366f1'}
+                    onChange={(e) => updateStyle('accentColor', e.target.value)}
+                    placeholder="#6366f1"
+                    className="flex-1"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const renderContentEditor = () => {
     switch (block.type) {
       case 'hero':
         return (
@@ -406,11 +584,8 @@ export function BlockEditor({ block, onChange }: BlockEditorProps) {
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-lg">Editar Bloco</CardTitle>
-      </CardHeader>
-      <CardContent>{renderEditor()}</CardContent>
-    </Card>
+    <div className="space-y-4">
+      {renderEditor()}
+    </div>
   );
 }

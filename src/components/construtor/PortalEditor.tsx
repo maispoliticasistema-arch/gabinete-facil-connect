@@ -16,7 +16,7 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Block, BlockType, blockTypeLabels, blockTypeDescriptions, getDefaultBlockData } from './BlockTypes';
+import { Block, BlockType, blockTypeLabels, blockTypeDescriptions, getDefaultBlockData, getDefaultBlockStyles } from './BlockTypes';
 import { BlockEditor } from './BlockEditor';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -125,6 +125,7 @@ export function PortalEditor({ blocks, onChange, colors }: PortalEditorProps) {
       id: Date.now().toString(),
       type,
       data: getDefaultBlockData(type),
+      styles: getDefaultBlockStyles(type),
     };
     onChange([...blocks, newBlock]);
   };

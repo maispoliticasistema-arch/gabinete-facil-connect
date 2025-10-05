@@ -9,26 +9,46 @@ interface BlockPreviewProps {
 }
 
 export function BlockPreview({ block, colors }: BlockPreviewProps) {
+  const styles = block.styles || {};
+  
   const renderBlock = () => {
     switch (block.type) {
       case 'hero':
         return (
           <div 
-            className="relative min-h-[400px] flex items-center justify-center text-white p-8"
+            className="relative min-h-[400px] flex items-center justify-center p-8"
             style={{ 
-              background: `linear-gradient(135deg, ${colors.primary}, ${colors.secondary})`,
+              backgroundColor: styles.backgroundColor || colors.primary,
               backgroundImage: block.data.backgroundImage ? `url(${block.data.backgroundImage})` : undefined,
               backgroundSize: 'cover',
               backgroundPosition: 'center',
+              color: styles.textColor || '#ffffff',
             }}
           >
             <div className="text-center max-w-3xl">
-              <h1 className="text-5xl font-bold mb-4">{block.data.title || 'Título'}</h1>
+              <h1 
+                className="text-5xl font-bold mb-4" 
+                style={{ color: styles.titleColor || styles.textColor || '#ffffff' }}
+              >
+                {block.data.title || 'Título'}
+              </h1>
               <p className="text-xl mb-8">{block.data.subtitle || 'Subtítulo'}</p>
               {block.data.buttonText && (
-                <Button size="lg" variant="secondary">
+                <button
+                  className="px-6 py-3 rounded-lg font-semibold transition-colors text-lg"
+                  style={{
+                    backgroundColor: styles.buttonColor || '#ffffff',
+                    color: styles.buttonTextColor || colors.primary,
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = styles.buttonHoverColor || '#f1f5f9';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = styles.buttonColor || '#ffffff';
+                  }}
+                >
                   {block.data.buttonText}
-                </Button>
+                </button>
               )}
             </div>
           </div>
@@ -36,13 +56,22 @@ export function BlockPreview({ block, colors }: BlockPreviewProps) {
 
       case 'about':
         return (
-          <div className="py-16 px-8">
+          <div 
+            className="py-16 px-8"
+            style={{ 
+              backgroundColor: styles.backgroundColor || '#ffffff',
+              color: styles.textColor || '#64748b',
+            }}
+          >
             <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-8 items-center">
               <div>
-                <h2 className="text-3xl font-bold mb-4" style={{ color: colors.primary }}>
+                <h2 
+                  className="text-3xl font-bold mb-4"
+                  style={{ color: styles.titleColor || colors.primary }}
+                >
                   {block.data.title || 'Título'}
                 </h2>
-                <p className="text-lg text-muted-foreground whitespace-pre-wrap">
+                <p className="text-lg whitespace-pre-wrap">
                   {block.data.description || 'Descrição...'}
                 </p>
               </div>
@@ -59,9 +88,18 @@ export function BlockPreview({ block, colors }: BlockPreviewProps) {
 
       case 'projects':
         return (
-          <div className="py-16 px-8 bg-muted/30">
+          <div 
+            className="py-16 px-8"
+            style={{ 
+              backgroundColor: styles.backgroundColor || '#f8fafc',
+              color: styles.textColor || '#64748b',
+            }}
+          >
             <div className="max-w-6xl mx-auto">
-              <h2 className="text-3xl font-bold mb-8 text-center" style={{ color: colors.primary }}>
+              <h2 
+                className="text-3xl font-bold mb-8 text-center"
+                style={{ color: styles.titleColor || colors.primary }}
+              >
                 {block.data.title || 'Projetos'}
               </h2>
               <div className="grid md:grid-cols-3 gap-6">
@@ -71,12 +109,17 @@ export function BlockPreview({ block, colors }: BlockPreviewProps) {
                       {project.image && (
                         <img src={project.image} alt={project.title} className="w-full h-40 object-cover rounded mb-4" />
                       )}
-                      <h3 className="font-semibold text-lg mb-2">{project.title}</h3>
-                      <p className="text-sm text-muted-foreground">{project.description}</p>
+                      <h3 
+                        className="font-semibold text-lg mb-2"
+                        style={{ color: styles.accentColor || colors.primary }}
+                      >
+                        {project.title}
+                      </h3>
+                      <p className="text-sm">{project.description}</p>
                     </Card>
                   ))
                 ) : (
-                  <p className="col-span-3 text-center text-muted-foreground">Nenhum projeto adicionado</p>
+                  <p className="col-span-3 text-center">Nenhum projeto adicionado</p>
                 )}
               </div>
             </div>
@@ -85,9 +128,18 @@ export function BlockPreview({ block, colors }: BlockPreviewProps) {
 
       case 'news':
         return (
-          <div className="py-16 px-8">
+          <div 
+            className="py-16 px-8"
+            style={{ 
+              backgroundColor: styles.backgroundColor || '#ffffff',
+              color: styles.textColor || '#64748b',
+            }}
+          >
             <div className="max-w-6xl mx-auto">
-              <h2 className="text-3xl font-bold mb-8 text-center" style={{ color: colors.primary }}>
+              <h2 
+                className="text-3xl font-bold mb-8 text-center"
+                style={{ color: styles.titleColor || colors.primary }}
+              >
                 {block.data.title || 'Notícias'}
               </h2>
               <div className="grid md:grid-cols-3 gap-6">
@@ -96,8 +148,13 @@ export function BlockPreview({ block, colors }: BlockPreviewProps) {
                     <div className="bg-muted h-40 rounded mb-4 flex items-center justify-center">
                       <ImageIcon className="h-12 w-12 text-muted-foreground" />
                     </div>
-                    <h3 className="font-semibold mb-2">Notícia {i}</h3>
-                    <p className="text-sm text-muted-foreground">Exemplo de notícia recente...</p>
+                    <h3 
+                      className="font-semibold mb-2"
+                      style={{ color: styles.accentColor || colors.primary }}
+                    >
+                      Notícia {i}
+                    </h3>
+                    <p className="text-sm">Exemplo de notícia recente...</p>
                   </Card>
                 ))}
               </div>
@@ -107,13 +164,22 @@ export function BlockPreview({ block, colors }: BlockPreviewProps) {
 
       case 'contact':
         return (
-          <div className="py-16 px-8 bg-muted/30">
+          <div 
+            className="py-16 px-8"
+            style={{ 
+              backgroundColor: styles.backgroundColor || '#f8fafc',
+              color: styles.textColor || '#64748b',
+            }}
+          >
             <div className="max-w-2xl mx-auto">
-              <h2 className="text-3xl font-bold mb-4 text-center" style={{ color: colors.primary }}>
+              <h2 
+                className="text-3xl font-bold mb-4 text-center"
+                style={{ color: styles.titleColor || colors.primary }}
+              >
                 {block.data.title || 'Contato'}
               </h2>
               {block.data.description && (
-                <p className="text-center text-muted-foreground mb-8">{block.data.description}</p>
+                <p className="text-center mb-8">{block.data.description}</p>
               )}
               {block.data.enableForm && (
                 <Card className="p-6">
@@ -121,9 +187,21 @@ export function BlockPreview({ block, colors }: BlockPreviewProps) {
                     <input placeholder="Nome" className="w-full p-2 border rounded" />
                     <input placeholder="E-mail" className="w-full p-2 border rounded" />
                     <textarea placeholder="Mensagem" rows={4} className="w-full p-2 border rounded" />
-                    <Button className="w-full" style={{ backgroundColor: colors.primary }}>
+                    <button
+                      className="w-full py-3 rounded-lg font-semibold transition-colors"
+                      style={{
+                        backgroundColor: styles.buttonColor || colors.primary,
+                        color: styles.buttonTextColor || '#ffffff',
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = styles.buttonHoverColor || colors.secondary;
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = styles.buttonColor || colors.primary;
+                      }}
+                    >
                       Enviar Mensagem
-                    </Button>
+                    </button>
                   </div>
                 </Card>
               )}
@@ -133,9 +211,18 @@ export function BlockPreview({ block, colors }: BlockPreviewProps) {
 
       case 'gallery':
         return (
-          <div className="py-16 px-8">
+          <div 
+            className="py-16 px-8"
+            style={{ 
+              backgroundColor: styles.backgroundColor || '#ffffff',
+              color: styles.textColor || '#64748b',
+            }}
+          >
             <div className="max-w-6xl mx-auto">
-              <h2 className="text-3xl font-bold mb-8 text-center" style={{ color: colors.primary }}>
+              <h2 
+                className="text-3xl font-bold mb-8 text-center"
+                style={{ color: styles.titleColor || colors.primary }}
+              >
                 {block.data.title || 'Galeria'}
               </h2>
               <div className="grid md:grid-cols-4 gap-4">
@@ -146,7 +233,7 @@ export function BlockPreview({ block, colors }: BlockPreviewProps) {
                     </div>
                   ))
                 ) : (
-                  <p className="col-span-4 text-center text-muted-foreground">Nenhuma imagem adicionada</p>
+                  <p className="col-span-4 text-center">Nenhuma imagem adicionada</p>
                 )}
               </div>
             </div>
@@ -155,9 +242,18 @@ export function BlockPreview({ block, colors }: BlockPreviewProps) {
 
       case 'testimonials':
         return (
-          <div className="py-16 px-8 bg-muted/30">
+          <div 
+            className="py-16 px-8"
+            style={{ 
+              backgroundColor: styles.backgroundColor || '#f8fafc',
+              color: styles.textColor || '#64748b',
+            }}
+          >
             <div className="max-w-6xl mx-auto">
-              <h2 className="text-3xl font-bold mb-8 text-center" style={{ color: colors.primary }}>
+              <h2 
+                className="text-3xl font-bold mb-8 text-center"
+                style={{ color: styles.titleColor || colors.primary }}
+              >
                 {block.data.title || 'Depoimentos'}
               </h2>
               <div className="grid md:grid-cols-3 gap-6">
@@ -166,22 +262,30 @@ export function BlockPreview({ block, colors }: BlockPreviewProps) {
                     <Card key={idx} className="p-6">
                       <p className="text-sm italic mb-4">"{test.text}"</p>
                       <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center">
+                        <div 
+                          className="w-12 h-12 rounded-full flex items-center justify-center"
+                          style={{ backgroundColor: styles.accentColor || colors.primary }}
+                        >
                           {test.image ? (
                             <img src={test.image} alt={test.name} className="w-full h-full object-cover rounded-full" />
                           ) : (
-                            <span className="text-lg font-bold">{test.name[0]}</span>
+                            <span className="text-lg font-bold text-white">{test.name[0]}</span>
                           )}
                         </div>
                         <div>
-                          <p className="font-semibold text-sm">{test.name}</p>
-                          <p className="text-xs text-muted-foreground">{test.role}</p>
+                          <p 
+                            className="font-semibold text-sm"
+                            style={{ color: styles.titleColor || '#1e293b' }}
+                          >
+                            {test.name}
+                          </p>
+                          <p className="text-xs">{test.role}</p>
                         </div>
                       </div>
                     </Card>
                   ))
                 ) : (
-                  <p className="col-span-3 text-center text-muted-foreground">Nenhum depoimento adicionado</p>
+                  <p className="col-span-3 text-center">Nenhum depoimento adicionado</p>
                 )}
               </div>
             </div>
@@ -190,7 +294,13 @@ export function BlockPreview({ block, colors }: BlockPreviewProps) {
 
       case 'footer':
         return (
-          <div className="py-12 px-8" style={{ backgroundColor: colors.primary, color: 'white' }}>
+          <div 
+            className="py-12 px-8"
+            style={{ 
+              backgroundColor: styles.backgroundColor || colors.primary,
+              color: styles.textColor || '#ffffff',
+            }}
+          >
             <div className="max-w-6xl mx-auto">
               <div className="flex flex-col md:flex-row justify-between items-center gap-4">
                 <p className="text-sm">{block.data.text || '© Todos os direitos reservados'}</p>
