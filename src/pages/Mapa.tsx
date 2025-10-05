@@ -78,6 +78,7 @@ const Mapa = () => {
   useEffect(() => {
     if (!mapContainerRef.current || mapRef.current) return;
     if (!currentGabinete) return;
+    if (permissionsLoading) return;
     if (!hasPermission('view_mapa')) return;
 
     console.log('Inicializando mapa...', { container: mapContainerRef.current });
@@ -104,7 +105,7 @@ const Mapa = () => {
         setMapInitialized(false);
       }
     };
-  }, [currentGabinete, hasPermission]);
+  }, [currentGabinete?.gabinete_id, permissionsLoading]);
 
   // Fetch data
   useEffect(() => {
