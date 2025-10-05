@@ -13,7 +13,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, Polyline } from 'react-leaflet';
 import MarkerClusterGroup from 'react-leaflet-cluster';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
@@ -53,22 +53,6 @@ interface Ponto {
   } | null;
 }
 
-const MapController = ({ center }: { center: [number, number] }) => {
-  const map = useMap();
-  
-  useEffect(() => {
-    if (!map || !center || center.length !== 2) return;
-    
-    try {
-      map.setView(center, 13);
-    } catch (error) {
-      console.error('Erro ao atualizar vista do mapa:', error);
-    }
-  }, [center, map]);
-  
-  return null;
-};
-
 const RoteirosMap = ({
   mapCenter,
   selectedRoteiroData,
@@ -99,9 +83,8 @@ const RoteirosMap = ({
       center={mapCenter}
       zoom={13}
       className="h-full w-full"
-      key={`map-${mapCenter[0]}-${mapCenter[1]}`}
+      scrollWheelZoom={true}
     >
-      <MapController center={mapCenter} />
       <TileLayer
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
