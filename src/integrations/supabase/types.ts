@@ -542,6 +542,41 @@ export type Database = {
           },
         ]
       }
+      portal_form_submissions: {
+        Row: {
+          created_at: string
+          data: Json
+          form_id: string
+          form_title: string
+          gabinete_id: string
+          id: string
+        }
+        Insert: {
+          created_at?: string
+          data: Json
+          form_id: string
+          form_title: string
+          gabinete_id: string
+          id?: string
+        }
+        Update: {
+          created_at?: string
+          data?: Json
+          form_id?: string
+          form_title?: string
+          gabinete_id?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "portal_form_submissions_gabinete_id_fkey"
+            columns: ["gabinete_id"]
+            isOneToOne: false
+            referencedRelation: "gabinetes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       portal_gabinete: {
         Row: {
           cor_primaria: string | null

@@ -689,6 +689,148 @@ export function BlockEditor({ block, onChange }: BlockEditorProps) {
           </div>
         );
 
+      case 'forms':
+        return (
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Título do Formulário</Label>
+              <Input
+                value={block.data.title || ''}
+                onChange={(e) => updateData('title', e.target.value)}
+                placeholder="Ex: Fale Conosco"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label>Descrição</Label>
+              <Textarea
+                value={block.data.description || ''}
+                onChange={(e) => updateData('description', e.target.value)}
+                placeholder="Texto introdutório do formulário..."
+                rows={2}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Vincular submissões a:</Label>
+              <select
+                value={block.data.linkTo || 'custom'}
+                onChange={(e) => updateData('linkTo', e.target.value)}
+                className="w-full p-2 border rounded"
+              >
+                <option value="custom">Formulário Customizado (ver respostas no sistema)</option>
+                <option value="demandas">Criar Demandas automaticamente</option>
+                <option value="eleitores">Cadastrar como Eleitor automaticamente</option>
+              </select>
+              <p className="text-xs text-muted-foreground">
+                {block.data.linkTo === 'demandas' && 'As submissões criarão demandas automaticamente'}
+                {block.data.linkTo === 'eleitores' && 'As submissões cadastrarão eleitores automaticamente'}
+                {block.data.linkTo === 'custom' && 'As respostas ficarão disponíveis na seção "Respostas de Formulários"'}
+              </p>
+            </div>
+
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <Label>Campos do Formulário</Label>
+                <Button
+                  size="sm"
+                  onClick={() => addArrayItem('fields', { 
+                    id: Date.now().toString(), 
+                    label: '', 
+                    type: 'text', 
+                    required: false 
+                  })}
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Adicionar Campo
+                </Button>
+              </div>
+              
+              {(block.data.fields || []).map((field: any, idx: number) => (
+                <Card key={idx}>
+                  <CardContent className="pt-6 space-y-3">
+                    <div className="flex justify-between items-start">
+                      <Label className="text-sm">Campo {idx + 1}</Label>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => removeArrayItem('fields', idx)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label className="text-xs">Rótulo do Campo</Label>
+                      <Input
+                        value={field.label}
+                        onChange={(e) => updateArrayItem('fields', idx, { ...field, label: e.target.value })}
+                        placeholder="Ex: Nome completo"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label className="text-xs">Tipo de Campo</Label>
+                      <select
+                        value={field.type}
+                        onChange={(e) => updateArrayItem('fields', idx, { ...field, type: e.target.value })}
+                        className="w-full p-2 border rounded text-sm"
+                      >
+                        <option value="text">Texto</option>
+                        <option value="email">E-mail</option>
+                        <option value="tel">Telefone</option>
+                        <option value="textarea">Texto Longo</option>
+                        <option value="select">Seleção</option>
+                      </select>
+                    </div>
+
+                    {field.type === 'select' && (
+                      <div className="space-y-2">
+                        <Label className="text-xs">Opções (uma por linha)</Label>
+                        <Textarea
+                          value={(field.options || []).join('\n')}
+                          onChange={(e) => updateArrayItem('fields', idx, { 
+                            ...field, 
+                            options: e.target.value.split('\n').filter(o => o.trim()) 
+                          })}
+                          placeholder="Opção 1&#10;Opção 2&#10;Opção 3"
+                          rows={3}
+                        />
+                      </div>
+                    )}
+
+                    <div className="flex items-center space-x-2">
+                      <Switch
+                        checked={field.required || false}
+                        onCheckedChange={(checked) => updateArrayItem('fields', idx, { ...field, required: checked })}
+                      />
+                      <Label className="text-xs">Campo obrigatório</Label>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+
+            <div className="space-y-2">
+              <Label>Texto do Botão</Label>
+              <Input
+                value={block.data.submitText || 'Enviar'}
+                onChange={(e) => updateData('submitText', e.target.value)}
+                placeholder="Enviar"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Mensagem de Sucesso</Label>
+              <Input
+                value={block.data.successMessage || ''}
+                onChange={(e) => updateData('successMessage', e.target.value)}
+                placeholder="Ex: Formulário enviado com sucesso!"
+              />
+            </div>
+          </div>
+        );
+
       case 'footer':
         return (
           <div className="space-y-4">

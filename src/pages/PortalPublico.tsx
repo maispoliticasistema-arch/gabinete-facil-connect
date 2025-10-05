@@ -134,6 +134,7 @@ const PortalPublico = () => {
       blocks={blocks}
       colors={colors}
       titulo={portal.titulo}
+      gabineteId={portal.gabinete_id}
     />
   );
 };

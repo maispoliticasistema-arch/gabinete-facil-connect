@@ -292,6 +292,87 @@ export function BlockPreview({ block, colors }: BlockPreviewProps) {
           </div>
         );
 
+      case 'forms':
+        return (
+          <div 
+            className="py-16 px-8"
+            style={{ 
+              backgroundColor: styles.backgroundColor || '#ffffff',
+              color: styles.textColor || '#64748b',
+            }}
+          >
+            <div className="max-w-2xl mx-auto">
+              <h2 
+                className="text-3xl font-bold mb-4 text-center"
+                style={{ color: styles.titleColor || colors.primary }}
+              >
+                {block.data.title || 'Formulário'}
+              </h2>
+              {block.data.description && (
+                <p className="text-center mb-8">{block.data.description}</p>
+              )}
+              
+              <div className="bg-white p-6 rounded-lg shadow-sm border space-y-4">
+                {block.data.fields?.length > 0 ? (
+                  block.data.fields.map((field: any, idx: number) => (
+                    <div key={idx} className="space-y-2">
+                      <label className="block text-sm font-medium" style={{ color: styles.titleColor || '#1e293b' }}>
+                        {field.label}
+                        {field.required && <span style={{ color: styles.accentColor || colors.primary }}>*</span>}
+                      </label>
+                      {field.type === 'textarea' ? (
+                        <textarea
+                          className="w-full p-2 border rounded"
+                          rows={3}
+                          placeholder={field.label}
+                          disabled
+                        />
+                      ) : field.type === 'select' ? (
+                        <select className="w-full p-2 border rounded" disabled>
+                          <option>Selecione...</option>
+                          {field.options?.map((opt: string, i: number) => (
+                            <option key={i}>{opt}</option>
+                          ))}
+                        </select>
+                      ) : (
+                        <input
+                          type={field.type}
+                          className="w-full p-2 border rounded"
+                          placeholder={field.label}
+                          disabled
+                        />
+                      )}
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-center text-muted-foreground">Nenhum campo adicionado ao formulário</p>
+                )}
+                
+                {block.data.fields?.length > 0 && (
+                  <button
+                    className="w-full py-3 rounded-lg font-semibold transition-colors mt-6"
+                    style={{
+                      backgroundColor: styles.buttonColor || colors.primary,
+                      color: styles.buttonTextColor || '#ffffff',
+                    }}
+                    disabled
+                  >
+                    {block.data.submitText || 'Enviar'}
+                  </button>
+                )}
+              </div>
+              
+              {block.data.linkTo && (
+                <p className="text-xs text-center mt-4" style={{ color: styles.textColor }}>
+                  {block.data.linkTo === 'demandas' && '📋 Este formulário criará demandas automaticamente'}
+                  {block.data.linkTo === 'eleitores' && '👥 Este formulário cadastrará eleitores automaticamente'}
+                  {block.data.linkTo === 'custom' && '📝 Este formulário salvará respostas customizadas'}
+                </p>
+              )}
+            </div>
+          </div>
+        );
+
       case 'footer':
         return (
           <div 

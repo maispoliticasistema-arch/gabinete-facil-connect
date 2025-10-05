@@ -1,13 +1,15 @@
 import { Block } from './BlockTypes';
 import { BlockPreview } from './BlockPreview';
+import { FormularioPortal } from './FormularioPortal';
 
 interface PortalRendererProps {
   blocks: Block[];
   colors: { primary: string; secondary: string };
   titulo?: string;
+  gabineteId: string;
 }
 
-export function PortalRenderer({ blocks, colors, titulo }: PortalRendererProps) {
+export function PortalRenderer({ blocks, colors, titulo, gabineteId }: PortalRendererProps) {
   return (
     <div className="min-h-screen bg-background">
       {/* SEO */}
@@ -18,9 +20,22 @@ export function PortalRenderer({ blocks, colors, titulo }: PortalRendererProps) 
       )}
       
       {/* Render all blocks */}
-      {blocks.map((block) => (
-        <BlockPreview key={block.id} block={block} colors={colors} />
-      ))}
+      {blocks.map((block) => {
+        // Use FormularioPortal for form blocks
+        if (block.type === 'forms') {
+          return (
+            <FormularioPortal
+              key={block.id}
+              block={block}
+              gabineteId={gabineteId}
+              colors={colors}
+            />
+          );
+        }
+        
+        // Use BlockPreview for all other blocks
+        return <BlockPreview key={block.id} block={block} colors={colors} />;
+      })}
       
       {/* Empty state */}
       {blocks.length === 0 && (

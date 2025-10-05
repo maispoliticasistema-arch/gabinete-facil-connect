@@ -52,6 +52,7 @@ const menuItems: MenuItem[] = [
   { title: 'Roteiros', url: '/roteiros', icon: Route, permission: 'view_roteiros' },
   { title: 'Relatórios', url: '/relatorios', icon: BarChart3, permission: 'view_relatorios' },
   { title: 'Construtor de Sites', url: '/construtor-de-sites', icon: Layout, permission: 'manage_settings' },
+  { title: 'Respostas de Formulários', url: '/respostas-formularios', icon: FileText, permission: 'manage_settings' },
   { title: 'Minha Conta', url: '/minha-conta', icon: UserCircle },
   { title: 'Configurações', url: '/configuracoes', icon: Settings, permission: 'manage_settings' },
 ];

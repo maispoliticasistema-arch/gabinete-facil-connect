@@ -6,6 +6,7 @@ export type BlockType =
   | 'contact'
   | 'gallery'
   | 'testimonials'
+  | 'forms'
   | 'footer';
 
 export interface BlockStyles {
@@ -86,6 +87,23 @@ export interface FooterData {
   socialLinks: Array<{ platform: string; url: string }>;
 }
 
+export interface FormField {
+  id: string;
+  label: string;
+  type: 'text' | 'email' | 'tel' | 'textarea' | 'select';
+  required: boolean;
+  options?: string[];
+}
+
+export interface FormsData {
+  title: string;
+  description: string;
+  fields: FormField[];
+  submitText: string;
+  successMessage: string;
+  linkTo?: 'demandas' | 'eleitores' | 'custom';
+}
+
 export const blockTypeLabels: Record<BlockType, string> = {
   hero: 'Hero / Cabeçalho',
   about: 'Sobre o Mandato',
@@ -94,6 +112,7 @@ export const blockTypeLabels: Record<BlockType, string> = {
   contact: 'Contato',
   gallery: 'Galeria de Fotos',
   testimonials: 'Depoimentos / Apoios',
+  forms: 'Formulário Customizado',
   footer: 'Rodapé',
 };
 
@@ -105,6 +124,7 @@ export const blockTypeDescriptions: Record<BlockType, string> = {
   contact: 'Formulário para o cidadão enviar mensagens',
   gallery: 'Carrossel de imagens das ações e eventos',
   testimonials: 'Espaço para falas de cidadãos ou lideranças',
+  forms: 'Formulário customizável com campos personalizados',
   footer: 'Links de redes sociais e informações básicas',
 };
 
@@ -148,6 +168,19 @@ export const getDefaultBlockData = (type: BlockType): Record<string, any> => {
         title: 'Depoimentos',
         testimonials: [],
       };
+    case 'forms':
+      return {
+        title: 'Fale Conosco',
+        description: 'Preencha o formulário abaixo',
+        fields: [
+          { id: '1', label: 'Nome', type: 'text', required: true },
+          { id: '2', label: 'Email', type: 'email', required: true },
+          { id: '3', label: 'Mensagem', type: 'textarea', required: true },
+        ],
+        submitText: 'Enviar',
+        successMessage: 'Formulário enviado com sucesso!',
+        linkTo: 'custom',
+      };
     case 'footer':
       return {
         text: 'Todos os direitos reservados',
@@ -181,11 +214,15 @@ export const getDefaultBlockStyles = (type: BlockType): BlockStyles => {
     case 'contact':
     case 'gallery':
     case 'testimonials':
+    case 'forms':
       return {
         backgroundColor: '#ffffff',
         textColor: '#64748b',
         titleColor: '#1e293b',
         accentColor: '#6366f1',
+        buttonColor: '#6366f1',
+        buttonTextColor: '#ffffff',
+        buttonHoverColor: '#4f46e5',
       };
     default:
       return {};
