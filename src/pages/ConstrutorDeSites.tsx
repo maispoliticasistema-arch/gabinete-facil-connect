@@ -31,6 +31,8 @@ const ConstrutorDeSites = () => {
   const [blocks, setBlocks] = useState<Block[]>([]);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [gabineteSlug, setGabineteSlug] = useState('');
+  const [editingSlug, setEditingSlug] = useState(false);
+  const [tempSlug, setTempSlug] = useState('');
   
   const [formData, setFormData] = useState({
     titulo: '',
@@ -260,6 +262,70 @@ const ConstrutorDeSites = () => {
     }
   };
 
+  const handleUpdateSlug = async () => {
+    if (!currentGabinete || !tempSlug.trim()) return;
+
+    const cleanedSlug = tempSlug.toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+    
+    if (!cleanedSlug) {
+      toast({
+        title: 'Slug inválido',
+        description: 'O slug deve conter pelo menos um caractere válido.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (cleanedSlug === gabineteSlug) {
+      setEditingSlug(false);
+      return;
+    }
+
+    try {
+      // Verificar se o slug já existe em outro gabinete
+      const { data: existingGabinete } = await supabase
+        .from('portal_gabinete')
+        .select('gabinete_id')
+        .eq('slug', cleanedSlug)
+        .neq('gabinete_id', currentGabinete.gabinetes.id)
+        .maybeSingle();
+
+      if (existingGabinete) {
+        toast({
+          title: 'Slug já está em uso',
+          description: 'Este slug já está sendo usado por outro gabinete.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      // Atualizar todos os sites deste gabinete com o novo slug
+      const { error } = await supabase
+        .from('portal_gabinete')
+        .update({ slug: cleanedSlug })
+        .eq('gabinete_id', currentGabinete.gabinetes.id);
+
+      if (error) throw error;
+
+      setGabineteSlug(cleanedSlug);
+      setEditingSlug(false);
+
+      toast({
+        title: 'Slug atualizado!',
+        description: 'O slug do gabinete foi atualizado com sucesso. Todas as URLs foram atualizadas.',
+      });
+
+      await loadSites();
+    } catch (error: any) {
+      console.error('Erro ao atualizar slug:', error);
+      toast({
+        title: 'Erro ao atualizar',
+        description: error.message || 'Não foi possível atualizar o slug.',
+        variant: 'destructive',
+      });
+    }
+  };
+
   if (permissionsLoading || loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -288,14 +354,64 @@ const ConstrutorDeSites = () => {
 
         <Card className="bg-muted">
           <CardContent className="pt-6">
-            <div className="flex items-center gap-2 text-sm">
-              <Globe className="h-4 w-4" />
-              <span className="font-medium">Slug do Gabinete:</span>
-              <code className="px-2 py-1 bg-background rounded">/{gabineteSlug}</code>
-            </div>
-            <p className="text-xs text-muted-foreground mt-2">
-              Todos os seus sites usarão este slug base. Ex: /{gabineteSlug}/portal, /{gabineteSlug}/projetos
-            </p>
+            {!editingSlug ? (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-sm">
+                    <Globe className="h-4 w-4" />
+                    <span className="font-medium">Slug do Gabinete:</span>
+                    <code className="px-2 py-1 bg-background rounded">/{gabineteSlug}</code>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setTempSlug(gabineteSlug);
+                      setEditingSlug(true);
+                    }}
+                  >
+                    Editar
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Todos os seus sites usarão este slug base. Ex: /{gabineteSlug}/portal, /{gabineteSlug}/projetos
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <Globe className="h-4 w-4" />
+                  <span className="font-medium text-sm">Editar Slug do Gabinete</span>
+                </div>
+                <div className="flex gap-2">
+                  <div className="flex-1">
+                    <div className="flex gap-2 items-center">
+                      <span className="text-sm text-muted-foreground">/</span>
+                      <Input
+                        value={tempSlug}
+                        onChange={(e) => setTempSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-'))}
+                        placeholder="slug-do-gabinete"
+                        className="flex-1"
+                      />
+                    </div>
+                  </div>
+                  <Button variant="outline" size="sm" onClick={() => setEditingSlug(false)}>
+                    Cancelar
+                  </Button>
+                  <Button size="sm" onClick={handleUpdateSlug}>
+                    Salvar
+                  </Button>
+                </div>
+                <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded p-3">
+                  <p className="text-xs text-amber-800 dark:text-amber-200 font-medium mb-1">
+                    ⚠️ Atenção: Alterar o slug afetará todos os sites
+                  </p>
+                  <p className="text-xs text-amber-700 dark:text-amber-300">
+                    As URLs de todos os sites publicados serão modificadas. Sites que já foram compartilhados precisarão ter seus links atualizados.
+                  </p>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
 
