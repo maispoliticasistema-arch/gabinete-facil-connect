@@ -7,7 +7,10 @@ import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
-import { Plus, Trash2, Palette } from 'lucide-react';
+import { Plus, Trash2, Palette, Upload } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+import { useState } from 'react';
 
 interface BlockEditorProps {
   block: Block;
@@ -15,11 +18,72 @@ interface BlockEditorProps {
 }
 
 export function BlockEditor({ block, onChange }: BlockEditorProps) {
+  const [uploadingImage, setUploadingImage] = useState<string | null>(null);
+
   const updateData = (key: string, value: any) => {
     onChange({
       ...block,
       data: { ...block.data, [key]: value },
     });
+  };
+
+  const handleImageUpload = async (file: File, fieldKey: string) => {
+    try {
+      setUploadingImage(fieldKey);
+      
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Math.random()}.${fileExt}`;
+      const filePath = `${fileName}`;
+
+      const { error: uploadError, data } = await supabase.storage
+        .from('portal-images')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('portal-images')
+        .getPublicUrl(filePath);
+
+      updateData(fieldKey, publicUrl);
+      toast.success('Imagem enviada com sucesso!');
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      toast.error('Erro ao enviar imagem');
+    } finally {
+      setUploadingImage(null);
+    }
+  };
+
+  const handleArrayImageUpload = async (file: File, arrayKey: string, index: number, itemKey: string) => {
+    try {
+      setUploadingImage(`${arrayKey}-${index}-${itemKey}`);
+      
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Math.random()}.${fileExt}`;
+      const filePath = `${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('portal-images')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('portal-images')
+        .getPublicUrl(filePath);
+
+      const array = [...(block.data[arrayKey] || [])];
+      array[index] = { ...array[index], [itemKey]: publicUrl };
+      updateData(arrayKey, array);
+      
+      toast.success('Imagem enviada com sucesso!');
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      toast.error('Erro ao enviar imagem');
+    } finally {
+      setUploadingImage(null);
+    }
   };
 
   const updateStyle = (key: string, value: any) => {
@@ -253,12 +317,34 @@ export function BlockEditor({ block, onChange }: BlockEditorProps) {
               />
             </div>
             <div className="space-y-2">
-              <Label>Imagem de Fundo (URL)</Label>
+              <Label>Imagem de Fundo</Label>
               <Input
                 value={block.data.backgroundImage || ''}
                 onChange={(e) => updateData('backgroundImage', e.target.value)}
-                placeholder="https://..."
+                placeholder="https://... ou faça upload abaixo"
               />
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={uploadingImage === 'backgroundImage'}
+                  onClick={() => document.getElementById('hero-bg-upload')?.click()}
+                >
+                  <Upload className="h-4 w-4 mr-2" />
+                  {uploadingImage === 'backgroundImage' ? 'Enviando...' : 'Enviar do Computador'}
+                </Button>
+                <input
+                  id="hero-bg-upload"
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) handleImageUpload(file, 'backgroundImage');
+                  }}
+                />
+              </div>
             </div>
           </div>
         );
@@ -284,12 +370,34 @@ export function BlockEditor({ block, onChange }: BlockEditorProps) {
               />
             </div>
             <div className="space-y-2">
-              <Label>Imagem (URL)</Label>
+              <Label>Imagem</Label>
               <Input
                 value={block.data.image || ''}
                 onChange={(e) => updateData('image', e.target.value)}
-                placeholder="https://..."
+                placeholder="https://... ou faça upload abaixo"
               />
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={uploadingImage === 'image'}
+                  onClick={() => document.getElementById('about-img-upload')?.click()}
+                >
+                  <Upload className="h-4 w-4 mr-2" />
+                  {uploadingImage === 'image' ? 'Enviando...' : 'Enviar do Computador'}
+                </Button>
+                <input
+                  id="about-img-upload"
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) handleImageUpload(file, 'image');
+                  }}
+                />
+              </div>
             </div>
           </div>
         );
@@ -343,7 +451,27 @@ export function BlockEditor({ block, onChange }: BlockEditorProps) {
                     <Input
                       value={project.image || ''}
                       onChange={(e) => updateArrayItem('projects', idx, { ...project, image: e.target.value })}
-                      placeholder="URL da imagem"
+                      placeholder="https://... ou faça upload abaixo"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={uploadingImage === `projects-${idx}-image`}
+                      onClick={() => document.getElementById(`project-img-${idx}`)?.click()}
+                    >
+                      <Upload className="h-4 w-4 mr-2" />
+                      {uploadingImage === `projects-${idx}-image` ? 'Enviando...' : 'Enviar Imagem'}
+                    </Button>
+                    <input
+                      id={`project-img-${idx}`}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) handleArrayImageUpload(file, 'projects', idx, 'image');
+                      }}
                     />
                   </CardContent>
                 </Card>
@@ -444,7 +572,27 @@ export function BlockEditor({ block, onChange }: BlockEditorProps) {
                     <Input
                       value={img.url}
                       onChange={(e) => updateArrayItem('images', idx, { ...img, url: e.target.value })}
-                      placeholder="URL da imagem"
+                      placeholder="https://... ou faça upload abaixo"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={uploadingImage === `images-${idx}-url`}
+                      onClick={() => document.getElementById(`gallery-img-${idx}`)?.click()}
+                    >
+                      <Upload className="h-4 w-4 mr-2" />
+                      {uploadingImage === `images-${idx}-url` ? 'Enviando...' : 'Enviar Imagem'}
+                    </Button>
+                    <input
+                      id={`gallery-img-${idx}`}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) handleArrayImageUpload(file, 'images', idx, 'url');
+                      }}
                     />
                     <Input
                       value={img.caption || ''}
@@ -512,7 +660,27 @@ export function BlockEditor({ block, onChange }: BlockEditorProps) {
                     <Input
                       value={test.image || ''}
                       onChange={(e) => updateArrayItem('testimonials', idx, { ...test, image: e.target.value })}
-                      placeholder="URL da foto (opcional)"
+                      placeholder="https://... ou faça upload abaixo"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={uploadingImage === `testimonials-${idx}-image`}
+                      onClick={() => document.getElementById(`testimonial-img-${idx}`)?.click()}
+                    >
+                      <Upload className="h-4 w-4 mr-2" />
+                      {uploadingImage === `testimonials-${idx}-image` ? 'Enviando...' : 'Enviar Foto'}
+                    </Button>
+                    <input
+                      id={`testimonial-img-${idx}`}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) handleArrayImageUpload(file, 'testimonials', idx, 'image');
+                      }}
                     />
                   </CardContent>
                 </Card>
