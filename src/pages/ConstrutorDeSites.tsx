@@ -9,7 +9,9 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { Globe, Save, Eye, ExternalLink, Settings, Loader2 } from 'lucide-react';
+import { Globe, Save, Eye, ExternalLink, Settings, Loader2, Layout } from 'lucide-react';
+import { PortalEditor } from '@/components/construtor/PortalEditor';
+import { Block } from '@/components/construtor/BlockTypes';
 
 const ConstrutorDeSites = () => {
   const { currentGabinete } = useGabinete();
@@ -18,6 +20,7 @@ const ConstrutorDeSites = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [portal, setPortal] = useState<any>(null);
+  const [blocks, setBlocks] = useState<Block[]>([]);
   
   const [formData, setFormData] = useState({
     titulo: '',
@@ -57,6 +60,7 @@ const ConstrutorDeSites = () => {
           cor_primaria: data.cor_primaria || '#6366f1',
           cor_secundaria: data.cor_secundaria || '#8b5cf6',
         });
+        setBlocks((data.layout_json || []) as unknown as Block[]);
       } else {
         // Gerar slug inicial baseado no nome do gabinete
         const { data: slugData } = await supabase.rpc(
@@ -99,6 +103,7 @@ const ConstrutorDeSites = () => {
       const portalData = {
         gabinete_id: currentGabinete.gabinetes.id,
         ...formData,
+        layout_json: blocks as any,
       };
 
       if (portal) {
@@ -236,17 +241,39 @@ const ConstrutorDeSites = () => {
       )}
 
       {/* Tabs */}
-      <Tabs defaultValue="configuracoes" className="space-y-6">
+      <Tabs defaultValue="editor" className="space-y-6">
         <TabsList>
+          <TabsTrigger value="editor">
+            <Layout className="h-4 w-4 mr-2" />
+            Editor
+          </TabsTrigger>
           <TabsTrigger value="configuracoes">
             <Settings className="h-4 w-4 mr-2" />
             Configurações
           </TabsTrigger>
-          <TabsTrigger value="preview" disabled>
-            <Eye className="h-4 w-4 mr-2" />
-            Preview (Em breve)
-          </TabsTrigger>
         </TabsList>
+
+        <TabsContent value="editor" className="space-y-6">
+          <PortalEditor
+            blocks={blocks}
+            onChange={setBlocks}
+            colors={{
+              primary: formData.cor_primaria,
+              secondary: formData.cor_secundaria,
+            }}
+          />
+          
+          <div className="flex justify-end">
+            <Button onClick={handleSave} disabled={saving}>
+              {saving ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Save className="h-4 w-4 mr-2" />
+              )}
+              Salvar Layout
+            </Button>
+          </div>
+        </TabsContent>
 
         <TabsContent value="configuracoes" className="space-y-6">
           <Card>
