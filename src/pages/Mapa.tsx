@@ -74,15 +74,6 @@ const Mapa = () => {
   const [selectedBairro, setSelectedBairro] = useState<string>('all');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
 
-  // Verificar permissão primeiro - se não tiver, não renderiza nada
-  if (permissionsLoading) {
-    return <div className="flex items-center justify-center h-screen">Carregando permissões...</div>;
-  }
-
-  if (!hasPermission('view_mapa')) {
-    return <NoPermissionMessage />;
-  }
-  
   // Initialize map - only once, independent of permissions
   useEffect(() => {
     const container = mapContainerRef.current;
@@ -361,6 +352,15 @@ const Mapa = () => {
       setLoadingProgress(0);
     }
   }, [filteredEleitores, filteredDemandas, roteiros, showEleitores, showDemandas, showRoteiros, mapInitialized]);
+
+  // Verificar permissão APÓS todos os hooks
+  if (permissionsLoading) {
+    return <div className="flex items-center justify-center h-screen">Carregando permissões...</div>;
+  }
+
+  if (!hasPermission('view_mapa')) {
+    return <NoPermissionMessage />;
+  }
 
   return (
     <div style={{ position: 'relative', width: '100%', height: '100vh', overflow: 'hidden' }}>
