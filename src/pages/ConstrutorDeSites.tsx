@@ -79,11 +79,6 @@ const ConstrutorDeSites = () => {
       if (error) throw error;
 
       setSites(data || []);
-      
-      // Se não tiver site selecionado e houver sites, seleciona o primeiro
-      if (!currentSite && data && data.length > 0) {
-        selectSite(data[0]);
-      }
     } catch (error) {
       console.error('Erro ao carregar sites:', error);
       toast({
