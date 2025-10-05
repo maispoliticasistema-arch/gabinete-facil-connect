@@ -32,17 +32,16 @@ interface RoteirosMapProps {
   pontos: Ponto[];
 }
 
-// Ícones customizados para marcadores
-const createIcon = (color: string) => {
-  return L.icon({
-    iconUrl: `https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-${color}.png`,
-    shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-    iconSize: [25, 41],
-    iconAnchor: [12, 41],
-    popupAnchor: [1, -34],
-    shadowSize: [41, 41]
-  });
-};
+// Usar ícone padrão do Leaflet (azul elegante)
+const defaultIcon = L.icon({
+  iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41]
+});
 
 const RoteirosMapComponent = ({
   mapCenter,
@@ -81,7 +80,7 @@ const RoteirosMapComponent = ({
     if (selectedRoteiroData.latitude_partida && selectedRoteiroData.longitude_partida) {
       const marker = L.marker(
         [selectedRoteiroData.latitude_partida, selectedRoteiroData.longitude_partida],
-        { icon: createIcon('green') }
+        { icon: defaultIcon }
       )
         .bindPopup(`<strong>🚀 Ponto de Partida</strong><br/>${selectedRoteiroData.endereco_partida || ''}`)
         .addTo(map);
@@ -93,7 +92,7 @@ const RoteirosMapComponent = ({
       if (ponto.latitude && ponto.longitude) {
         const marker = L.marker(
           [ponto.latitude, ponto.longitude],
-          { icon: createIcon('blue') }
+          { icon: defaultIcon }
         )
           .bindPopup(
             `<strong>Parada #${ponto.ordem}</strong><br/>` +
@@ -109,7 +108,7 @@ const RoteirosMapComponent = ({
     if (selectedRoteiroData.latitude_final && selectedRoteiroData.longitude_final) {
       const marker = L.marker(
         [selectedRoteiroData.latitude_final, selectedRoteiroData.longitude_final],
-        { icon: createIcon('red') }
+        { icon: defaultIcon }
       )
         .bindPopup(`<strong>🏁 Ponto de Chegada</strong><br/>${selectedRoteiroData.endereco_final || ''}`)
         .addTo(map);
