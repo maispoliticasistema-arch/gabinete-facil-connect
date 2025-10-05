@@ -86,13 +86,16 @@ export function MetricasEmTempoReal() {
         .select('*', { count: 'exact', head: true })
         .gte('created_at', fiveMinutesAgo.toISOString());
 
+      // Buscar métricas de infraestrutura via edge function
+      const { data: infraData } = await supabase.functions.invoke('get-database-metrics');
+
       setMetricas({
         avgLatency,
         requestsPerMinute,
         errorRate,
         slowQueryCount: slowQueryCount || 0,
-        activeConnections: Math.floor(Math.random() * 20) + 10, // Simulado
-        cacheHitRate: 94 // Simulado
+        activeConnections: infraData?.activeConnections || 0,
+        cacheHitRate: infraData?.cacheHitRate || 0
       });
     } catch (error) {
       console.error('Erro ao carregar métricas:', error);

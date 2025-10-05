@@ -492,6 +492,42 @@ export type Database = {
         }
         Relationships: []
       }
+      infrastructure_metrics: {
+        Row: {
+          active_connections: number | null
+          cache_hit_rate: number | null
+          cpu_percent: number | null
+          created_at: string
+          database_size_bytes: number | null
+          disk_usage_percent: number | null
+          id: string
+          memory_percent: number | null
+          queries_per_second: number | null
+        }
+        Insert: {
+          active_connections?: number | null
+          cache_hit_rate?: number | null
+          cpu_percent?: number | null
+          created_at?: string
+          database_size_bytes?: number | null
+          disk_usage_percent?: number | null
+          id?: string
+          memory_percent?: number | null
+          queries_per_second?: number | null
+        }
+        Update: {
+          active_connections?: number | null
+          cache_hit_rate?: number | null
+          cpu_percent?: number | null
+          created_at?: string
+          database_size_bytes?: number | null
+          disk_usage_percent?: number | null
+          id?: string
+          memory_percent?: number | null
+          queries_per_second?: number | null
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           created_at: string

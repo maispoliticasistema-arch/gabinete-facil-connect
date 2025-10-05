@@ -48,12 +48,17 @@ export function OverviewSection() {
           .select('*', { count: 'exact', head: true })
           .eq('resolved', false);
 
+        // Buscar tamanho do banco via edge function
+        const { data: metricsData } = await supabase.functions.invoke('get-database-metrics');
+        const dbSizeBytes = metricsData?.databaseSizeBytes || 0;
+        const dbSizeGB = (dbSizeBytes / (1024 ** 3)).toFixed(2);
+
         setStats({
           totalGabinetes: gabinetes || 0,
           usuariosAtivos: usuarios || 0,
           demandasHoje: demandas || 0,
           errosNaoResolvidos: erros || 0,
-          tamanhoDb: 'N/A'
+          tamanhoDb: dbSizeBytes > 0 ? `${dbSizeGB} GB` : 'N/A'
         });
       } catch (error) {
         console.error('Erro ao carregar estatísticas:', error);

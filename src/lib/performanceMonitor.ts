@@ -167,3 +167,32 @@ export function trackPageLoad() {
     }
   });
 }
+
+/**
+ * Função para coletar métricas de infraestrutura periodicamente
+ */
+export async function collectInfrastructureMetrics() {
+  try {
+    const { data, error } = await supabase.functions.invoke('get-database-metrics');
+    
+    if (error) {
+      console.error('Erro ao coletar métricas de infraestrutura:', error);
+      return;
+    }
+    
+    console.log('Métricas de infraestrutura coletadas:', data);
+  } catch (error) {
+    console.error('Erro ao coletar métricas de infraestrutura:', error);
+  }
+}
+
+/**
+ * Inicializar coleta de métricas (chamar no main.tsx)
+ */
+export function startInfrastructureMetricsCollection() {
+  // Coletar imediatamente
+  collectInfrastructureMetrics();
+  
+  // Coletar a cada 5 minutos
+  setInterval(collectInfrastructureMetrics, 5 * 60 * 1000);
+}
