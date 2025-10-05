@@ -20,6 +20,7 @@ type Permission =
   | 'create_roteiros'
   | 'edit_roteiros'
   | 'delete_roteiros'
+  | 'view_mapa'
   | 'view_relatorios'
   | 'manage_users'
   | 'manage_settings';
@@ -66,6 +67,7 @@ export function usePermissions() {
             'create_roteiros',
             'edit_roteiros',
             'delete_roteiros',
+            'view_mapa',
             'view_relatorios',
             'manage_users',
             'manage_settings',

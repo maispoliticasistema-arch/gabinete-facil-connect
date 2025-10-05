@@ -34,6 +34,7 @@ const PERMISSIONS = [
   { id: 'create_roteiros', label: 'Criar Roteiros' },
   { id: 'edit_roteiros', label: 'Editar Roteiros' },
   { id: 'delete_roteiros', label: 'Excluir Roteiros' },
+  { id: 'view_mapa', label: 'Visualizar Mapa' },
   { id: 'view_relatorios', label: 'Visualizar Relatórios' },
 ];
 

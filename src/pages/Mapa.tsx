@@ -4,6 +4,8 @@ import 'leaflet/dist/leaflet.css';
 import { supabase } from '@/integrations/supabase/client';
 import { useGabinete } from '@/contexts/GabineteContext';
 import { useToast } from '@/hooks/use-toast';
+import { usePermissions } from '@/hooks/usePermissions';
+import { PermissionGuard, NoPermissionMessage } from '@/components/PermissionGuard';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -51,9 +53,19 @@ const roteiroFimIcon = createCustomIcon('#3b82f6', '🏁');
 const Mapa = () => {
   const { currentGabinete } = useGabinete();
   const { toast } = useToast();
+  const { hasPermission, loading: permissionsLoading } = usePermissions();
   const mapRef = useRef<L.Map | null>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const markersLayerRef = useRef<L.LayerGroup | null>(null);
+
+  // Verificar permissão
+  if (permissionsLoading) {
+    return <div className="flex items-center justify-center h-screen">Carregando...</div>;
+  }
+
+  if (!hasPermission('view_mapa')) {
+    return <NoPermissionMessage />;
+  }
   
   const [eleitores, setEleitores] = useState<any[]>([]);
   const [totalEleitores, setTotalEleitores] = useState(0);

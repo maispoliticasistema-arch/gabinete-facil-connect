@@ -29,6 +29,7 @@ const PERMISSIONS = [
   { id: "view_roteiros", label: "Visualizar Roteiros" },
   { id: "create_roteiros", label: "Criar / Editar Roteiros" },
   { id: "delete_roteiros", label: "Excluir Roteiros" },
+  { id: "view_mapa", label: "Acessar Mapa" },
   { id: "view_relatorios", label: "Acessar Relatórios" },
   { id: "manage_users", label: "Gerenciar Usuários" },
 ];
