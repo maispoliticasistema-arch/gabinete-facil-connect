@@ -5,6 +5,7 @@ import { GabinetesSection } from '@/components/painel/GabinetesSection';
 import { UsuariosSection } from '@/components/painel/UsuariosSection';
 import { DesempenhoSection } from '@/components/painel/DesempenhoSection';
 import { AuditoriaGlobalSection } from '@/components/painel/AuditoriaGlobalSection';
+import { ErrosSection } from '@/components/painel/ErrosSection';
 import { Shield, LogOut } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -42,6 +43,7 @@ export default function Painel() {
           <Tabs defaultValue="overview" className="space-y-6">
             <TabsList>
               <TabsTrigger value="overview">Visão Geral</TabsTrigger>
+              <TabsTrigger value="erros">Erros</TabsTrigger>
               <TabsTrigger value="gabinetes">Gabinetes</TabsTrigger>
               <TabsTrigger value="usuarios">Usuários</TabsTrigger>
               <TabsTrigger value="desempenho">Desempenho</TabsTrigger>
@@ -50,6 +52,10 @@ export default function Painel() {
 
             <TabsContent value="overview">
               <OverviewSection />
+            </TabsContent>
+
+            <TabsContent value="erros">
+              <ErrosSection />
             </TabsContent>
 
             <TabsContent value="gabinetes">

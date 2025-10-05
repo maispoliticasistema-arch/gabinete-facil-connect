@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
-import { Building2, Users, FileText, Activity, Database, Clock } from 'lucide-react';
+import { Building2, Users, FileText, Activity, Database, Clock, AlertCircle } from 'lucide-react';
 
 interface Stats {
   totalGabinetes: number;
   usuariosAtivos: number;
   demandasHoje: number;
+  errosNaoResolvidos: number;
   tamanhoDb: string;
 }
 
@@ -15,6 +16,7 @@ export function OverviewSection() {
     totalGabinetes: 0,
     usuariosAtivos: 0,
     demandasHoje: 0,
+    errosNaoResolvidos: 0,
     tamanhoDb: 'Calculando...'
   });
   const [loading, setLoading] = useState(true);
@@ -40,10 +42,17 @@ export function OverviewSection() {
           .select('*', { count: 'exact', head: true })
           .gte('created_at', hoje);
 
+        // Erros não resolvidos
+        const { count: erros } = await supabase
+          .from('system_errors')
+          .select('*', { count: 'exact', head: true })
+          .eq('resolved', false);
+
         setStats({
           totalGabinetes: gabinetes || 0,
           usuariosAtivos: usuarios || 0,
           demandasHoje: demandas || 0,
+          errosNaoResolvidos: erros || 0,
           tamanhoDb: 'N/A'
         });
       } catch (error) {
@@ -76,6 +85,13 @@ export function OverviewSection() {
       description: 'Novas demandas criadas hoje'
     },
     {
+      title: 'Erros Pendentes',
+      value: stats.errosNaoResolvidos,
+      icon: AlertCircle,
+      description: 'Erros aguardando resolução',
+      alert: stats.errosNaoResolvidos > 0
+    },
+    {
       title: 'Banco de Dados',
       value: stats.tamanhoDb,
       icon: Database,
@@ -86,8 +102,8 @@ export function OverviewSection() {
 
   if (loading) {
     return (
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {[1, 2, 3, 4].map((i) => (
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+        {[1, 2, 3, 4, 5].map((i) => (
           <Card key={i}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Carregando...</CardTitle>
@@ -103,17 +119,17 @@ export function OverviewSection() {
 
   return (
     <div className="space-y-6">
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
         {cards.map((card) => {
           const Icon = card.icon;
           return (
-            <Card key={card.title}>
+            <Card key={card.title} className={card.alert ? 'border-destructive' : ''}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">{card.title}</CardTitle>
-                <Icon className="h-4 w-4 text-muted-foreground" />
+                <Icon className={`h-4 w-4 ${card.alert ? 'text-destructive' : 'text-muted-foreground'}`} />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">
+                <div className={`text-2xl font-bold ${card.alert ? 'text-destructive' : ''}`}>
                   {card.isText ? card.value : card.value.toLocaleString()}
                 </div>
                 <p className="text-xs text-muted-foreground">{card.description}</p>
