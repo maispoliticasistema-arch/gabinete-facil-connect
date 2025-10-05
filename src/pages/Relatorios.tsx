@@ -22,7 +22,7 @@ import autoTable from "jspdf-autotable";
 
 const Relatorios = () => {
   const { currentGabinete } = useGabinete();
-  const { hasPermission } = usePermissions();
+  const { hasPermission, loading: permissionsLoading } = usePermissions();
   const [periodo, setPeriodo] = useState("30");
   const [assessorId, setAssessorId] = useState<string>("todos");
   const [assessores, setAssessores] = useState<{ id: string; nome: string }[]>([]);
@@ -756,6 +756,14 @@ const Relatorios = () => {
   };
 
   // Verificar permissão
+  if (permissionsLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <p className="text-muted-foreground">Carregando...</p>
+      </div>
+    );
+  }
+
   if (!hasPermission("view_relatorios")) {
     return <NoPermissionMessage />;
   }

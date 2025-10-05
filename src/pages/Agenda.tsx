@@ -49,7 +49,7 @@ const tipoLabels: Record<string, string> = {
 
 const Agenda = () => {
   const { currentGabinete } = useGabinete();
-  const { hasPermission } = usePermissions();
+  const { hasPermission, loading: permissionsLoading } = usePermissions();
   const [eventos, setEventos] = useState<Evento[]>([]);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [viewMode, setViewMode] = useState<"month" | "week" | "list">("month");
@@ -200,6 +200,14 @@ const Agenda = () => {
   };
 
   // Verificar permissão de visualização
+  if (permissionsLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <p className="text-muted-foreground">Carregando...</p>
+      </div>
+    );
+  }
+
   if (!hasPermission('view_agenda')) {
     return <NoPermissionMessage />;
   }

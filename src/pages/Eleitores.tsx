@@ -80,7 +80,7 @@ const Eleitores = () => {
   const [addEleitorOpen, setAddEleitorOpen] = useState(false);
   const { currentGabinete } = useGabinete();
   const { toast } = useToast();
-  const { hasPermission } = usePermissions();
+  const { hasPermission, loading: permissionsLoading } = usePermissions();
 
   const ITEMS_PER_PAGE = 20;
   const totalPages = Math.ceil(totalCount / ITEMS_PER_PAGE);
@@ -233,6 +233,14 @@ const Eleitores = () => {
   };
 
   // Verificar permissão de visualização
+  if (permissionsLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <p className="text-muted-foreground">Carregando...</p>
+      </div>
+    );
+  }
+
   if (!hasPermission('view_eleitores')) {
     return <NoPermissionMessage />;
   }

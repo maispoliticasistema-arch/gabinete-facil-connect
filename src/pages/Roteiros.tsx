@@ -54,7 +54,7 @@ interface Ponto {
 
 const Roteiros = () => {
   const { currentGabinete } = useGabinete();
-  const { hasPermission } = usePermissions();
+  const { hasPermission, loading: permissionsLoading } = usePermissions();
   const [roteiros, setRoteiros] = useState<Roteiro[]>([]);
   const [selectedRoteiro, setSelectedRoteiro] = useState<string | null>(null);
   const [showAddDialog, setShowAddDialog] = useState(false);
@@ -256,6 +256,14 @@ const Roteiros = () => {
   };
 
   // Verificar permissão de visualização (depois de todos os hooks)
+  if (permissionsLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <p className="text-muted-foreground">Carregando...</p>
+      </div>
+    );
+  }
+
   if (!hasPermission('view_roteiros')) {
     return <NoPermissionMessage />;
   }
