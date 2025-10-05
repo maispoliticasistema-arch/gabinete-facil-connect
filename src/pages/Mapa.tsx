@@ -57,6 +57,7 @@ const Mapa = () => {
   const mapRef = useRef<L.Map | null>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const markersLayerRef = useRef<L.LayerGroup | null>(null);
+  const [mapInitialized, setMapInitialized] = useState(false);
   
   const [eleitores, setEleitores] = useState<any[]>([]);
   const [totalEleitores, setTotalEleitores] = useState(0);
@@ -91,7 +92,8 @@ const Mapa = () => {
     const markersLayer = L.layerGroup().addTo(map);
     markersLayerRef.current = markersLayer;
     mapRef.current = map;
-
+    
+    setMapInitialized(true);
     console.log('Mapa inicializado com sucesso!');
 
     return () => {
@@ -99,6 +101,7 @@ const Mapa = () => {
         console.log('Limpando mapa...');
         mapRef.current.remove();
         mapRef.current = null;
+        setMapInitialized(false);
       }
     };
   }, [currentGabinete, hasPermission]);
@@ -217,7 +220,16 @@ const Mapa = () => {
   }, [demandas, selectedCidade, selectedBairro, selectedStatus]);
 
   useEffect(() => {
-    if (!markersLayerRef.current) return;
+    if (!markersLayerRef.current || !mapInitialized) {
+      console.log('Aguardando mapa inicializar...', { hasLayer: !!markersLayerRef.current, mapInitialized });
+      return;
+    }
+
+    console.log('Adicionando marcadores...', { 
+      eleitores: filteredEleitores.length, 
+      demandas: filteredDemandas.length, 
+      roteiros: roteiros.length 
+    });
 
     setIsLoadingMarkers(true);
     setLoadingProgress(0);
@@ -330,7 +342,9 @@ const Mapa = () => {
       setIsLoadingMarkers(false);
       setLoadingProgress(0);
     }
-  }, [filteredEleitores, filteredDemandas, roteiros, showEleitores, showDemandas, showRoteiros]);
+    
+    console.log('Marcadores adicionados:', { totalMarkers, loadedMarkers });
+  }, [filteredEleitores, filteredDemandas, roteiros, showEleitores, showDemandas, showRoteiros, mapInitialized]);
 
   if (permissionsLoading) {
     return <div className="flex items-center justify-center h-screen">Carregando...</div>;
