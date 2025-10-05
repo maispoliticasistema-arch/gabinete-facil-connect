@@ -11,10 +11,12 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { Globe, Save, Eye, ExternalLink, Settings, Loader2, Layout, FileText } from 'lucide-react';
+import { Globe, Save, Eye, ExternalLink, Settings, Loader2, Layout, FileText, ArrowLeft } from 'lucide-react';
 import { PortalEditor } from '@/components/construtor/PortalEditor';
 import { PortalPreview } from '@/components/construtor/PortalPreview';
 import { RespostasFormulariosTab } from '@/components/construtor/RespostasFormulariosTab';
+import { SitesList } from '@/components/construtor/SitesList';
+import { CreateSiteDialog } from '@/components/construtor/CreateSiteDialog';
 import { Block } from '@/components/construtor/BlockTypes';
 
 const ConstrutorDeSites = () => {
@@ -24,25 +26,44 @@ const ConstrutorDeSites = () => {
   
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [portal, setPortal] = useState<any>(null);
+  const [sites, setSites] = useState<any[]>([]);
+  const [currentSite, setCurrentSite] = useState<any>(null);
   const [blocks, setBlocks] = useState<Block[]>([]);
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [gabineteSlug, setGabineteSlug] = useState('');
   
   const [formData, setFormData] = useState({
     titulo: '',
     subtitulo: '',
     descricao: '',
-    slug: '',
+    site_path: '',
     cor_primaria: '#6366f1',
     cor_secundaria: '#8b5cf6',
   });
 
   useEffect(() => {
     if (currentGabinete) {
-      loadPortal();
+      loadSites();
+      generateGabineteSlug();
     }
   }, [currentGabinete]);
 
-  const loadPortal = async () => {
+  const generateGabineteSlug = async () => {
+    if (!currentGabinete) return;
+    
+    try {
+      const { data } = await supabase.rpc(
+        'generate_gabinete_slug',
+        { gabinete_nome: currentGabinete.gabinetes.nome }
+      );
+      
+      setGabineteSlug(data || '');
+    } catch (error) {
+      console.error('Erro ao gerar slug:', error);
+    }
+  };
+
+  const loadSites = async () => {
     if (!currentGabinete) return;
     
     setLoading(true);
@@ -51,39 +72,21 @@ const ConstrutorDeSites = () => {
         .from('portal_gabinete')
         .select('*')
         .eq('gabinete_id', currentGabinete.gabinetes.id)
-        .maybeSingle();
+        .order('created_at', { ascending: false });
 
-      if (error && error.code !== 'PGRST116') throw error;
+      if (error) throw error;
 
-      if (data) {
-        setPortal(data);
-        setFormData({
-          titulo: data.titulo || '',
-          subtitulo: data.subtitulo || '',
-          descricao: data.descricao || '',
-          slug: data.slug || '',
-          cor_primaria: data.cor_primaria || '#6366f1',
-          cor_secundaria: data.cor_secundaria || '#8b5cf6',
-        });
-        setBlocks((data.layout_json || []) as unknown as Block[]);
-      } else {
-        // Gerar slug inicial baseado no nome do gabinete
-        const { data: slugData } = await supabase.rpc(
-          'generate_portal_slug',
-          { gabinete_nome: currentGabinete.gabinetes.nome }
-        );
-        
-        setFormData(prev => ({
-          ...prev,
-          slug: slugData || '',
-          titulo: currentGabinete.gabinetes.nome || '',
-        }));
+      setSites(data || []);
+      
+      // Se não tiver site selecionado e houver sites, seleciona o primeiro
+      if (!currentSite && data && data.length > 0) {
+        selectSite(data[0]);
       }
     } catch (error) {
-      console.error('Erro ao carregar portal:', error);
+      console.error('Erro ao carregar sites:', error);
       toast({
         title: 'Erro ao carregar',
-        description: 'Não foi possível carregar as configurações do portal.',
+        description: 'Não foi possível carregar os sites.',
         variant: 'destructive',
       });
     } finally {
@@ -91,13 +94,69 @@ const ConstrutorDeSites = () => {
     }
   };
 
-  const handleSave = async () => {
-    if (!currentGabinete) return;
+  const selectSite = (site: any) => {
+    setCurrentSite(site);
+    setFormData({
+      titulo: site.titulo || '',
+      subtitulo: site.subtitulo || '',
+      descricao: site.descricao || '',
+      site_path: site.site_path || '',
+      cor_primaria: site.cor_primaria || '#6366f1',
+      cor_secundaria: site.cor_secundaria || '#8b5cf6',
+    });
+    setBlocks((site.layout_json || []) as unknown as Block[]);
+  };
 
-    if (!formData.slug.trim()) {
+  const handleCreateSite = async (sitePath: string, titulo: string) => {
+    if (!currentGabinete || !gabineteSlug) return;
+
+    try {
+      const siteData = {
+        gabinete_id: currentGabinete.gabinetes.id,
+        slug: gabineteSlug,
+        site_path: sitePath,
+        titulo: titulo,
+        subtitulo: '',
+        descricao: '',
+        cor_primaria: '#6366f1',
+        cor_secundaria: '#8b5cf6',
+        layout_json: [],
+        publicado: false,
+      };
+
+      const { data, error } = await supabase
+        .from('portal_gabinete')
+        .insert(siteData)
+        .select()
+        .single();
+
+      if (error) throw error;
+
       toast({
-        title: 'Slug obrigatório',
-        description: 'O slug do portal é obrigatório.',
+        title: 'Site criado!',
+        description: 'Seu novo site foi criado com sucesso.',
+      });
+
+      await loadSites();
+      selectSite(data);
+    } catch (error: any) {
+      console.error('Erro ao criar site:', error);
+      toast({
+        title: 'Erro ao criar site',
+        description: error.message || 'Não foi possível criar o site.',
+        variant: 'destructive',
+      });
+      throw error;
+    }
+  };
+
+  const handleSave = async () => {
+    if (!currentGabinete || !currentSite) return;
+
+    if (!formData.site_path.trim()) {
+      toast({
+        title: 'Caminho obrigatório',
+        description: 'O caminho do site é obrigatório.',
         variant: 'destructive',
       });
       return;
@@ -105,40 +164,27 @@ const ConstrutorDeSites = () => {
 
     setSaving(true);
     try {
-      const portalData = {
-        gabinete_id: currentGabinete.gabinetes.id,
+      const siteData = {
         ...formData,
+        slug: gabineteSlug,
         layout_json: blocks as any,
       };
 
-      if (portal) {
-        // Atualizar
-        const { error } = await supabase
-          .from('portal_gabinete')
-          .update(portalData)
-          .eq('id', portal.id);
+      const { error } = await supabase
+        .from('portal_gabinete')
+        .update(siteData)
+        .eq('id', currentSite.id);
 
-        if (error) throw error;
-      } else {
-        // Criar
-        const { data, error } = await supabase
-          .from('portal_gabinete')
-          .insert(portalData)
-          .select()
-          .single();
-
-        if (error) throw error;
-        setPortal(data);
-      }
+      if (error) throw error;
 
       toast({
         title: 'Salvo com sucesso!',
-        description: 'As configurações do portal foram salvas.',
+        description: 'As configurações do site foram salvas.',
       });
 
-      loadPortal();
+      await loadSites();
     } catch (error: any) {
-      console.error('Erro ao salvar portal:', error);
+      console.error('Erro ao salvar site:', error);
       toast({
         title: 'Erro ao salvar',
         description: error.message || 'Não foi possível salvar as configurações.',
@@ -150,7 +196,7 @@ const ConstrutorDeSites = () => {
   };
 
   const handlePublish = async () => {
-    if (!portal) {
+    if (!currentSite) {
       toast({
         title: 'Salve primeiro',
         description: 'Você precisa salvar as configurações antes de publicar.',
@@ -162,24 +208,53 @@ const ConstrutorDeSites = () => {
     try {
       const { error } = await supabase
         .from('portal_gabinete')
-        .update({ publicado: !portal.publicado })
-        .eq('id', portal.id);
+        .update({ publicado: !currentSite.publicado })
+        .eq('id', currentSite.id);
 
       if (error) throw error;
 
       toast({
-        title: portal.publicado ? 'Portal despublicado' : 'Portal publicado!',
-        description: portal.publicado 
-          ? 'Seu portal não está mais visível publicamente.'
-          : 'Seu portal está agora visível publicamente.',
+        title: currentSite.publicado ? 'Site despublicado' : 'Site publicado!',
+        description: currentSite.publicado 
+          ? 'Seu site não está mais visível publicamente.'
+          : 'Seu site está agora visível publicamente.',
       });
 
-      loadPortal();
+      await loadSites();
     } catch (error) {
       console.error('Erro ao publicar:', error);
       toast({
         title: 'Erro ao publicar',
         description: 'Não foi possível alterar o status de publicação.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleDeleteSite = async (siteId: string) => {
+    try {
+      const { error } = await supabase
+        .from('portal_gabinete')
+        .delete()
+        .eq('id', siteId);
+
+      if (error) throw error;
+
+      toast({
+        title: 'Site excluído',
+        description: 'O site foi excluído com sucesso.',
+      });
+
+      if (currentSite?.id === siteId) {
+        setCurrentSite(null);
+      }
+
+      await loadSites();
+    } catch (error) {
+      console.error('Erro ao excluir site:', error);
+      toast({
+        title: 'Erro ao excluir',
+        description: 'Não foi possível excluir o site.',
         variant: 'destructive',
       });
     }
@@ -197,82 +272,140 @@ const ConstrutorDeSites = () => {
     return <NoPermissionMessage />;
   }
 
-  const portalUrl = `${window.location.origin}/portal/${formData.slug}`;
-
-  return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
+  // Lista de sites (quando nenhum site está selecionado)
+  if (!currentSite) {
+    return (
+      <div className="space-y-6">
         <div>
           <h1 className="text-3xl font-bold flex items-center gap-2">
             <Globe className="h-8 w-8" />
             Construtor de Sites
           </h1>
           <p className="text-muted-foreground mt-1">
-            Crie e gerencie o portal público do seu gabinete
+            Crie e gerencie múltiplos sites públicos do seu gabinete
           </p>
         </div>
-        
-        <div className="flex items-center gap-2">
-          {portal?.publicado && (
-            <Badge variant="default" className="gap-1">
-              <Globe className="h-3 w-3" />
-              Publicado
-            </Badge>
-          )}
-          {portal && !portal.publicado && (
-            <Badge variant="secondary">Rascunho</Badge>
-          )}
+
+        <Card className="bg-muted">
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-2 text-sm">
+              <Globe className="h-4 w-4" />
+              <span className="font-medium">Slug do Gabinete:</span>
+              <code className="px-2 py-1 bg-background rounded">/{gabineteSlug}</code>
+            </div>
+            <p className="text-xs text-muted-foreground mt-2">
+              Todos os seus sites usarão este slug base. Ex: /{gabineteSlug}/portal, /{gabineteSlug}/projetos
+            </p>
+          </CardContent>
+        </Card>
+
+        <SitesList
+          sites={sites}
+          currentSiteId={null}
+          onSelectSite={(id) => {
+            const site = sites.find(s => s.id === id);
+            if (site) selectSite(site);
+          }}
+          onCreateSite={() => setShowCreateDialog(true)}
+          onDeleteSite={handleDeleteSite}
+        />
+
+        <CreateSiteDialog
+          open={showCreateDialog}
+          onClose={() => setShowCreateDialog(false)}
+          onCreateSite={handleCreateSite}
+        />
+      </div>
+    );
+  }
+
+  // Editor de site selecionado
+  const siteUrl = `${window.location.origin}/${gabineteSlug}/${formData.site_path}`;
+
+  return (
+    <div className="space-y-6">
+      {/* Header com botão voltar */}
+      <div>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setCurrentSite(null)}
+          className="mb-4"
+        >
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Voltar para lista
+        </Button>
+
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold flex items-center gap-2">
+              <Globe className="h-8 w-8" />
+              {formData.titulo || 'Sem título'}
+            </h1>
+            <p className="text-muted-foreground mt-1 font-mono text-sm">
+              /{gabineteSlug}/{formData.site_path}
+            </p>
+          </div>
+          
+          <div className="flex items-center gap-2">
+            {currentSite?.publicado && (
+              <Badge variant="default" className="gap-1">
+                <Globe className="h-3 w-3" />
+                Publicado
+              </Badge>
+            )}
+            {currentSite && !currentSite.publicado && (
+              <Badge variant="secondary">Rascunho</Badge>
+            )}
+          </div>
         </div>
       </div>
 
       {/* URL Preview & Publication Status */}
-      {portal && (
-        <Card className={portal.publicado ? "bg-primary/5 border-primary/20" : "bg-muted border-muted"}>
-          <CardContent className="pt-6">
-            <div className="space-y-4">
-              <div className="flex items-center justify-between gap-4">
-                <div className="flex-1">
-                  <Label className="text-xs text-muted-foreground">URL do Portal</Label>
-                  <p className="text-sm font-mono mt-1 break-all">{portalUrl}</p>
-                  {!portal.publicado && (
-                    <p className="text-xs text-muted-foreground mt-1">
-                      ⚠️ Portal não publicado - apenas você pode ver este link
-                    </p>
-                  )}
-                </div>
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => window.open(portalUrl, '_blank')}
-                    disabled={!portal.publicado}
-                  >
-                    <ExternalLink className="h-4 w-4 mr-2" />
-                    Abrir
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant={portal.publicado ? "secondary" : "default"}
-                    onClick={handlePublish}
-                  >
-                    <Globe className="h-4 w-4 mr-2" />
-                    {portal.publicado ? 'Despublicar' : 'Publicar Agora'}
-                  </Button>
-                </div>
-              </div>
-              {portal.publicado && (
-                <div className="bg-primary/10 border border-primary/20 rounded p-3 text-sm">
-                  <p className="font-semibold text-primary mb-1">✓ Portal Público</p>
-                  <p className="text-xs text-muted-foreground">
-                    Seu portal está visível publicamente. Qualquer pessoa com o link pode acessá-lo.
+      <Card className={currentSite.publicado ? "bg-primary/5 border-primary/20" : "bg-muted border-muted"}>
+        <CardContent className="pt-6">
+          <div className="space-y-4">
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex-1">
+                <Label className="text-xs text-muted-foreground">URL do Site</Label>
+                <p className="text-sm font-mono mt-1 break-all">{siteUrl}</p>
+                {!currentSite.publicado && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    ⚠️ Site não publicado - apenas você pode ver este link
                   </p>
-                </div>
-              )}
+                )}
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => window.open(siteUrl, '_blank')}
+                  disabled={!currentSite.publicado}
+                >
+                  <ExternalLink className="h-4 w-4 mr-2" />
+                  Abrir
+                </Button>
+                <Button
+                  size="sm"
+                  variant={currentSite.publicado ? "secondary" : "default"}
+                  onClick={handlePublish}
+                >
+                  <Globe className="h-4 w-4 mr-2" />
+                  {currentSite.publicado ? 'Despublicar' : 'Publicar Agora'}
+                </Button>
+              </div>
             </div>
-          </CardContent>
-        </Card>
-      )}
+            {currentSite.publicado && (
+              <div className="bg-primary/10 border border-primary/20 rounded p-3 text-sm">
+                <p className="font-semibold text-primary mb-1">✓ Site Público</p>
+                <p className="text-xs text-muted-foreground">
+                  Seu site está visível publicamente. Qualquer pessoa com o link pode acessá-lo.
+                </p>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Tabs */}
       <Tabs defaultValue="editor" className="space-y-6">
@@ -336,17 +469,17 @@ const ConstrutorDeSites = () => {
             <CardHeader>
               <CardTitle>Informações Básicas</CardTitle>
               <CardDescription>
-                Configure as informações principais do seu portal
+                Configure as informações principais do seu site
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="titulo">Título do Portal *</Label>
+                <Label htmlFor="titulo">Título do Site *</Label>
                 <Input
                   id="titulo"
                   value={formData.titulo}
                   onChange={(e) => setFormData(prev => ({ ...prev, titulo: e.target.value }))}
-                  placeholder="Ex: Gabinete da Vereadora Claudinha"
+                  placeholder="Ex: Portal Oficial"
                   maxLength={100}
                 />
               </div>
@@ -375,19 +508,19 @@ const ConstrutorDeSites = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="slug">Slug (URL) *</Label>
+                <Label htmlFor="site_path">Caminho do Site *</Label>
                 <div className="flex gap-2">
                   <span className="flex items-center text-sm text-muted-foreground whitespace-nowrap">
-                    {window.location.origin}/portal/
+                    /{gabineteSlug}/
                   </span>
                   <Input
-                    id="slug"
-                    value={formData.slug}
+                    id="site_path"
+                    value={formData.site_path}
                     onChange={(e) => setFormData(prev => ({ 
                       ...prev, 
-                      slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-') 
+                      site_path: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-') 
                     }))}
-                    placeholder="claudinha-jardim"
+                    placeholder="portal"
                     maxLength={100}
                   />
                 </div>
@@ -402,7 +535,7 @@ const ConstrutorDeSites = () => {
             <CardHeader>
               <CardTitle>Cores e Identidade</CardTitle>
               <CardDescription>
-                Personalize as cores do seu portal
+                Personalize as cores do seu site
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -452,23 +585,21 @@ const ConstrutorDeSites = () => {
           <div className="flex justify-between gap-4">
             <Button
               variant="outline"
-              onClick={loadPortal}
+              onClick={() => selectSite(currentSite)}
               disabled={saving}
             >
               Descartar alterações
             </Button>
             
             <div className="flex gap-2">
-              {portal && (
-                <Button
-                  variant={portal.publicado ? "secondary" : "default"}
-                  onClick={handlePublish}
-                  disabled={saving}
-                >
-                  <Globe className="h-4 w-4 mr-2" />
-                  {portal.publicado ? 'Despublicar' : 'Publicar Portal'}
-                </Button>
-              )}
+              <Button
+                variant={currentSite.publicado ? "secondary" : "default"}
+                onClick={handlePublish}
+                disabled={saving}
+              >
+                <Globe className="h-4 w-4 mr-2" />
+                {currentSite.publicado ? 'Despublicar' : 'Publicar Site'}
+              </Button>
               
               <Button onClick={handleSave} disabled={saving}>
                 {saving ? (

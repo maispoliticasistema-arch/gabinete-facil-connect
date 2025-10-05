@@ -588,6 +588,7 @@ export type Database = {
           layout_json: Json | null
           logo_url: string | null
           publicado: boolean | null
+          site_path: string
           slug: string
           subtitulo: string | null
           titulo: string | null
@@ -603,6 +604,7 @@ export type Database = {
           layout_json?: Json | null
           logo_url?: string | null
           publicado?: boolean | null
+          site_path?: string
           slug: string
           subtitulo?: string | null
           titulo?: string | null
@@ -618,6 +620,7 @@ export type Database = {
           layout_json?: Json | null
           logo_url?: string | null
           publicado?: boolean | null
+          site_path?: string
           slug?: string
           subtitulo?: string | null
           titulo?: string | null
@@ -983,6 +986,10 @@ export type Database = {
       }
       generate_codigo_indicacao: {
         Args: Record<PropertyKey, never>
+        Returns: string
+      }
+      generate_gabinete_slug: {
+        Args: { gabinete_nome: string }
         Returns: string
       }
       generate_portal_slug: {

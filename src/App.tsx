@@ -38,7 +38,7 @@ const App = () => (
             <Routes>
               <Route path="/inicio" element={<Inicio />} />
               <Route path="/cadastro-publico" element={<CadastroPublico />} />
-              <Route path="/portal/:slug" element={<PortalPublico />} />
+              <Route path="/:gabinete_slug/:site_path" element={<PortalPublico />} />
               <Route path="/auth" element={<Auth />} />
               <Route
                 path="/setup-gabinete"
