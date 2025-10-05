@@ -57,6 +57,7 @@ const Mapa = () => {
   const mapRef = useRef<L.Map | null>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const markersLayerRef = useRef<L.LayerGroup | null>(null);
+  const [mapInitialized, setMapInitialized] = useState(false);
   
   const [eleitores, setEleitores] = useState<any[]>([]);
   const [totalEleitores, setTotalEleitores] = useState(0);
@@ -73,17 +74,25 @@ const Mapa = () => {
   const [selectedBairro, setSelectedBairro] = useState<string>('all');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
 
-  // Initialize map - only once
+  // Initialize map - wait for container to be ready
   useEffect(() => {
+    // Don't initialize if no permission
+    if (permissionsLoading || !hasPermission('view_mapa')) {
+      console.log('Aguardando permissões ou sem permissão para mapa');
+      return;
+    }
+
     const container = mapContainerRef.current;
     if (!container) {
-      console.log('Container não encontrado');
+      console.log('Container ainda não está montado, aguardando...');
       return;
     }
     
     if (mapRef.current) {
-      console.log('Mapa já existe, invalidando tamanho...');
-      mapRef.current.invalidateSize();
+      console.log('Mapa já existe');
+      if (!mapInitialized) {
+        setMapInitialized(true);
+      }
       return;
     }
 
@@ -104,30 +113,22 @@ const Mapa = () => {
       const markersLayer = L.layerGroup().addTo(map);
       markersLayerRef.current = markersLayer;
       mapRef.current = map;
+      setMapInitialized(true);
       
-      console.log('Mapa inicializado com sucesso!', { map, markersLayer });
+      console.log('Mapa inicializado com sucesso!');
       
       // Force resize multiple times to ensure visibility
-      setTimeout(() => {
+      const resizeMap = () => {
         if (mapRef.current) {
           mapRef.current.invalidateSize();
-          console.log('Mapa redimensionado (100ms)');
         }
-      }, 100);
+      };
       
-      setTimeout(() => {
-        if (mapRef.current) {
-          mapRef.current.invalidateSize();
-          console.log('Mapa redimensionado (500ms)');
-        }
-      }, 500);
+      setTimeout(resizeMap, 100);
+      setTimeout(resizeMap, 300);
+      setTimeout(resizeMap, 500);
+      setTimeout(resizeMap, 1000);
       
-      setTimeout(() => {
-        if (mapRef.current) {
-          mapRef.current.invalidateSize();
-          console.log('Mapa redimensionado (1000ms)');
-        }
-      }, 1000);
     } catch (error) {
       console.error('Erro ao inicializar mapa:', error);
     }
@@ -139,8 +140,9 @@ const Mapa = () => {
         mapRef.current = null;
       }
       markersLayerRef.current = null;
+      setMapInitialized(false);
     };
-  }, []); // Empty dependency array ensures this runs only once
+  }, [permissionsLoading, hasPermission, mapInitialized]);
 
   // Fetch data
   useEffect(() => {
@@ -590,24 +592,26 @@ const Mapa = () => {
           width: '100%',
           height: '100%',
           zIndex: 0,
-          backgroundColor: '#e5e7eb'
+          backgroundColor: '#e5e7eb',
+          visibility: mapInitialized ? 'visible' : 'hidden'
         }}
-      >
-        {!mapRef.current && (
-          <div style={{
-            position: 'absolute',
-            top: '50%',
-            left: '50%',
-            transform: 'translate(-50%, -50%)',
-            padding: '20px',
-            background: 'white',
-            borderRadius: '8px',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
-          }}>
-            Carregando mapa...
-          </div>
-        )}
-      </div>
+      />
+      
+      {!mapInitialized && (
+        <div style={{
+          position: 'absolute',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          padding: '20px',
+          background: 'white',
+          borderRadius: '8px',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+          zIndex: 1
+        }}>
+          Inicializando mapa...
+        </div>
+      )}
     </div>
   );
 };
