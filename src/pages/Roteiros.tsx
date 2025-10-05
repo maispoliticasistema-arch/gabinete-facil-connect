@@ -56,7 +56,9 @@ interface Ponto {
 const MapController = ({ center }: { center: [number, number] }) => {
   const map = useMap();
   useEffect(() => {
-    map.setView(center, 13);
+    if (map && center) {
+      map.setView(center, 13);
+    }
   }, [center, map]);
   return null;
 };
@@ -75,6 +77,15 @@ const Roteiros = () => {
   const [mapCenter, setMapCenter] = useState<[number, number]>([-30.0346, -51.2177]);
   const [routeGeometry, setRouteGeometry] = useState<[number, number][]>([]);
   const [locaisVisitados, setLocaisVisitados] = useState(0);
+
+  // Verificar permissão de visualização
+  if (!hasPermission('view_roteiros')) {
+    return <NoPermissionMessage />;
+  }
+
+  if (!currentGabinete) {
+    return null;
+  }
 
   useEffect(() => {
     if (currentGabinete) {
@@ -286,11 +297,6 @@ const Roteiros = () => {
   const roteiroPartidaIcon = createCustomIcon('#22c55e', '🚀');
   const roteiroFimIcon = createCustomIcon('#3b82f6', '🏁');
 
-  // Verificar permissão de visualização
-  if (!hasPermission('view_roteiros')) {
-    return <NoPermissionMessage />;
-  }
-
   return (
     <div className="animate-fade-in space-y-6">
       <div className="flex items-center justify-between">
@@ -384,16 +390,18 @@ const Roteiros = () => {
             </CardTitle>
           </CardHeader>
           <CardContent className="p-0 h-[calc(100%-4rem)]">
-            <MapContainer
-              center={mapCenter}
-              zoom={13}
-              className="h-full w-full"
-            >
-              <MapController center={mapCenter} />
-              <TileLayer
-                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-              />
+            {mapCenter && mapCenter.length === 2 && (
+              <MapContainer
+                center={mapCenter}
+                zoom={13}
+                className="h-full w-full"
+                key={`map-${mapCenter[0]}-${mapCenter[1]}`}
+              >
+                <MapController center={mapCenter} />
+                <TileLayer
+                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                />
 
               {selectedRoteiroData && selectedRoteiroData.latitude_partida && selectedRoteiroData.longitude_partida && (
                 <Marker
@@ -465,6 +473,7 @@ const Roteiros = () => {
                 </MarkerClusterGroup>
               )}
             </MapContainer>
+            )}
           </CardContent>
         </Card>
       </div>
