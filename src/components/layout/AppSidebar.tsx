@@ -23,18 +23,35 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/contexts/AuthContext';
 import { useGabinete } from '@/contexts/GabineteContext';
+import { usePermissions } from '@/hooks/usePermissions';
 import { Button } from '@/components/ui/button';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 
-const menuItems = [
+type Permission = 
+  | 'view_eleitores'
+  | 'view_demandas'
+  | 'view_agenda'
+  | 'view_roteiros'
+  | 'view_mapa'
+  | 'view_relatorios'
+  | 'manage_settings';
+
+interface MenuItem {
+  title: string;
+  url: string;
+  icon: any;
+  permission?: Permission;
+}
+
+const menuItems: MenuItem[] = [
   { title: 'Dashboard', url: '/', icon: Home },
-  { title: 'Demandas', url: '/demandas', icon: FileText },
-  { title: 'Eleitores', url: '/eleitores', icon: Users },
-  { title: 'Agenda', url: '/agenda', icon: Calendar },
-  { title: 'Mapa', url: '/mapa', icon: Map },
-  { title: 'Roteiros', url: '/roteiros', icon: Route },
-  { title: 'Relatórios', url: '/relatorios', icon: BarChart3 },
-  { title: 'Configurações', url: '/configuracoes', icon: Settings },
+  { title: 'Demandas', url: '/demandas', icon: FileText, permission: 'view_demandas' },
+  { title: 'Eleitores', url: '/eleitores', icon: Users, permission: 'view_eleitores' },
+  { title: 'Agenda', url: '/agenda', icon: Calendar, permission: 'view_agenda' },
+  { title: 'Mapa', url: '/mapa', icon: Map, permission: 'view_mapa' },
+  { title: 'Roteiros', url: '/roteiros', icon: Route, permission: 'view_roteiros' },
+  { title: 'Relatórios', url: '/relatorios', icon: BarChart3, permission: 'view_relatorios' },
+  { title: 'Configurações', url: '/configuracoes', icon: Settings, permission: 'manage_settings' },
 ];
 
 export function AppSidebar() {
@@ -43,7 +60,20 @@ export function AppSidebar() {
   const collapsed = state === 'collapsed';
   const { signOut } = useAuth();
   const { gabinetes, currentGabinete, setCurrentGabinete } = useGabinete();
+  const { hasPermission, loading } = usePermissions();
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
+
+  // Filtrar itens do menu baseado nas permissões
+  const visibleMenuItems = useMemo(() => {
+    if (loading) return [];
+    
+    return menuItems.filter(item => {
+      // Dashboard sempre visível
+      if (!item.permission) return true;
+      // Verificar permissão
+      return hasPermission(item.permission);
+    });
+  }, [hasPermission, loading]);
 
   useEffect(() => {
     const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' | null;
@@ -94,7 +124,7 @@ export function AppSidebar() {
           <SidebarGroupLabel>Navegação</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {menuItems.map((item) => (
+              {visibleMenuItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
                     <NavLink
