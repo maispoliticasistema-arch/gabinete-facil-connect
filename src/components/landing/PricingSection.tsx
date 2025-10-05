@@ -24,7 +24,7 @@ const plans = [
     popular: true,
     features: [
       'Até 10 usuários',
-      '5.000 eleitores',
+      '10.000 eleitores',
       'Demandas ilimitadas',
       'Suporte prioritário',
       'Relatórios avançados',
