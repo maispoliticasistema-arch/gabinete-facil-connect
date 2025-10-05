@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useGabinete } from '@/contexts/GabineteContext';
+import { usePermissions } from '@/hooks/usePermissions';
+import { NoPermissionMessage } from '@/components/PermissionGuard';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -17,6 +19,7 @@ import { Block } from '@/components/construtor/BlockTypes';
 const ConstrutorDeSites = () => {
   const { currentGabinete } = useGabinete();
   const { toast } = useToast();
+  const { isAdmin, loading: permissionsLoading } = usePermissions();
   
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -181,12 +184,16 @@ const ConstrutorDeSites = () => {
     }
   };
 
-  if (loading) {
+  if (permissionsLoading || loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>
     );
+  }
+
+  if (!isAdmin) {
+    return <NoPermissionMessage />;
   }
 
   const portalUrl = `${window.location.origin}/portal/${formData.slug}`;
