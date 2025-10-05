@@ -136,9 +136,7 @@ export const EleitoresDetailsSheet = ({
             status,
             objetivo,
             roteiro_responsaveis(
-              profiles!inner(
-                nome_completo
-              )
+              user_id
             )
           )
         `)
@@ -164,7 +162,25 @@ export const EleitoresDetailsSheet = ({
         });
       });
 
-      setRoteiros(Array.from(roteirosMap.values()));
+      const roteirosArray = Array.from(roteirosMap.values());
+
+      // Buscar os nomes dos responsáveis para cada roteiro
+      for (const roteiro of roteirosArray) {
+        if (roteiro.roteiro_responsaveis && roteiro.roteiro_responsaveis.length > 0) {
+          const userIds = roteiro.roteiro_responsaveis.map((r: any) => r.user_id);
+          
+          const { data: profiles } = await supabase
+            .from('profiles')
+            .select('id, nome_completo')
+            .in('id', userIds);
+
+          roteiro.roteiro_responsaveis = (profiles || []).map(profile => ({
+            profiles: { nome_completo: profile.nome_completo }
+          }));
+        }
+      }
+
+      setRoteiros(roteirosArray);
     } catch (error: any) {
       toast({
         title: 'Erro ao carregar roteiros',
