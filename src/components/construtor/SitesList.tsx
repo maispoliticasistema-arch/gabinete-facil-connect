@@ -78,10 +78,14 @@ export const SitesList = ({
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1">
                     <h4 className="font-semibold">{site.titulo || 'Sem título'}</h4>
-                    {site.publicado && (
+                    {site.publicado ? (
                       <Badge variant="default" className="text-xs">
                         <Globe className="h-3 w-3 mr-1" />
                         Publicado
+                      </Badge>
+                    ) : (
+                      <Badge variant="secondary" className="text-xs">
+                        Rascunho
                       </Badge>
                     )}
                   </div>
