@@ -118,7 +118,8 @@ const Mapa = () => {
         const { data: eleitoresData, error: eleitoresError } = await supabase
           .from('eleitores')
           .select('*')
-          .eq('gabinete_id', currentGabinete.gabinete_id);
+          .eq('gabinete_id', currentGabinete.gabinete_id)
+          .limit(10000); // Aumentar limite para suportar mais registros
 
         if (eleitoresError) {
           console.error('Error fetching eleitores:', eleitoresError);
