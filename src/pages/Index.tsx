@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { Users, FileText, Calendar, AlertCircle, TrendingUp, UserPlus } from 'lucide-react';
 import { StatsCard } from '@/components/dashboard/StatsCard';
 import { AniversariantesDialog } from '@/components/dashboard/AniversariantesDialog';
+import { RankingAssessores } from '@/components/dashboard/RankingAssessores';
 import { AddDemandaDialog } from '@/components/demandas/AddDemandaDialog';
 import { AddEleitoresDialog } from '@/components/eleitores/AddEleitoresDialog';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -208,16 +209,7 @@ const Index = () => {
         </TabsContent>
 
         <TabsContent value="ranking" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Ranking de Assessores</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground">
-                Desempenho da equipe será exibido aqui.
-              </p>
-            </CardContent>
-          </Card>
+          <RankingAssessores />
         </TabsContent>
       </Tabs>
 
