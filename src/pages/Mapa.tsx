@@ -57,7 +57,6 @@ const Mapa = () => {
   const mapRef = useRef<L.Map | null>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const markersLayerRef = useRef<L.LayerGroup | null>(null);
-  const [mapInitialized, setMapInitialized] = useState(false);
   
   const [eleitores, setEleitores] = useState<any[]>([]);
   const [totalEleitores, setTotalEleitores] = useState(0);
@@ -74,52 +73,28 @@ const Mapa = () => {
   const [selectedBairro, setSelectedBairro] = useState<string>('all');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
 
-  // Initialize map - only once, independent of permissions
+  // Initialize map
   useEffect(() => {
-    const container = mapContainerRef.current;
-    if (!container) {
-      console.log('Container ainda não está montado');
-      return;
-    }
-    
-    if (mapRef.current) {
-      console.log('Mapa já existe');
-      return;
-    }
+    if (!mapContainerRef.current || mapRef.current) return;
 
-    console.log('Inicializando mapa...', { container });
+    const map = L.map(mapContainerRef.current).setView([-15.7939, -47.8828], 4);
     
-    try {
-      const map = L.map(container, {
-        zoomControl: true,
-        attributionControl: true,
-        preferCanvas: true,
-      }).setView([-15.7939, -47.8828], 4);
-      
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; OpenStreetMap contributors',
-        maxZoom: 19,
-      }).addTo(map);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap',
+      maxZoom: 19,
+    }).addTo(map);
 
-      const markersLayer = L.layerGroup().addTo(map);
-      markersLayerRef.current = markersLayer;
-      mapRef.current = map;
-      setMapInitialized(true);
-      
-      console.log('Mapa inicializado com sucesso!');
-      
-      // Force resize
-      setTimeout(() => {
-        if (mapRef.current) {
-          mapRef.current.invalidateSize();
-          console.log('Resize do mapa');
-        }
-      }, 250);
-      
-    } catch (error) {
-      console.error('Erro ao inicializar mapa:', error);
-    }
-  }, []); // SEM DEPENDÊNCIAS - roda apenas uma vez
+    const markersLayer = L.layerGroup().addTo(map);
+    markersLayerRef.current = markersLayer;
+    mapRef.current = map;
+
+    return () => {
+      if (mapRef.current) {
+        mapRef.current.remove();
+        mapRef.current = null;
+      }
+    };
+  }, []);
 
   // Fetch data
   useEffect(() => {
@@ -256,7 +231,6 @@ const Mapa = () => {
     };
 
     if (showEleitores) {
-      console.log('Adicionando eleitores ao mapa:', filteredEleitores.length);
       filteredEleitores.forEach(eleitor => {
         if (!eleitor.latitude || !eleitor.longitude) {
           updateProgress();
@@ -281,7 +255,6 @@ const Mapa = () => {
     }
 
     if (showDemandas) {
-      console.log('Adicionando demandas ao mapa:', filteredDemandas.length);
       filteredDemandas.forEach(demanda => {
         if (!demanda.eleitores || !demanda.eleitores.latitude || !demanda.eleitores.longitude) {
           updateProgress();
@@ -309,7 +282,6 @@ const Mapa = () => {
     }
 
     if (showRoteiros) {
-      console.log('Adicionando roteiros ao mapa:', roteiros.length);
       roteiros.forEach(roteiro => {
         // Marcador de partida
         if (roteiro.latitude_partida && roteiro.longitude_partida) {
@@ -351,11 +323,10 @@ const Mapa = () => {
       setIsLoadingMarkers(false);
       setLoadingProgress(0);
     }
-  }, [filteredEleitores, filteredDemandas, roteiros, showEleitores, showDemandas, showRoteiros, mapInitialized]);
+  }, [filteredEleitores, filteredDemandas, roteiros, showEleitores, showDemandas, showRoteiros]);
 
-  // Verificar permissão APÓS todos os hooks
   if (permissionsLoading) {
-    return <div className="flex items-center justify-center h-screen">Carregando permissões...</div>;
+    return <div className="flex items-center justify-center h-screen">Carregando...</div>;
   }
 
   if (!hasPermission('view_mapa')) {
@@ -560,7 +531,6 @@ const Mapa = () => {
       {/* Map */}
       <div 
         ref={mapContainerRef}
-        id="map-container"
         style={{
           position: 'absolute',
           top: 0,
@@ -569,27 +539,9 @@ const Mapa = () => {
           bottom: 0,
           width: '100%',
           height: '100%',
-          zIndex: 0,
-          backgroundColor: '#e5e7eb',
-          visibility: mapInitialized ? 'visible' : 'hidden'
+          zIndex: 0
         }}
       />
-      
-      {!mapInitialized && (
-        <div style={{
-          position: 'absolute',
-          top: '50%',
-          left: '50%',
-          transform: 'translate(-50%, -50%)',
-          padding: '20px',
-          background: 'white',
-          borderRadius: '8px',
-          boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-          zIndex: 1
-        }}>
-          Inicializando mapa...
-        </div>
-      )}
     </div>
   );
 };
