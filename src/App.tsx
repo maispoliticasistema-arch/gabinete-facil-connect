@@ -24,6 +24,8 @@ import Inicio from "./pages/Inicio";
 import CadastroPublico from "./pages/CadastroPublico";
 import ConstrutorDeSites from "./pages/ConstrutorDeSites";
 import PortalPublico from "./pages/PortalPublico";
+import Painel from "./pages/Painel";
+import { RequiresSuperowner } from "./components/RequiresSuperowner";
 
 const queryClient = new QueryClient();
 
@@ -163,6 +165,16 @@ const App = () => (
                         <ConstrutorDeSites />
                       </MainLayout>
                     </RequiresGabinete>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/painel"
+                element={
+                  <ProtectedRoute>
+                    <RequiresSuperowner>
+                      <Painel />
+                    </RequiresSuperowner>
                   </ProtectedRoute>
                 }
               />

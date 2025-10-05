@@ -828,6 +828,27 @@ export type Database = {
         }
         Relationships: []
       }
+      system_user_roles: {
+        Row: {
+          created_at: string | null
+          id: string
+          role: Database["public"]["Enums"]["system_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          role: Database["public"]["Enums"]["system_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["system_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
       tags: {
         Row: {
           cor: string
@@ -1002,6 +1023,13 @@ export type Database = {
           gabinete_id: string
         }[]
       }
+      has_system_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["system_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
       log_audit_action: {
         Args: {
           _action: Database["public"]["Enums"]["audit_action"]
@@ -1101,6 +1129,7 @@ export type Database = {
         | "manage_settings"
         | "view_mapa"
       roteiro_status: "planejado" | "em_andamento" | "concluido" | "cancelado"
+      system_role: "superowner" | "support"
       user_role: "owner" | "admin" | "assessor"
     }
     CompositeTypes: {
@@ -1290,6 +1319,7 @@ export const Constants = {
         "view_mapa",
       ],
       roteiro_status: ["planejado", "em_andamento", "concluido", "cancelado"],
+      system_role: ["superowner", "support"],
       user_role: ["owner", "admin", "assessor"],
     },
   },
