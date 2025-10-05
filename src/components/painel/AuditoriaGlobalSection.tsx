@@ -2,9 +2,13 @@ import { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { Filter, X } from 'lucide-react';
 
 interface AuditLog {
   id: string;
@@ -18,11 +22,16 @@ interface AuditLog {
 export function AuditoriaGlobalSection() {
   const [logs, setLogs] = useState<AuditLog[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [actionFilter, setActionFilter] = useState<string>('all');
+  const [entityFilter, setEntityFilter] = useState<string>('all');
+  const [gabinetes, setGabinetes] = useState<{ id: string; nome: string }[]>([]);
+  const [gabineteFilter, setGabineteFilter] = useState<string>('all');
 
   useEffect(() => {
     async function loadLogs() {
       try {
-        const { data, error } = await supabase
+        let query = supabase
           .from('audit_logs')
           .select(`
             id,
@@ -34,6 +43,19 @@ export function AuditoriaGlobalSection() {
           `)
           .order('created_at', { ascending: false })
           .limit(100);
+        
+        // Aplicar filtros
+        if (actionFilter !== 'all') {
+          query = query.eq('action', actionFilter as any);
+        }
+        if (entityFilter !== 'all') {
+          query = query.eq('entity_type', entityFilter as any);
+        }
+        if (gabineteFilter !== 'all') {
+          query = query.eq('gabinete_id', gabineteFilter);
+        }
+
+        const { data, error } = await query;
 
         if (error) throw error;
 
@@ -70,6 +92,17 @@ export function AuditoriaGlobalSection() {
     }
 
     loadLogs();
+  }, [actionFilter, entityFilter, gabineteFilter]);
+
+  useEffect(() => {
+    async function loadGabinetes() {
+      const { data } = await supabase
+        .from('gabinetes')
+        .select('id, nome')
+        .order('nome');
+      if (data) setGabinetes(data);
+    }
+    loadGabinetes();
   }, []);
 
   const getActionBadge = (action: string) => {
@@ -82,6 +115,20 @@ export function AuditoriaGlobalSection() {
     };
     return <Badge variant={colors[action] || 'outline'}>{action}</Badge>;
   };
+
+  const clearFilters = () => {
+    setSearchTerm('');
+    setActionFilter('all');
+    setEntityFilter('all');
+    setGabineteFilter('all');
+  };
+
+  const filteredLogs = logs.filter(log => {
+    const matchesSearch = 
+      log.user_nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      log.gabinete_nome.toLowerCase().includes(searchTerm.toLowerCase());
+    return matchesSearch;
+  });
 
   if (loading) {
     return (
@@ -97,12 +144,78 @@ export function AuditoriaGlobalSection() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Log de Auditoria Global</CardTitle>
+        <CardTitle className="flex items-center gap-2">
+          <Filter className="h-5 w-5" />
+          Log de Auditoria Global
+        </CardTitle>
         <CardDescription>
           Últimas 100 ações realizadas em todos os gabinetes
         </CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <Input
+            placeholder="Buscar usuário ou gabinete..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+          
+          <Select value={actionFilter} onValueChange={setActionFilter}>
+            <SelectTrigger>
+              <SelectValue placeholder="Filtrar por ação" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todas as ações</SelectItem>
+              <SelectItem value="create">Create</SelectItem>
+              <SelectItem value="update">Update</SelectItem>
+              <SelectItem value="delete">Delete</SelectItem>
+              <SelectItem value="login">Login</SelectItem>
+              <SelectItem value="logout">Logout</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Select value={entityFilter} onValueChange={setEntityFilter}>
+            <SelectTrigger>
+              <SelectValue placeholder="Filtrar por tipo" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos os tipos</SelectItem>
+              <SelectItem value="eleitor">Eleitor</SelectItem>
+              <SelectItem value="demanda">Demanda</SelectItem>
+              <SelectItem value="agenda">Agenda</SelectItem>
+              <SelectItem value="roteiro">Roteiro</SelectItem>
+              <SelectItem value="user">Usuário</SelectItem>
+              <SelectItem value="gabinete">Gabinete</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Select value={gabineteFilter} onValueChange={setGabineteFilter}>
+            <SelectTrigger>
+              <SelectValue placeholder="Filtrar por gabinete" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos os gabinetes</SelectItem>
+              {gabinetes.map((gab) => (
+                <SelectItem key={gab.id} value={gab.id}>
+                  {gab.nome}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {(searchTerm || actionFilter !== 'all' || entityFilter !== 'all' || gabineteFilter !== 'all') && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={clearFilters}
+            className="gap-2"
+          >
+            <X className="h-4 w-4" />
+            Limpar filtros
+          </Button>
+        )}
+
         <Table>
           <TableHeader>
             <TableRow>
@@ -114,7 +227,7 @@ export function AuditoriaGlobalSection() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {logs.map((log) => (
+            {filteredLogs.map((log) => (
               <TableRow key={log.id}>
                 <TableCell>
                   {format(new Date(log.created_at), 'dd/MM/yyyy HH:mm', { locale: ptBR })}
