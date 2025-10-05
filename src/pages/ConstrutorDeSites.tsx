@@ -203,20 +203,26 @@ const ConstrutorDeSites = () => {
     }
 
     try {
+      const newPublishedState = !currentSite.publicado;
+      
       const { error } = await supabase
         .from('portal_gabinete')
-        .update({ publicado: !currentSite.publicado })
+        .update({ publicado: newPublishedState })
         .eq('id', currentSite.id);
 
       if (error) throw error;
 
       toast({
-        title: currentSite.publicado ? 'Site despublicado' : 'Site publicado!',
-        description: currentSite.publicado 
-          ? 'Seu site não está mais visível publicamente.'
-          : 'Seu site está agora visível publicamente.',
+        title: newPublishedState ? 'Site publicado!' : 'Site despublicado',
+        description: newPublishedState 
+          ? 'Seu site está agora visível publicamente.'
+          : 'Seu site não está mais visível publicamente.',
       });
 
+      // Atualizar o site atual na interface
+      setCurrentSite({ ...currentSite, publicado: newPublishedState });
+      
+      // Recarregar a lista
       await loadSites();
     } catch (error) {
       console.error('Erro ao publicar:', error);
