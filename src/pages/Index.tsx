@@ -11,6 +11,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useGabinete } from '@/contexts/GabineteContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { format, subMonths, startOfMonth, endOfMonth } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 interface DashboardStats {
   totalEleitores: number;
   aniversariantes: number;
@@ -18,6 +21,11 @@ interface DashboardStats {
   demandasHoje: number;
   demandasAtrasadas: number;
   eventosHoje: number;
+}
+
+interface CadastrosChart {
+  mes: string;
+  total: number;
 }
 const Index = () => {
   const {
@@ -38,6 +46,7 @@ const Index = () => {
   const [aniversariantesDialogOpen, setAniversariantesDialogOpen] = useState(false);
   const [novaDemandaDialogOpen, setNovaDemandaDialogOpen] = useState(false);
   const [novoEleitorDialogOpen, setNovoEleitorDialogOpen] = useState(false);
+  const [cadastrosData, setCadastrosData] = useState<CadastrosChart[]>([]);
   const fetchStats = useCallback(async () => {
     if (!currentGabinete) return;
     setLoading(true);
@@ -97,6 +106,7 @@ const Index = () => {
         count: 'exact',
         head: true
       }).eq('gabinete_id', currentGabinete.gabinete_id).gte('data_inicio', `${today}T00:00:00`).lt('data_inicio', `${today}T23:59:59`);
+      
       setStats({
         totalEleitores: totalEleitores || 0,
         aniversariantes,
@@ -105,6 +115,34 @@ const Index = () => {
         demandasAtrasadas: demandasAtrasadas || 0,
         eventosHoje: eventosHoje || 0
       });
+
+      // Buscar dados de cadastros dos últimos 6 meses
+      const { data: eleitores } = await supabase
+        .from('eleitores')
+        .select('created_at')
+        .eq('gabinete_id', currentGabinete.gabinete_id)
+        .order('created_at', { ascending: true });
+
+      // Processar dados para o gráfico
+      const chartData: CadastrosChart[] = [];
+      for (let i = 5; i >= 0; i--) {
+        const monthDate = subMonths(new Date(), i);
+        const start = startOfMonth(monthDate);
+        const end = endOfMonth(monthDate);
+        
+        const count = eleitores?.filter(e => {
+          const createdAt = new Date(e.created_at);
+          return createdAt >= start && createdAt <= end;
+        }).length || 0;
+
+        chartData.push({
+          mes: format(monthDate, 'MMM/yy', { locale: ptBR }),
+          total: count
+        });
+      }
+
+      setCadastrosData(chartData);
+
     } catch (error) {
       console.error('Erro ao buscar estatísticas:', error);
       toast({
@@ -185,9 +223,45 @@ const Index = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-muted-foreground">
-                Gráfico de evolução de cadastros (últimos 6 meses)
-              </p>
+              {cadastrosData.length > 0 ? (
+                <div className="h-[300px] w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={cadastrosData}>
+                      <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                      <XAxis 
+                        dataKey="mes" 
+                        className="text-sm"
+                        tick={{ fill: 'hsl(var(--muted-foreground))' }}
+                      />
+                      <YAxis 
+                        className="text-sm"
+                        tick={{ fill: 'hsl(var(--muted-foreground))' }}
+                      />
+                      <Tooltip 
+                        contentStyle={{
+                          backgroundColor: 'hsl(var(--card))',
+                          border: '1px solid hsl(var(--border))',
+                          borderRadius: '8px'
+                        }}
+                        labelStyle={{ color: 'hsl(var(--foreground))' }}
+                      />
+                      <Line 
+                        type="monotone" 
+                        dataKey="total" 
+                        stroke="hsl(var(--primary))" 
+                        strokeWidth={2}
+                        dot={{ fill: 'hsl(var(--primary))', r: 4 }}
+                        activeDot={{ r: 6 }}
+                        name="Cadastros"
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              ) : (
+                <p className="text-muted-foreground text-center py-8">
+                  Nenhum dado disponível para exibir
+                </p>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
