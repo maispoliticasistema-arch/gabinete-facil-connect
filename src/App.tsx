@@ -20,6 +20,7 @@ import Configuracoes from "./pages/Configuracoes";
 import Relatorios from "./pages/Relatorios";
 import MinhaConta from "./pages/MinhaConta";
 import NotFound from "./pages/NotFound";
+import Inicio from "./pages/Inicio";
 
 const queryClient = new QueryClient();
 
@@ -32,6 +33,7 @@ const App = () => (
         <AuthProvider>
           <GabineteProvider>
             <Routes>
+              <Route path="/inicio" element={<Inicio />} />
               <Route path="/auth" element={<Auth />} />
               <Route
                 path="/setup-gabinete"
