@@ -73,15 +73,19 @@ const Mapa = () => {
   const [selectedBairro, setSelectedBairro] = useState<string>('all');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
 
-  // Initialize map
+  // Initialize map - only once
   useEffect(() => {
     const container = mapContainerRef.current;
     if (!container || mapRef.current) return;
 
-    const map = L.map(container).setView([-15.7939, -47.8828], 4);
+    console.log('Inicializando mapa...');
+    const map = L.map(container, {
+      zoomControl: true,
+      attributionControl: true,
+    }).setView([-15.7939, -47.8828], 4);
     
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; OpenStreetMap',
+      attribution: '&copy; OpenStreetMap contributors',
       maxZoom: 19,
     }).addTo(map);
 
@@ -89,17 +93,23 @@ const Mapa = () => {
     markersLayerRef.current = markersLayer;
     mapRef.current = map;
     
-    // Force resize
-    requestAnimationFrame(() => {
+    console.log('Mapa inicializado com sucesso!');
+    
+    // Force resize after a short delay
+    setTimeout(() => {
       map.invalidateSize();
-    });
+      console.log('Mapa redimensionado');
+    }, 100);
 
     return () => {
-      map.remove();
-      mapRef.current = null;
+      console.log('Limpando mapa...');
+      if (mapRef.current) {
+        mapRef.current.remove();
+        mapRef.current = null;
+      }
       markersLayerRef.current = null;
     };
-  }, []);
+  }, []); // Empty dependency array ensures this runs only once
 
   // Fetch data
   useEffect(() => {
@@ -330,12 +340,14 @@ const Mapa = () => {
     }
   }, [filteredEleitores, filteredDemandas, roteiros, showEleitores, showDemandas, showRoteiros]);
 
-  // Verificar permissão
+  // Verificar permissão - não bloqueia a renderização do mapa
+  const hasMapPermission = !permissionsLoading && hasPermission('view_mapa');
+  
   if (permissionsLoading) {
-    return <div className="flex items-center justify-center h-screen">Carregando...</div>;
+    return <div className="flex items-center justify-center h-screen">Carregando permissões...</div>;
   }
 
-  if (!hasPermission('view_mapa')) {
+  if (!hasMapPermission) {
     return <NoPermissionMessage />;
   }
 
