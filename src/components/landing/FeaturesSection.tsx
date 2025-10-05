@@ -7,7 +7,7 @@ const features = [
   {
     icon: FileText,
     title: 'Demandas',
-    description: 'Protocolo automático, prazos, responsável e histórico completo de cada atendimento.'
+    description: 'Prazos, responsável e histórico completo de cada atendimento.'
   },
   {
     icon: Users,
@@ -17,7 +17,7 @@ const features = [
   {
     icon: Calendar,
     title: 'Agenda',
-    description: 'Compromissos da equipe com sincronização Google Calendar e lembretes automáticos.'
+    description: 'Compromissos da equipe com lembretes automáticos dentro do Gabinete Fácil.'
   },
   {
     icon: Map,
