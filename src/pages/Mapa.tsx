@@ -73,9 +73,13 @@ const Mapa = () => {
   const [selectedBairro, setSelectedBairro] = useState<string>('all');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
 
-  // Initialize map
+  // Initialize map - only if we have permission and gabinete
   useEffect(() => {
     if (!mapContainerRef.current || mapRef.current) return;
+    if (!currentGabinete) return;
+    if (!hasPermission('view_mapa')) return;
+
+    console.log('Inicializando mapa...', { container: mapContainerRef.current });
 
     const map = L.map(mapContainerRef.current).setView([-15.7939, -47.8828], 4);
     
@@ -88,13 +92,16 @@ const Mapa = () => {
     markersLayerRef.current = markersLayer;
     mapRef.current = map;
 
+    console.log('Mapa inicializado com sucesso!');
+
     return () => {
       if (mapRef.current) {
+        console.log('Limpando mapa...');
         mapRef.current.remove();
         mapRef.current = null;
       }
     };
-  }, []);
+  }, [currentGabinete, hasPermission]);
 
   // Fetch data
   useEffect(() => {
