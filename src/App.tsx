@@ -18,6 +18,7 @@ import Mapa from "./pages/Mapa";
 import Roteiros from "./pages/Roteiros";
 import Configuracoes from "./pages/Configuracoes";
 import Relatorios from "./pages/Relatorios";
+import MinhaConta from "./pages/MinhaConta";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -133,6 +134,16 @@ const App = () => (
                         <Configuracoes />
                       </MainLayout>
                     </RequiresGabinete>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/minha-conta"
+                element={
+                  <ProtectedRoute>
+                    <MainLayout>
+                      <MinhaConta />
+                    </MainLayout>
                   </ProtectedRoute>
                 }
               />

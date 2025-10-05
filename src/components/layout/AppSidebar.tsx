@@ -1,4 +1,4 @@
-import { Building2, Calendar, FileText, Home, Map, Route, Users, ChevronDown, LogOut, Moon, Sun, Settings, BarChart3 } from 'lucide-react';
+import { Building2, Calendar, FileText, Home, Map, Route, Users, ChevronDown, LogOut, Moon, Sun, Settings, BarChart3, UserCircle } from 'lucide-react';
 import { NavLink, useLocation } from 'react-router-dom';
 import {
   Sidebar,
@@ -183,6 +183,17 @@ export function AppSidebar() {
         )}
 
         <div className={`flex ${collapsed ? 'flex-col gap-1 items-center' : 'gap-2'}`}>
+          <Button
+            variant="ghost"
+            size="icon"
+            asChild
+            className={`${!collapsed ? 'flex-1' : 'w-10 h-10'} bg-sidebar-accent text-sidebar-accent-foreground hover:bg-sidebar-accent/80`}
+          >
+            <NavLink to="/minha-conta">
+              <UserCircle className="h-4 w-4" />
+              {!collapsed && <span className="ml-2">Minha Conta</span>}
+            </NavLink>
+          </Button>
           <Button
             variant="ghost"
             size="icon"
