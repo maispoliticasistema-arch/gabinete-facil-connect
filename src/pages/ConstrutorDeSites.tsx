@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Globe, Save, Eye, ExternalLink, Settings, Loader2, Layout } from 'lucide-react';
 import { PortalEditor } from '@/components/construtor/PortalEditor';
+import { PortalPreview } from '@/components/construtor/PortalPreview';
 import { Block } from '@/components/construtor/BlockTypes';
 
 const ConstrutorDeSites = () => {
@@ -272,6 +273,10 @@ const ConstrutorDeSites = () => {
             <Layout className="h-4 w-4 mr-2" />
             Editor
           </TabsTrigger>
+          <TabsTrigger value="preview">
+            <Eye className="h-4 w-4 mr-2" />
+            Preview
+          </TabsTrigger>
           <TabsTrigger value="configuracoes">
             <Settings className="h-4 w-4 mr-2" />
             Configurações
@@ -298,6 +303,16 @@ const ConstrutorDeSites = () => {
               Salvar Layout
             </Button>
           </div>
+        </TabsContent>
+
+        <TabsContent value="preview">
+          <PortalPreview
+            blocks={blocks}
+            colors={{
+              primary: formData.cor_primaria,
+              secondary: formData.cor_secundaria,
+            }}
+          />
         </TabsContent>
 
         <TabsContent value="configuracoes" className="space-y-6">
