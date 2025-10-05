@@ -11,9 +11,10 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { Globe, Save, Eye, ExternalLink, Settings, Loader2, Layout } from 'lucide-react';
+import { Globe, Save, Eye, ExternalLink, Settings, Loader2, Layout, FileText } from 'lucide-react';
 import { PortalEditor } from '@/components/construtor/PortalEditor';
 import { PortalPreview } from '@/components/construtor/PortalPreview';
+import { RespostasFormulariosTab } from '@/components/construtor/RespostasFormulariosTab';
 import { Block } from '@/components/construtor/BlockTypes';
 
 const ConstrutorDeSites = () => {
@@ -284,6 +285,10 @@ const ConstrutorDeSites = () => {
             <Eye className="h-4 w-4 mr-2" />
             Preview
           </TabsTrigger>
+          <TabsTrigger value="respostas">
+            <FileText className="h-4 w-4 mr-2" />
+            Respostas
+          </TabsTrigger>
           <TabsTrigger value="configuracoes">
             <Settings className="h-4 w-4 mr-2" />
             Configurações
@@ -320,6 +325,10 @@ const ConstrutorDeSites = () => {
               secondary: formData.cor_secundaria,
             }}
           />
+        </TabsContent>
+
+        <TabsContent value="respostas">
+          <RespostasFormulariosTab />
         </TabsContent>
 
         <TabsContent value="configuracoes" className="space-y-6">

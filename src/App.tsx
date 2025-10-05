@@ -24,7 +24,6 @@ import Inicio from "./pages/Inicio";
 import CadastroPublico from "./pages/CadastroPublico";
 import ConstrutorDeSites from "./pages/ConstrutorDeSites";
 import PortalPublico from "./pages/PortalPublico";
-import RespostasFormularios from "./pages/RespostasFormularios";
 
 const queryClient = new QueryClient();
 
@@ -162,18 +161,6 @@ const App = () => (
                     <RequiresGabinete>
                       <MainLayout>
                         <ConstrutorDeSites />
-                      </MainLayout>
-                    </RequiresGabinete>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/respostas-formularios"
-                element={
-                  <ProtectedRoute>
-                    <RequiresGabinete>
-                      <MainLayout>
-                        <RespostasFormularios />
                       </MainLayout>
                     </RequiresGabinete>
                   </ProtectedRoute>
