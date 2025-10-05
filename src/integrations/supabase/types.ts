@@ -542,6 +542,53 @@ export type Database = {
           },
         ]
       }
+      performance_metrics: {
+        Row: {
+          created_at: string | null
+          duration_ms: number
+          endpoint: string | null
+          gabinete_id: string | null
+          id: string
+          is_slow: boolean | null
+          metadata: Json | null
+          metric_type: string
+          status_code: number | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          duration_ms: number
+          endpoint?: string | null
+          gabinete_id?: string | null
+          id?: string
+          is_slow?: boolean | null
+          metadata?: Json | null
+          metric_type: string
+          status_code?: number | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          duration_ms?: number
+          endpoint?: string | null
+          gabinete_id?: string | null
+          id?: string
+          is_slow?: boolean | null
+          metadata?: Json | null
+          metric_type?: string
+          status_code?: number | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "performance_metrics_gabinete_id_fkey"
+            columns: ["gabinete_id"]
+            isOneToOne: false
+            referencedRelation: "gabinetes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       portal_form_submissions: {
         Row: {
           created_at: string
@@ -828,6 +875,89 @@ export type Database = {
         }
         Relationships: []
       }
+      slow_queries: {
+        Row: {
+          context: Json | null
+          created_at: string | null
+          duration_ms: number
+          gabinete_id: string | null
+          id: string
+          query_text: string
+          table_name: string | null
+          user_id: string | null
+        }
+        Insert: {
+          context?: Json | null
+          created_at?: string | null
+          duration_ms: number
+          gabinete_id?: string | null
+          id?: string
+          query_text: string
+          table_name?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          context?: Json | null
+          created_at?: string | null
+          duration_ms?: number
+          gabinete_id?: string | null
+          id?: string
+          query_text?: string
+          table_name?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "slow_queries_gabinete_id_fkey"
+            columns: ["gabinete_id"]
+            isOneToOne: false
+            referencedRelation: "gabinetes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      system_alerts: {
+        Row: {
+          alert_type: string
+          auto_resolved: boolean | null
+          created_at: string | null
+          id: string
+          message: string
+          metric_value: number | null
+          resolved: boolean | null
+          resolved_at: string | null
+          severity: string
+          threshold_value: number | null
+          title: string
+        }
+        Insert: {
+          alert_type: string
+          auto_resolved?: boolean | null
+          created_at?: string | null
+          id?: string
+          message: string
+          metric_value?: number | null
+          resolved?: boolean | null
+          resolved_at?: string | null
+          severity: string
+          threshold_value?: number | null
+          title: string
+        }
+        Update: {
+          alert_type?: string
+          auto_resolved?: boolean | null
+          created_at?: string | null
+          id?: string
+          message?: string
+          metric_value?: number | null
+          resolved?: boolean | null
+          resolved_at?: string | null
+          severity?: string
+          threshold_value?: number | null
+          title?: string
+        }
+        Relationships: []
+      }
       system_errors: {
         Row: {
           context: Json | null
@@ -886,6 +1016,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      system_metrics_hourly: {
+        Row: {
+          active_gabinetes: number
+          active_users: number
+          avg_response_time_ms: number
+          cpu_usage_percent: number | null
+          created_at: string | null
+          error_count: number
+          hour_timestamp: string
+          id: string
+          memory_usage_percent: number | null
+          slow_query_count: number
+          total_requests: number
+        }
+        Insert: {
+          active_gabinetes: number
+          active_users: number
+          avg_response_time_ms: number
+          cpu_usage_percent?: number | null
+          created_at?: string | null
+          error_count: number
+          hour_timestamp: string
+          id?: string
+          memory_usage_percent?: number | null
+          slow_query_count: number
+          total_requests: number
+        }
+        Update: {
+          active_gabinetes?: number
+          active_users?: number
+          avg_response_time_ms?: number
+          cpu_usage_percent?: number | null
+          created_at?: string | null
+          error_count?: number
+          hour_timestamp?: string
+          id?: string
+          memory_usage_percent?: number | null
+          slow_query_count?: number
+          total_requests?: number
+        }
+        Relationships: []
       }
       system_user_roles: {
         Row: {
@@ -1052,6 +1224,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      aggregate_hourly_metrics: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
+      check_and_create_alerts: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       cleanup_old_errors: {
         Args: Record<PropertyKey, never>
         Returns: undefined
