@@ -220,12 +220,23 @@ const Mapa = () => {
   }, [demandas, selectedCidade, selectedBairro, selectedStatus]);
 
   useEffect(() => {
+    console.log('🔍 useEffect marcadores disparado', { 
+      hasLayer: !!markersLayerRef.current, 
+      mapInitialized,
+      showEleitores,
+      showDemandas,
+      showRoteiros,
+      eleitoresCount: filteredEleitores.length,
+      demandasCount: filteredDemandas.length,
+      roteirosCount: roteiros.length
+    });
+
     if (!markersLayerRef.current || !mapInitialized) {
-      console.log('Aguardando mapa inicializar...', { hasLayer: !!markersLayerRef.current, mapInitialized });
+      console.log('⏸️ Aguardando mapa inicializar...', { hasLayer: !!markersLayerRef.current, mapInitialized });
       return;
     }
 
-    console.log('Adicionando marcadores...', { 
+    console.log('✅ Adicionando marcadores...', { 
       eleitores: filteredEleitores.length, 
       demandas: filteredDemandas.length, 
       roteiros: roteiros.length 
@@ -250,12 +261,15 @@ const Mapa = () => {
     };
 
     if (showEleitores) {
-      filteredEleitores.forEach(eleitor => {
+      console.log('👤 Processando eleitores:', filteredEleitores.length);
+      filteredEleitores.forEach((eleitor, index) => {
         if (!eleitor.latitude || !eleitor.longitude) {
+          console.log(`⚠️ Eleitor ${index} sem coordenadas:`, eleitor.nome_completo);
           updateProgress();
           return;
         }
         
+        console.log(`📍 Adicionando eleitor ${index}:`, eleitor.nome_completo, [eleitor.latitude, eleitor.longitude]);
         const marker = L.marker([eleitor.latitude, eleitor.longitude], { icon: eleitorIcon });
         marker.bindPopup(`
           <div style="padding: 8px; min-width: 250px;">
@@ -274,12 +288,15 @@ const Mapa = () => {
     }
 
     if (showDemandas) {
-      filteredDemandas.forEach(demanda => {
+      console.log('📋 Processando demandas:', filteredDemandas.length);
+      filteredDemandas.forEach((demanda, index) => {
         if (!demanda.eleitores || !demanda.eleitores.latitude || !demanda.eleitores.longitude) {
+          console.log(`⚠️ Demanda ${index} sem coordenadas:`, demanda.titulo);
           updateProgress();
           return;
         }
         
+        console.log(`📍 Adicionando demanda ${index}:`, demanda.titulo, [demanda.eleitores.latitude, demanda.eleitores.longitude]);
         const isOpen = demanda.status === 'aberta' || demanda.status === 'em_andamento';
         const icon = isOpen ? demandaAbertaIcon : demandaConcluidaIcon;
         const color = isOpen ? '#ef4444' : '#22c55e';
@@ -301,9 +318,11 @@ const Mapa = () => {
     }
 
     if (showRoteiros) {
-      roteiros.forEach(roteiro => {
+      console.log('🗺️ Processando roteiros:', roteiros.length);
+      roteiros.forEach((roteiro, index) => {
         // Marcador de partida
         if (roteiro.latitude_partida && roteiro.longitude_partida) {
+          console.log(`📍 Adicionando partida roteiro ${index}:`, roteiro.nome, [roteiro.latitude_partida, roteiro.longitude_partida]);
           const markerPartida = L.marker([roteiro.latitude_partida, roteiro.longitude_partida], { icon: roteiroPartidaIcon });
           markerPartida.bindPopup(`
             <div style="padding: 8px; min-width: 250px;">
@@ -321,6 +340,7 @@ const Mapa = () => {
 
         // Marcador de chegada
         if (roteiro.latitude_final && roteiro.longitude_final) {
+          console.log(`📍 Adicionando chegada roteiro ${index}:`, roteiro.nome, [roteiro.latitude_final, roteiro.longitude_final]);
           const markerFim = L.marker([roteiro.latitude_final, roteiro.longitude_final], { icon: roteiroFimIcon });
           markerFim.bindPopup(`
             <div style="padding: 8px; min-width: 250px;">
