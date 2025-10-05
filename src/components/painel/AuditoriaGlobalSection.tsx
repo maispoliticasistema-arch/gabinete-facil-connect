@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Filter, X } from 'lucide-react';
+import { Filter, X, Activity, PlusCircle, Edit, Trash2, Users } from 'lucide-react';
 
 interface AuditLog {
   id: string;
@@ -17,6 +17,8 @@ interface AuditLog {
   entity_type: string;
   user_nome: string;
   gabinete_nome: string;
+  user_id: string;
+  gabinete_id: string;
 }
 
 export function AuditoriaGlobalSection() {
@@ -130,6 +132,15 @@ export function AuditoriaGlobalSection() {
     return matchesSearch;
   });
 
+  const stats = {
+    total: filteredLogs.length,
+    create: filteredLogs.filter(l => l.action === 'create').length,
+    update: filteredLogs.filter(l => l.action === 'update').length,
+    delete: filteredLogs.filter(l => l.action === 'delete').length,
+    usuarios: new Set(filteredLogs.map(l => l.user_id)).size,
+    gabinetes: new Set(filteredLogs.map(l => l.gabinete_id)).size,
+  };
+
   if (loading) {
     return (
       <Card>
@@ -152,7 +163,81 @@ export function AuditoriaGlobalSection() {
           Últimas 100 ações realizadas em todos os gabinetes
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-6">
+        <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                <Activity className="h-4 w-4" />
+                Total
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.total}</div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                <PlusCircle className="h-4 w-4" />
+                Create
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-green-600">{stats.create}</div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                <Edit className="h-4 w-4" />
+                Update
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-blue-600">{stats.update}</div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                <Trash2 className="h-4 w-4" />
+                Delete
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-red-600">{stats.delete}</div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                <Users className="h-4 w-4" />
+                Usuários
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.usuarios}</div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                <Filter className="h-4 w-4" />
+                Gabinetes
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.gabinetes}</div>
+            </CardContent>
+          </Card>
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <Input
             placeholder="Buscar usuário ou gabinete..."
