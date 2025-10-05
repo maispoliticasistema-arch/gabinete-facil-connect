@@ -76,7 +76,7 @@ const Mapa = () => {
 
   // Initialize map - wait for container to be ready
   useEffect(() => {
-    // Don't initialize if no permission
+    // Don't initialize if no permission or already initialized
     if (permissionsLoading || !hasPermission('view_mapa')) {
       console.log('Aguardando permissões ou sem permissão para mapa');
       return;
@@ -89,10 +89,7 @@ const Mapa = () => {
     }
     
     if (mapRef.current) {
-      console.log('Mapa já existe');
-      if (!mapInitialized) {
-        setMapInitialized(true);
-      }
+      console.log('Mapa já existe, não reinicializar');
       return;
     }
 
@@ -134,7 +131,7 @@ const Mapa = () => {
     }
 
     return () => {
-      console.log('Limpando mapa...');
+      console.log('Componente desmontando, limpando mapa...');
       if (mapRef.current) {
         mapRef.current.remove();
         mapRef.current = null;
@@ -142,7 +139,7 @@ const Mapa = () => {
       markersLayerRef.current = null;
       setMapInitialized(false);
     };
-  }, [permissionsLoading, hasPermission, mapInitialized]);
+  }, [permissionsLoading, hasPermission]); // Removi mapInitialized das dependências
 
   // Fetch data
   useEffect(() => {
