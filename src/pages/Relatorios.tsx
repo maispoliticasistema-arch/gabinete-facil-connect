@@ -3,6 +3,7 @@ import { useGabinete } from "@/contexts/GabineteContext";
 import { usePermissions } from "@/hooks/usePermissions";
 import { NoPermissionMessage } from "@/components/PermissionGuard";
 import { supabase } from "@/integrations/supabase/client";
+import { logAudit } from "@/lib/auditLog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -624,7 +625,9 @@ const Relatorios = () => {
     setAgendaData({ evolucaoMensal, porTipo, porStatus });
   };
 
-  const exportToXLSX = () => {
+  const exportToXLSX = async () => {
+    if (!currentGabinete) return;
+    
     try {
       const wb = XLSX.utils.book_new();
 
@@ -648,6 +651,19 @@ const Relatorios = () => {
       XLSX.utils.book_append_sheet(wb, eleitoresWS, "Eleitores");
 
       XLSX.writeFile(wb, `relatorio-${format(new Date(), "yyyy-MM-dd")}.xlsx`);
+      
+      // Registrar log de auditoria
+      await logAudit({
+        gabineteId: currentGabinete.gabinete_id,
+        action: 'export_report',
+        entityType: 'relatorio',
+        details: { 
+          tipo: 'XLSX',
+          periodo,
+          assessor: assessorId !== 'todos' ? assessores.find(a => a.id === assessorId)?.nome : 'Todos'
+        }
+      });
+      
       toast.success("Planilha exportada com sucesso!");
     } catch (error) {
       console.error("Erro ao exportar:", error);
@@ -655,7 +671,9 @@ const Relatorios = () => {
     }
   };
 
-  const exportToPDF = () => {
+  const exportToPDF = async () => {
+    if (!currentGabinete) return;
+    
     try {
       const doc = new jsPDF();
       
@@ -748,6 +766,19 @@ const Relatorios = () => {
       });
       
       doc.save(`relatorio-${format(new Date(), "yyyy-MM-dd")}.pdf`);
+      
+      // Registrar log de auditoria
+      await logAudit({
+        gabineteId: currentGabinete.gabinete_id,
+        action: 'export_report',
+        entityType: 'relatorio',
+        details: { 
+          tipo: 'PDF',
+          periodo,
+          assessor: assessorId !== 'todos' ? assessores.find(a => a.id === assessorId)?.nome : 'Todos'
+        }
+      });
+      
       toast.success("PDF exportado com sucesso!");
     } catch (error) {
       console.error("Erro ao exportar PDF:", error);
