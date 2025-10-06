@@ -47,11 +47,11 @@ const Auth = () => {
     e.preventDefault();
     setLoading(true);
 
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        emailRedirectTo: `${window.location.origin}/`,
+        emailRedirectTo: `${window.location.origin}/setup-gabinete`,
         data: {
           nome_completo: nomeCompleto,
         },
@@ -67,8 +67,12 @@ const Auth = () => {
     } else {
       toast({
         title: 'Conta criada com sucesso!',
-        description: 'Verifique seu email para confirmar o cadastro.',
+        description: 'Redirecionando para configuração...',
       });
+      // Redirecionar imediatamente para setup (funciona se email confirmation estiver desabilitado)
+      if (data?.user) {
+        navigate('/setup-gabinete');
+      }
     }
 
     setLoading(false);
