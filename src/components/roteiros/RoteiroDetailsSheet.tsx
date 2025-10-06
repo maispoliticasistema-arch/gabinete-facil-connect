@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { usePermissions } from '@/hooks/usePermissions';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { MapPin, CheckCircle2, Navigation, Trash2 } from 'lucide-react';
@@ -64,6 +65,7 @@ export const RoteiroDetailsSheet = ({
   onRoteiroUpdated
 }: RoteiroDetailsSheetProps) => {
   const { toast } = useToast();
+  const { hasPermission } = usePermissions();
   const [roteiro, setRoteiro] = useState<Roteiro | null>(null);
   const [pontos, setPontos] = useState<Ponto[]>([]);
   const [loading, setLoading] = useState(false);
@@ -373,13 +375,15 @@ export const RoteiroDetailsSheet = ({
                           </p>
                         )}
                       </div>
-                      <Button
-                        variant={ponto.visitado ? 'default' : 'outline'}
-                        size="sm"
-                        onClick={() => toggleVisitado(ponto.id, ponto.visitado)}
-                      >
-                        <CheckCircle2 className="h-4 w-4" />
-                      </Button>
+                      {hasPermission('edit_roteiros') && (
+                        <Button
+                          variant={ponto.visitado ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => toggleVisitado(ponto.id, ponto.visitado)}
+                        >
+                          <CheckCircle2 className="h-4 w-4" />
+                        </Button>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -403,12 +407,14 @@ export const RoteiroDetailsSheet = ({
                 <Navigation className="mr-2 h-4 w-4" />
                 Iniciar Navegação
               </Button>
-              <Button
-                variant="destructive"
-                onClick={() => setShowDeleteDialog(true)}
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
+              {hasPermission('delete_roteiros') && (
+                <Button
+                  variant="destructive"
+                  onClick={() => setShowDeleteDialog(true)}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              )}
             </div>
           </div>
         </SheetContent>

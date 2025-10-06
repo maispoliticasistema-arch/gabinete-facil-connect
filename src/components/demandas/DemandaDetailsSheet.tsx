@@ -4,6 +4,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useGabinete } from '@/contexts/GabineteContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { createNotification } from '@/lib/notifications';
+import { usePermissions } from '@/hooks/usePermissions';
 import {
   Sheet,
   SheetContent,
@@ -83,6 +84,7 @@ export const DemandaDetailsSheet = ({
   const { toast } = useToast();
   const { currentGabinete } = useGabinete();
   const { user } = useAuth();
+  const { hasPermission } = usePermissions();
 
   useEffect(() => {
     if (open && currentGabinete && demanda) {
@@ -415,44 +417,46 @@ export const DemandaDetailsSheet = ({
           <Separator />
 
           {/* Alterar Status e Responsável */}
-          <div className="space-y-4">
-            <h3 className="text-sm font-semibold">Gerenciar Demanda</h3>
+          {hasPermission('edit_demandas') && (
+            <div className="space-y-4">
+              <h3 className="text-sm font-semibold">Gerenciar Demanda</h3>
 
-            <div>
-              <label className="text-sm font-medium mb-2 block">Status</label>
-              <Select value={selectedStatus} onValueChange={handleStatusChange} disabled={loading}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="aberta">Aberta</SelectItem>
-                  <SelectItem value="em_andamento">Em Andamento</SelectItem>
-                  <SelectItem value="concluida">Concluída</SelectItem>
-                  <SelectItem value="cancelada">Cancelada</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+              <div>
+                <label className="text-sm font-medium mb-2 block">Status</label>
+                <Select value={selectedStatus} onValueChange={handleStatusChange} disabled={loading}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="aberta">Aberta</SelectItem>
+                    <SelectItem value="em_andamento">Em Andamento</SelectItem>
+                    <SelectItem value="concluida">Concluída</SelectItem>
+                    <SelectItem value="cancelada">Cancelada</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
 
-            <div>
-              <label className="text-sm font-medium mb-2 block">Responsável</label>
-              <Select
-                value={selectedResponsavel}
-                onValueChange={handleResponsavelChange}
-                disabled={loading}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione o responsável" />
-                </SelectTrigger>
-                <SelectContent>
-                  {assessores.map((assessor) => (
-                    <SelectItem key={assessor.user_id} value={assessor.user_id}>
-                      {assessor.profiles.nome_completo}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div>
+                <label className="text-sm font-medium mb-2 block">Responsável</label>
+                <Select
+                  value={selectedResponsavel}
+                  onValueChange={handleResponsavelChange}
+                  disabled={loading}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione o responsável" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {assessores.map((assessor) => (
+                      <SelectItem key={assessor.user_id} value={assessor.user_id}>
+                        {assessor.profiles.nome_completo}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
-          </div>
+          )}
 
           <Separator />
 

@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { logAudit } from "@/lib/auditLog";
 import { useGabinete } from "@/contexts/GabineteContext";
+import { usePermissions } from "@/hooks/usePermissions";
 
 interface Participante {
   user_id: string;
@@ -67,6 +68,7 @@ export function EventDetailsSheet({ evento, open, onOpenChange, onEdit, onEvento
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
   const { currentGabinete } = useGabinete();
+  const { hasPermission } = usePermissions();
 
   if (!evento) return null;
 
@@ -235,17 +237,21 @@ export function EventDetailsSheet({ evento, open, onOpenChange, onEdit, onEvento
         </div>
 
         <div className="flex gap-2 mt-8">
-          <Button variant="outline" className="flex-1" onClick={handleEdit} disabled={loading}>
-            Editar
-          </Button>
-          <Button 
-            variant="destructive" 
-            className="flex-1" 
-            onClick={handleCancelar}
-            disabled={loading}
-          >
-            {loading ? "Excluindo..." : "Excluir Evento"}
-          </Button>
+          {hasPermission('edit_agenda') && (
+            <Button variant="outline" className="flex-1" onClick={handleEdit} disabled={loading}>
+              Editar
+            </Button>
+          )}
+          {hasPermission('delete_agenda') && (
+            <Button 
+              variant="destructive" 
+              className="flex-1" 
+              onClick={handleCancelar}
+              disabled={loading}
+            >
+              {loading ? "Excluindo..." : "Excluir Evento"}
+            </Button>
+          )}
         </div>
       </SheetContent>
     </Sheet>

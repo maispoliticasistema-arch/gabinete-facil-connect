@@ -15,6 +15,7 @@ import { Mail, Phone, MapPin, Calendar, Pencil, Trash2 } from 'lucide-react';
 import { EditEleitoresDialog } from './EditEleitoresDialog';
 import { DeleteEleitoresDialog } from './DeleteEleitoresDialog';
 import { EleitoresTagsSelect } from './EleitoresTagsSelect';
+import { usePermissions } from '@/hooks/usePermissions';
 
 interface Eleitor {
   id: string;
@@ -42,6 +43,7 @@ export const EleitoresTable = ({ eleitores, onEleitoresUpdated, onEleitoresClick
   const [deletingEleitor, setDeletingEleitor] = useState<Eleitor | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const { hasPermission } = usePermissions();
 
   const handleEdit = (eleitor: Eleitor) => {
     setEditingEleitor(eleitor);
@@ -185,28 +187,32 @@ export const EleitoresTable = ({ eleitores, onEleitoresUpdated, onEleitoresClick
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center justify-end gap-1">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleEdit(eleitor);
-                        }}
-                        className="h-7 w-7"
-                      >
-                        <Pencil className="h-3.5 w-3.5" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDelete(eleitor);
-                        }}
-                        className="h-7 w-7 text-destructive hover:text-destructive"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
+                      {hasPermission('edit_eleitores') && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleEdit(eleitor);
+                          }}
+                          className="h-7 w-7"
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                        </Button>
+                      )}
+                      {hasPermission('delete_eleitores') && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDelete(eleitor);
+                          }}
+                          className="h-7 w-7 text-destructive hover:text-destructive"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      )}
                     </div>
                   </TableCell>
                 </TableRow>
