@@ -115,11 +115,14 @@ const Mapa = () => {
     
     const fetchData = async () => {
       try {
-        const { data: eleitoresData, error: eleitoresError } = await supabase
+        const { data: eleitoresData, error: eleitoresError, count } = await supabase
           .from('eleitores')
-          .select('*')
+          .select('*', { count: 'exact' })
           .eq('gabinete_id', currentGabinete.gabinete_id)
-          .limit(10000); // Aumentar limite para suportar mais registros
+          .range(0, 50000);
+
+        console.log('📊 TOTAL DE ELEITORES NO DB:', count);
+        console.log('📊 ELEITORES BUSCADOS:', eleitoresData?.length);
 
         if (eleitoresError) {
           console.error('Error fetching eleitores:', eleitoresError);
@@ -129,7 +132,7 @@ const Mapa = () => {
         const eleitoresComCoords = (eleitoresData || []).filter(e => e.latitude && e.longitude);
         console.log('Eleitores fetched:', eleitoresData?.length || 0, 'com coordenadas:', eleitoresComCoords.length);
         
-        setTotalEleitores(eleitoresData?.length || 0);
+        setTotalEleitores(count || 0);
 
         const { data: demandasData, error: demandasError } = await supabase
           .from('demandas')

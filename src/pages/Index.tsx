@@ -122,7 +122,7 @@ const Index = () => {
         .select('created_at')
         .eq('gabinete_id', currentGabinete.gabinete_id)
         .order('created_at', { ascending: true })
-        .limit(10000); // Aumentar limite para suportar mais registros
+        .range(0, 50000);
 
       // Processar dados para o gráfico
       const chartData: CadastrosChart[] = [];
