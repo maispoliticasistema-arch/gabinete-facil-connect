@@ -58,7 +58,7 @@ const Index = () => {
       } = await supabase.from('eleitores').select('*', {
         count: 'exact',
         head: true
-      }).eq('gabinete_id', currentGabinete.gabinete_id);
+      }).eq('gabinete_id', currentGabinete.gabinete_id).is('deleted_at', null);
 
       // Aniversariantes do dia
       const now = new Date();
@@ -66,7 +66,7 @@ const Index = () => {
       const day = String(now.getDate()).padStart(2, '0');
       const {
         data: eleitoresData
-      } = await supabase.from('eleitores').select('data_nascimento').eq('gabinete_id', currentGabinete.gabinete_id).not('data_nascimento', 'is', null);
+      } = await supabase.from('eleitores').select('data_nascimento').eq('gabinete_id', currentGabinete.gabinete_id).not('data_nascimento', 'is', null).is('deleted_at', null);
       const aniversariantes = eleitoresData?.filter(eleitor => {
         if (!eleitor.data_nascimento) return false;
         const nascimento = new Date(eleitor.data_nascimento + 'T00:00:00');
@@ -128,6 +128,7 @@ const Index = () => {
           .from('eleitores')
           .select('*', { count: 'exact', head: true })
           .eq('gabinete_id', currentGabinete.gabinete_id)
+          .is('deleted_at', null)
           .gte('created_at', start.toISOString())
           .lte('created_at', end.toISOString());
 
