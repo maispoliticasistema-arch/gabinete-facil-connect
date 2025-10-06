@@ -9,7 +9,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Search, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, Trash2, ChevronLeft, ChevronRight, Undo2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useGabinete } from "@/contexts/GabineteContext";
 
@@ -80,6 +80,8 @@ export function AuditLogs({ gabineteId }: AuditLogsProps) {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
   const [deletingLogs, setDeletingLogs] = useState(false);
+  const [undoDialogOpen, setUndoDialogOpen] = useState(false);
+  const [undoingAction, setUndoingAction] = useState(false);
   
   const itemsPerPage = 20;
 
@@ -398,6 +400,75 @@ export function AuditLogs({ gabineteId }: AuditLogsProps) {
 
   const totalPages = Math.ceil(totalCount / itemsPerPage);
 
+  const canUndoAction = (log: any): boolean => {
+    if (!log || !log.action || !log.entity_id || !log.entity_type) return false;
+    
+    // Permitir desfazer create e delete
+    const undoableActions = ['create', 'delete'];
+    const undoableEntities = ['eleitor', 'demanda', 'agenda', 'roteiro', 'tag'];
+    
+    return undoableActions.includes(log.action) && undoableEntities.includes(log.entity_type);
+  };
+
+  const handleUndoAction = async () => {
+    if (!selectedLog) return;
+
+    setUndoingAction(true);
+    try {
+      let tableName = '';
+      switch (selectedLog.entity_type) {
+        case 'eleitor': tableName = 'eleitores'; break;
+        case 'demanda': tableName = 'demandas'; break;
+        case 'agenda': tableName = 'agenda'; break;
+        case 'roteiro': tableName = 'roteiros'; break;
+        case 'tag': tableName = 'tags'; break;
+        default:
+          throw new Error('Tipo de entidade não suportado');
+      }
+
+      if (selectedLog.action === 'delete') {
+        // Restaurar: remover deleted_at
+        const { error } = await supabase
+          .from(tableName as any)
+          .update({ deleted_at: null })
+          .eq('id', selectedLog.entity_id);
+
+        if (error) throw error;
+
+        toast({
+          title: "Ação desfeita",
+          description: `${ENTITY_LABELS[selectedLog.entity_type]} restaurado com sucesso`
+        });
+      } else if (selectedLog.action === 'create') {
+        // Desfazer criação: fazer soft delete
+        const { error } = await supabase
+          .from(tableName as any)
+          .update({ deleted_at: new Date().toISOString() })
+          .eq('id', selectedLog.entity_id);
+
+        if (error) throw error;
+
+        toast({
+          title: "Ação desfeita",
+          description: `${ENTITY_LABELS[selectedLog.entity_type]} removido com sucesso`
+        });
+      }
+
+      setUndoDialogOpen(false);
+      setSheetOpen(false);
+      fetchLogs();
+    } catch (error: any) {
+      console.error("Erro ao desfazer ação:", error);
+      toast({
+        title: "Erro ao desfazer ação",
+        description: error.message,
+        variant: "destructive"
+      });
+    } finally {
+      setUndoingAction(false);
+    }
+  };
+
   return (
     <>
       {/* Filtros e Busca */}
@@ -696,10 +767,62 @@ export function AuditLogs({ gabineteId }: AuditLogsProps) {
                   <p className="mt-1 text-xs text-muted-foreground">{selectedLog.user_agent}</p>
                 </div>
               )}
+
+              {/* Botão Desfazer Ação */}
+              {canUndoAction(selectedLog) && (
+                <div className="pt-4 border-t">
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => setUndoDialogOpen(true)}
+                  >
+                    <Undo2 className="h-4 w-4 mr-2" />
+                    Desfazer Ação
+                  </Button>
+                  <p className="text-xs text-muted-foreground mt-2 text-center">
+                    {selectedLog.action === 'delete' 
+                      ? 'Restaurar este registro excluído' 
+                      : 'Remover este registro criado'}
+                  </p>
+                </div>
+              )}
             </div>
           )}
         </SheetContent>
       </Sheet>
+
+      {/* Modal de confirmação de desfazer ação */}
+      <AlertDialog open={undoDialogOpen} onOpenChange={setUndoDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Desfazer Ação</AlertDialogTitle>
+            <AlertDialogDescription>
+              {selectedLog?.action === 'delete' ? (
+                <>
+                  Você está prestes a <strong>restaurar</strong> este{' '}
+                  {selectedLog?.entity_type && ENTITY_LABELS[selectedLog.entity_type]?.toLowerCase()}.
+                  O registro voltará a ficar visível no sistema.
+                </>
+              ) : (
+                <>
+                  Você está prestes a <strong>remover</strong> este{' '}
+                  {selectedLog?.entity_type && ENTITY_LABELS[selectedLog.entity_type]?.toLowerCase()}.
+                  Esta ação pode ser desfeita posteriormente através dos logs de auditoria.
+                </>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleUndoAction}
+              disabled={undoingAction}
+            >
+              {undoingAction ? "Desfazendo..." : "Confirmar"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
