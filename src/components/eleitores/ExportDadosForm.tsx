@@ -86,50 +86,64 @@ export function ExportDadosForm({
   const buscarEleitores = async (): Promise<Eleitor[]> => {
     if (!currentGabinete) return [];
 
-    let query = supabase
-      .from('eleitores')
-      .select('*')
-      .eq('gabinete_id', currentGabinete.gabinete_id)
-      .is('deleted_at', null);
+    let todosEleitores: Eleitor[] = [];
+    let offset = 0;
+    const limite = 1000;
+    let hasMore = true;
 
-    if (searchTerm.trim()) {
-      query = query.or(`nome_completo.ilike.%${searchTerm}%,telefone.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%,cidade.ilike.%${searchTerm}%`);
-    }
+    while (hasMore) {
+      let query = supabase
+        .from('eleitores')
+        .select('*')
+        .eq('gabinete_id', currentGabinete.gabinete_id)
+        .is('deleted_at', null);
 
-    if (selectedBairro) {
-      query = query.eq('bairro', selectedBairro);
-    }
+      if (searchTerm.trim()) {
+        query = query.or(`nome_completo.ilike.%${searchTerm}%,telefone.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%,cidade.ilike.%${searchTerm}%`);
+      }
 
-    if (selectedCidade) {
-      query = query.eq('cidade', selectedCidade);
-    }
+      if (selectedBairro) {
+        query = query.eq('bairro', selectedBairro);
+      }
 
-    if (selectedTags.length > 0) {
-      const { data: eleitoresComTags } = await supabase
-        .from('eleitor_tags')
-        .select('eleitor_id')
-        .in('tag_id', selectedTags)
-        .range(0, 999999);
+      if (selectedCidade) {
+        query = query.eq('cidade', selectedCidade);
+      }
 
-      if (eleitoresComTags && eleitoresComTags.length > 0) {
-        const eleitoresIds = eleitoresComTags.map((et) => et.eleitor_id);
-        query = query.in('id', eleitoresIds);
+      if (selectedTags.length > 0) {
+        const { data: eleitoresComTags } = await supabase
+          .from('eleitor_tags')
+          .select('eleitor_id')
+          .in('tag_id', selectedTags);
+
+        if (eleitoresComTags && eleitoresComTags.length > 0) {
+          const eleitoresIds = eleitoresComTags.map((et) => et.eleitor_id);
+          query = query.in('id', eleitoresIds);
+        } else {
+          return [];
+        }
+      }
+
+      if (selectedAssessor) {
+        query = query.eq('cadastrado_por', selectedAssessor);
+      }
+
+      const { data, error } = await query
+        .order('nome_completo', { ascending: true })
+        .range(offset, offset + limite - 1);
+
+      if (error) throw error;
+
+      if (data && data.length > 0) {
+        todosEleitores = [...todosEleitores, ...(data as Eleitor[])];
+        offset += limite;
+        hasMore = data.length === limite;
       } else {
-        return [];
+        hasMore = false;
       }
     }
 
-    if (selectedAssessor) {
-      query = query.eq('cadastrado_por', selectedAssessor);
-    }
-
-    // Buscar TODOS os registros sem limite
-    const { data, error } = await query
-      .order('nome_completo', { ascending: true })
-      .range(0, 999999);
-
-    if (error) throw error;
-    return (data || []) as Eleitor[];
+    return todosEleitores;
   };
 
   const formatarValor = (valor: any, campo: string): string => {

@@ -184,58 +184,76 @@ export function ExportEtiquetasForm({
   const fetchEleitores = async (): Promise<Eleitor[]> => {
     if (!currentGabinete) return [];
 
-    let query = supabase
-      .from('eleitores')
-      .select('id, nome_completo, endereco, numero, bairro, cidade, estado, cep, data_nascimento, telefone')
-      .eq('gabinete_id', currentGabinete.gabinete_id)
-      .is('deleted_at', null);
+    let todosEleitores: Eleitor[] = [];
+    let offset = 0;
+    const limite = 1000;
+    let hasMore = true;
 
-    if (searchTerm.trim()) {
-      query = query.or(`nome_completo.ilike.%${searchTerm}%,telefone.ilike.%${searchTerm}%,cidade.ilike.%${searchTerm}%`);
+    // Buscar IDs filtrados por tags primeiro, se necessário
+    let eleitoresIdsFiltrados: string[] | null = null;
+    if (selectedTags.length > 0) {
+      const { data: eleitoresComTags } = await supabase
+        .from('eleitor_tags')
+        .select('eleitor_id')
+        .in('tag_id', selectedTags);
+
+      if (eleitoresComTags && eleitoresComTags.length > 0) {
+        eleitoresIdsFiltrados = eleitoresComTags.map((et) => et.eleitor_id);
+      } else {
+        return [];
+      }
     }
 
-    if (selectedBairro) {
-      query = query.eq('bairro', selectedBairro);
-    }
+    while (hasMore) {
+      let query = supabase
+        .from('eleitores')
+        .select('id, nome_completo, endereco, numero, bairro, cidade, estado, cep, data_nascimento, telefone')
+        .eq('gabinete_id', currentGabinete.gabinete_id)
+        .is('deleted_at', null);
 
-    if (selectedCidade) {
-      query = query.eq('cidade', selectedCidade);
-    }
-
-      if (selectedTags.length > 0) {
-        const { data: eleitoresComTags } = await supabase
-          .from('eleitor_tags')
-          .select('eleitor_id')
-          .in('tag_id', selectedTags)
-          .range(0, 999999);
-
-        if (eleitoresComTags && eleitoresComTags.length > 0) {
-          const eleitoresIds = eleitoresComTags.map((et) => et.eleitor_id);
-          query = query.in('id', eleitoresIds);
-        } else {
-          return [];
-        }
+      if (searchTerm.trim()) {
+        query = query.or(`nome_completo.ilike.%${searchTerm}%,telefone.ilike.%${searchTerm}%,cidade.ilike.%${searchTerm}%`);
       }
 
-    if (selectedAssessor) {
-      query = query.eq('cadastrado_por', selectedAssessor);
+      if (selectedBairro) {
+        query = query.eq('bairro', selectedBairro);
+      }
+
+      if (selectedCidade) {
+        query = query.eq('cidade', selectedCidade);
+      }
+
+      if (eleitoresIdsFiltrados) {
+        query = query.in('id', eleitoresIdsFiltrados);
+      }
+
+      if (selectedAssessor) {
+        query = query.eq('cadastrado_por', selectedAssessor);
+      }
+
+      // Ordenar
+      const orderMap = {
+        nome: 'nome_completo',
+        bairro: 'bairro',
+        cidade: 'cidade',
+        cep: 'cep',
+      };
+      query = query.order(orderMap[ordenarPor], { ascending: true });
+
+      const { data, error } = await query.range(offset, offset + limite - 1);
+
+      if (error) throw error;
+
+      if (data && data.length > 0) {
+        todosEleitores = [...todosEleitores, ...data];
+        offset += limite;
+        hasMore = data.length === limite;
+      } else {
+        hasMore = false;
+      }
     }
 
-    // Ordenar
-    const orderMap = {
-      nome: 'nome_completo',
-      bairro: 'bairro',
-      cidade: 'cidade',
-      cep: 'cep',
-    };
-    query = query.order(orderMap[ordenarPor], { ascending: true });
-
-    // Buscar TODOS os registros sem limite
-    const { data, error } = await query.range(0, 999999);
-
-    if (error) throw error;
-
-    return data || [];
+    return todosEleitores;
   };
 
   const deduplicarEleitores = (eleitores: Eleitor[]): Eleitor[] => {
