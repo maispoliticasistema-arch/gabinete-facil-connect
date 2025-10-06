@@ -325,7 +325,11 @@ export function AuditLogs({ gabineteId }: AuditLogsProps) {
   };
 
   const handleDeleteLogs = async () => {
+    console.log('🗑️ Iniciando exclusão/arquivamento de logs...');
+    console.log('📝 Texto de confirmação:', deleteConfirmText);
+    
     if (deleteConfirmText !== "excluir") {
+      console.log('❌ Confirmação incorreta');
       toast({
         title: "Confirmação incorreta",
         description: 'Você deve digitar "excluir" para confirmar',
@@ -334,18 +338,23 @@ export function AuditLogs({ gabineteId }: AuditLogsProps) {
       return;
     }
 
+    console.log('✅ Confirmação correta, iniciando processo...');
     setDeletingLogs(true);
     try {
       // 1. Buscar TODOS os logs do gabinete para arquivar
+      console.log('🔍 Buscando logs do gabinete:', gabineteId);
       const { data: allLogs, error: fetchError } = await supabase
         .from("audit_logs")
         .select("*")
         .eq("gabinete_id", gabineteId);
 
+      console.log('📊 Logs encontrados:', allLogs?.length, 'Erro:', fetchError);
+      
       if (fetchError) throw fetchError;
 
       // 2. Mover logs para a tabela de arquivamento
       if (allLogs && allLogs.length > 0) {
+        console.log('📦 Preparando', allLogs.length, 'logs para arquivamento');
         const archivedLogs = allLogs.map(log => ({
           original_log_id: log.id,
           gabinete_id: log.gabinete_id,
@@ -359,11 +368,16 @@ export function AuditLogs({ gabineteId }: AuditLogsProps) {
           original_created_at: log.created_at
         }));
 
+        console.log('💾 Inserindo logs no arquivo...');
         const { error: archiveError } = await supabase
           .from("archived_audit_logs")
           .insert(archivedLogs);
 
-        if (archiveError) throw archiveError;
+        console.log('📥 Resultado do arquivamento:', archiveError ? 'ERRO' : 'SUCESSO');
+        if (archiveError) {
+          console.error('❌ Erro ao arquivar:', archiveError);
+          throw archiveError;
+        }
       }
 
       // 3. Hard delete das entidades soft-deleted
@@ -393,13 +407,19 @@ export function AuditLogs({ gabineteId }: AuditLogsProps) {
       }
 
       // 4. Remover logs da tabela principal
+      console.log('🗑️ Deletando logs da tabela principal...');
       const { error: deleteLogsError } = await supabase
         .from("audit_logs")
         .delete()
         .eq("gabinete_id", gabineteId);
 
-      if (deleteLogsError) throw deleteLogsError;
+      console.log('🔥 Resultado da deleção:', deleteLogsError ? 'ERRO' : 'SUCESSO');
+      if (deleteLogsError) {
+        console.error('❌ Erro ao deletar logs:', deleteLogsError);
+        throw deleteLogsError;
+      }
 
+      console.log('✅ Processo completo! Logs arquivados com sucesso.');
       toast({
         title: "Logs arquivados",
         description: "Todos os logs foram movidos para o arquivo com sucesso"
@@ -409,13 +429,15 @@ export function AuditLogs({ gabineteId }: AuditLogsProps) {
       setDeleteConfirmText("");
       fetchLogs();
     } catch (error: any) {
-      console.error("Erro ao arquivar logs:", error);
+      console.error("💥 ERRO GERAL ao arquivar logs:", error);
+      console.error("Detalhes do erro:", JSON.stringify(error, null, 2));
       toast({
         title: "Erro ao arquivar logs",
-        description: error.message,
+        description: error.message || "Erro desconhecido",
         variant: "destructive"
       });
     } finally {
+      console.log('🏁 Finalizando processo de exclusão...');
       setDeletingLogs(false);
     }
   };
