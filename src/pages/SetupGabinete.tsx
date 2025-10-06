@@ -10,6 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Building2, Loader2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useGabinete } from '@/contexts/GabineteContext';
+import { estados, cidadesPorEstado } from '@/lib/estadosCidades';
 
 const SetupGabinete = () => {
   const navigate = useNavigate();
@@ -26,9 +27,21 @@ const SetupGabinete = () => {
   const [formData, setFormData] = useState({
     nomePolitico: '',
     cargo: '',
-    cidade: '',
     estado: '',
+    cidade: '',
   });
+  
+  const [cidadesDisponiveis, setCidadesDisponiveis] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (formData.estado) {
+      setCidadesDisponiveis(cidadesPorEstado[formData.estado] || []);
+      // Limpar cidade se o estado mudar
+      setFormData(prev => ({ ...prev, cidade: '' }));
+    } else {
+      setCidadesDisponiveis([]);
+    }
+  }, [formData.estado]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -129,28 +142,44 @@ const SetupGabinete = () => {
 
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="cidade">Cidade</Label>
-                <Input
-                  id="cidade"
-                  type="text"
-                  placeholder="Ex: São Paulo"
-                  value={formData.cidade}
-                  onChange={(e) => setFormData({ ...formData, cidade: e.target.value })}
+                <Label htmlFor="estado">Estado</Label>
+                <Select
+                  value={formData.estado}
+                  onValueChange={(value) => setFormData({ ...formData, estado: value })}
                   required
-                />
+                >
+                  <SelectTrigger id="estado">
+                    <SelectValue placeholder="Selecione o estado" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {estados.map((estado) => (
+                      <SelectItem key={estado.sigla} value={estado.sigla}>
+                        {estado.nome} - {estado.sigla}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="estado">Estado</Label>
-                <Input
-                  id="estado"
-                  type="text"
-                  placeholder="Ex: SP"
-                  maxLength={2}
-                  value={formData.estado}
-                  onChange={(e) => setFormData({ ...formData, estado: e.target.value.toUpperCase() })}
+                <Label htmlFor="cidade">Cidade</Label>
+                <Select
+                  value={formData.cidade}
+                  onValueChange={(value) => setFormData({ ...formData, cidade: value })}
                   required
-                />
+                  disabled={!formData.estado}
+                >
+                  <SelectTrigger id="cidade">
+                    <SelectValue placeholder={formData.estado ? "Selecione a cidade" : "Selecione o estado primeiro"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {cidadesDisponiveis.map((cidade) => (
+                      <SelectItem key={cidade} value={cidade}>
+                        {cidade}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
 
