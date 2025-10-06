@@ -26,11 +26,43 @@ export function UsuariosSection() {
   useEffect(() => {
     async function loadUsuarios() {
       try {
-        const { data, error } = await supabase.functions.invoke('list-all-users');
+        // Buscar todos os profiles
+        const { data: profiles, error: profilesError } = await supabase
+          .from('profiles')
+          .select('*')
+          .order('created_at', { ascending: false });
 
-        if (error) throw error;
+        if (profilesError) throw profilesError;
 
-        setUsuarios(data?.users || []);
+        // Para cada profile, buscar seus gabinetes
+        const usuariosCompletos = await Promise.all(
+          (profiles || []).map(async (profile) => {
+            const { data: userGabs } = await supabase
+              .from('user_gabinetes')
+              .select(`
+                role,
+                ativo,
+                gabinetes (nome)
+              `)
+              .eq('user_id', profile.id);
+
+            return {
+              id: profile.id,
+              nome_completo: profile.nome_completo,
+              email: profile.id, // Vamos mostrar o ID como referência
+              telefone: profile.telefone,
+              created_at: profile.created_at,
+              gabinetes: (userGabs || []).map((ug: any) => ({
+                nome: ug.gabinetes?.nome || 'Desconhecido',
+                role: ug.role,
+                ativo: ug.ativo
+              }))
+            };
+          })
+        );
+
+        console.log(`📊 Total de usuários carregados: ${usuariosCompletos.length}`);
+        setUsuarios(usuariosCompletos);
       } catch (error) {
         console.error('Erro ao carregar usuários:', error);
       } finally {
