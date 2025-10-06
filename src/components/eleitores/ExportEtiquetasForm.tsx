@@ -542,58 +542,77 @@ export function ExportEtiquetasForm({
         <CardContent>
           <RadioGroup value={modeloSelecionado} onValueChange={setModeloSelecionado}>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {modelosEtiquetas.map((modelo) => (
-                <div
-                  key={modelo.id}
-                  className={`relative border rounded-lg p-4 cursor-pointer transition-all ${
-                    modeloSelecionado === modelo.id
-                      ? 'border-primary bg-primary/5'
-                      : 'border-border hover:border-primary/50'
-                  }`}
-                  onClick={() => setModeloSelecionado(modelo.id)}
-                >
-                  <div className="flex items-start space-x-3">
-                    <RadioGroupItem value={modelo.id} id={modelo.id} />
-                    <div className="flex-1 space-y-3">
-                      <Label htmlFor={modelo.id} className="cursor-pointer font-semibold">
-                        {modelo.nome}
-                      </Label>
+              {modelosEtiquetas.map((modelo) => {
+                // Escala para preview (1mm = 0.5px para caber no card)
+                const escala = 0.5;
+                const a4LarguraMm = 210;
+                const a4AlturaMm = 297;
+                
+                return (
+                  <div
+                    key={modelo.id}
+                    className={`relative border rounded-lg p-4 cursor-pointer transition-all ${
+                      modeloSelecionado === modelo.id
+                        ? 'border-primary bg-primary/5'
+                        : 'border-border hover:border-primary/50'
+                    }`}
+                    onClick={() => setModeloSelecionado(modelo.id)}
+                  >
+                    <div className="flex flex-col space-y-3">
+                      <div className="flex items-start space-x-3">
+                        <RadioGroupItem value={modelo.id} id={modelo.id} />
+                        <Label htmlFor={modelo.id} className="cursor-pointer font-semibold text-sm">
+                          {modelo.nome}
+                        </Label>
+                      </div>
                       
-                      {/* Preview visual do formato */}
-                      <div className="bg-background border rounded p-2 flex items-center justify-center min-h-[80px]">
+                      {/* Preview FIEL da folha A4 com etiquetas */}
+                      <div className="bg-white border-2 border-muted rounded shadow-sm p-1 flex items-center justify-center">
                         <div
-                          className="grid gap-[2px]"
+                          className="relative bg-white"
                           style={{
-                            gridTemplateColumns: `repeat(${modelo.colunas}, 1fr)`,
-                            gridTemplateRows: `repeat(${modelo.linhas}, 1fr)`,
-                            width: '100%',
-                            maxWidth: '120px',
-                            aspectRatio: '210/297', // A4 ratio
+                            width: `${a4LarguraMm * escala}px`,
+                            height: `${a4AlturaMm * escala}px`,
+                            border: '1px solid #e5e7eb',
                           }}
                         >
-                          {Array.from({ length: modelo.etiquetasPorFolha }).map((_, idx) => (
-                            <div
-                              key={idx}
-                              className="border border-primary/30 bg-primary/5 rounded-sm"
-                              style={{
-                                aspectRatio: `${modelo.larguraMm}/${modelo.alturaMm}`,
-                              }}
-                            />
-                          ))}
+                          {/* Renderizar cada etiqueta na posição EXATA */}
+                          {Array.from({ length: modelo.linhas }).map((_, linha) =>
+                            Array.from({ length: modelo.colunas }).map((_, coluna) => {
+                              const index = linha * modelo.colunas + coluna;
+                              if (index >= modelo.etiquetasPorFolha) return null;
+
+                              const x = modelo.margemEsquerdaMm + coluna * (modelo.larguraMm + modelo.espacamentoHorizontalMm);
+                              const y = modelo.margemSuperiorMm + linha * (modelo.alturaMm + modelo.espacamentoVerticalMm);
+
+                              return (
+                                <div
+                                  key={`${linha}-${coluna}`}
+                                  className="absolute border border-primary/40 bg-primary/10"
+                                  style={{
+                                    left: `${x * escala}px`,
+                                    top: `${y * escala}px`,
+                                    width: `${modelo.larguraMm * escala}px`,
+                                    height: `${modelo.alturaMm * escala}px`,
+                                  }}
+                                />
+                              );
+                            })
+                          )}
                         </div>
                       </div>
 
-                      <div className="text-xs text-muted-foreground space-y-1">
-                        <p>{modelo.etiquetasPorFolha} etiquetas por folha</p>
+                      <div className="text-xs text-muted-foreground space-y-1 pt-2 border-t">
+                        <p className="font-medium text-foreground">{modelo.etiquetasPorFolha} etiquetas</p>
                         <p>
-                          Tamanho {modelo.larguraMm}×{modelo.alturaMm}mm
+                          {modelo.larguraMm}×{modelo.alturaMm}mm
                         </p>
-                        <p className="text-primary">{modelo.observacao}</p>
+                        <p className="text-primary font-medium">{modelo.observacao}</p>
                       </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </RadioGroup>
         </CardContent>
