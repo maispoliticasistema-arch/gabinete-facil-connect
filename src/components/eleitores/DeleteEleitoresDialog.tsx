@@ -45,7 +45,7 @@ export const DeleteEleitoresDialog = ({
     try {
       const { error } = await supabase
         .from('eleitores')
-        .delete()
+        .update({ deleted_at: new Date().toISOString() })
         .eq('id', eleitor.id);
 
       if (error) {

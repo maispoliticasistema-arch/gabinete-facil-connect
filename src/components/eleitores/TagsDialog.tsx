@@ -88,8 +88,8 @@ export const TagsDialog = () => {
       // Primeiro deletar as relações
       await supabase.from('eleitor_tags').delete().eq('tag_id', tagId);
 
-      // Depois deletar a tag
-      const { error } = await supabase.from('tags').delete().eq('id', tagId);
+      // Depois fazer soft delete da tag
+      const { error } = await supabase.from('tags').update({ deleted_at: new Date().toISOString() }).eq('id', tagId);
 
       if (error) throw error;
 

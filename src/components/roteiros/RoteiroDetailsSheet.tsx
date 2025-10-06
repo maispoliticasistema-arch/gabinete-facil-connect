@@ -242,7 +242,7 @@ export const RoteiroDetailsSheet = ({
     setLoading(true);
     const { error } = await supabase
       .from('roteiros')
-      .delete()
+      .update({ deleted_at: new Date().toISOString() })
       .eq('id', roteiroId);
 
     if (error) {

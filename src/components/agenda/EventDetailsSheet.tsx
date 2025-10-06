@@ -1,9 +1,14 @@
+import { useState } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Calendar, Clock, MapPin, Users, Link as LinkIcon, FileText } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+import { logAudit } from "@/lib/auditLog";
+import { useGabinete } from "@/contexts/GabineteContext";
 
 interface Participante {
   user_id: string;
@@ -32,6 +37,7 @@ interface EventDetailsSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onEdit: (evento: Evento) => void;
+  onEventoUpdated?: () => void;
 }
 
 const tipoLabels: Record<string, string> = {
@@ -57,12 +63,57 @@ const statusVariants: Record<string, "default" | "secondary" | "destructive" | "
   cancelado: "destructive",
 };
 
-export function EventDetailsSheet({ evento, open, onOpenChange, onEdit }: EventDetailsSheetProps) {
+export function EventDetailsSheet({ evento, open, onOpenChange, onEdit, onEventoUpdated }: EventDetailsSheetProps) {
+  const [loading, setLoading] = useState(false);
+  const { toast } = useToast();
+  const { currentGabinete } = useGabinete();
+
   if (!evento) return null;
 
   const handleEdit = () => {
     onEdit(evento);
     onOpenChange(false);
+  };
+
+  const handleCancelar = async () => {
+    if (!currentGabinete) return;
+    
+    setLoading(true);
+    try {
+      const { error } = await supabase
+        .from('agenda')
+        .update({ deleted_at: new Date().toISOString() })
+        .eq('id', evento.id);
+
+      if (error) throw error;
+
+      await logAudit({
+        gabineteId: currentGabinete.gabinete_id,
+        action: 'delete',
+        entityType: 'agenda',
+        entityId: evento.id,
+        details: {
+          titulo: evento.titulo,
+          data_inicio: evento.data_inicio
+        }
+      });
+
+      toast({
+        title: 'Evento excluído',
+        description: 'O evento foi removido da agenda.',
+      });
+
+      onOpenChange(false);
+      onEventoUpdated?.();
+    } catch (error: any) {
+      toast({
+        title: 'Erro ao excluir evento',
+        description: error.message,
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const dataInicio = new Date(evento.data_inicio);
@@ -184,11 +235,16 @@ export function EventDetailsSheet({ evento, open, onOpenChange, onEdit }: EventD
         </div>
 
         <div className="flex gap-2 mt-8">
-          <Button variant="outline" className="flex-1" onClick={handleEdit}>
+          <Button variant="outline" className="flex-1" onClick={handleEdit} disabled={loading}>
             Editar
           </Button>
-          <Button variant="outline" className="flex-1">
-            Cancelar Evento
+          <Button 
+            variant="destructive" 
+            className="flex-1" 
+            onClick={handleCancelar}
+            disabled={loading}
+          >
+            {loading ? "Excluindo..." : "Excluir Evento"}
           </Button>
         </div>
       </SheetContent>

@@ -21,6 +21,7 @@ export type Database = {
           criado_por: string | null
           data_fim: string | null
           data_inicio: string
+          deleted_at: string | null
           descricao: string | null
           endereco: string | null
           gabinete_id: string
@@ -41,6 +42,7 @@ export type Database = {
           criado_por?: string | null
           data_fim?: string | null
           data_inicio: string
+          deleted_at?: string | null
           descricao?: string | null
           endereco?: string | null
           gabinete_id: string
@@ -61,6 +63,7 @@ export type Database = {
           criado_por?: string | null
           data_fim?: string | null
           data_inicio?: string
+          deleted_at?: string | null
           descricao?: string | null
           endereco?: string | null
           gabinete_id?: string
@@ -232,6 +235,7 @@ export type Database = {
           concluida_em: string | null
           created_at: string | null
           criado_por: string | null
+          deleted_at: string | null
           descricao: string | null
           eleitor_id: string | null
           gabinete_id: string
@@ -247,6 +251,7 @@ export type Database = {
           concluida_em?: string | null
           created_at?: string | null
           criado_por?: string | null
+          deleted_at?: string | null
           descricao?: string | null
           eleitor_id?: string | null
           gabinete_id: string
@@ -262,6 +267,7 @@ export type Database = {
           concluida_em?: string | null
           created_at?: string | null
           criado_por?: string | null
+          deleted_at?: string | null
           descricao?: string | null
           eleitor_id?: string | null
           gabinete_id?: string
@@ -334,6 +340,7 @@ export type Database = {
           cpf: string | null
           created_at: string | null
           data_nascimento: string | null
+          deleted_at: string | null
           email: string | null
           endereco: string | null
           estado: string | null
@@ -358,6 +365,7 @@ export type Database = {
           cpf?: string | null
           created_at?: string | null
           data_nascimento?: string | null
+          deleted_at?: string | null
           email?: string | null
           endereco?: string | null
           estado?: string | null
@@ -382,6 +390,7 @@ export type Database = {
           cpf?: string | null
           created_at?: string | null
           data_nascimento?: string | null
+          deleted_at?: string | null
           email?: string | null
           endereco?: string | null
           estado?: string | null
@@ -924,6 +933,7 @@ export type Database = {
           created_at: string
           criado_por: string | null
           data: string
+          deleted_at: string | null
           distancia_total: number | null
           endereco_final: string | null
           endereco_partida: string | null
@@ -945,6 +955,7 @@ export type Database = {
           created_at?: string
           criado_por?: string | null
           data: string
+          deleted_at?: string | null
           distancia_total?: number | null
           endereco_final?: string | null
           endereco_partida?: string | null
@@ -966,6 +977,7 @@ export type Database = {
           created_at?: string
           criado_por?: string | null
           data?: string
+          deleted_at?: string | null
           distancia_total?: number | null
           endereco_final?: string | null
           endereco_partida?: string | null
@@ -1194,6 +1206,7 @@ export type Database = {
         Row: {
           cor: string
           created_at: string
+          deleted_at: string | null
           gabinete_id: string
           id: string
           nome: string
@@ -1202,6 +1215,7 @@ export type Database = {
         Insert: {
           cor?: string
           created_at?: string
+          deleted_at?: string | null
           gabinete_id: string
           id?: string
           nome: string
@@ -1210,6 +1224,7 @@ export type Database = {
         Update: {
           cor?: string
           created_at?: string
+          deleted_at?: string | null
           gabinete_id?: string
           id?: string
           nome?: string

@@ -410,6 +410,7 @@ const Agenda = () => {
         open={detailsSheetOpen}
         onOpenChange={setDetailsSheetOpen}
         onEdit={handleEditEvento}
+        onEventoUpdated={fetchEventos}
       />
     </div>
   );
