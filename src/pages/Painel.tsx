@@ -9,6 +9,7 @@ import { ErrosSection } from '@/components/painel/ErrosSection';
 import { MonitoramentoSection } from '@/components/painel/MonitoramentoSection';
 import { Shield, LogOut } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { ThemeToggle } from '@/components/ThemeToggle';
 
 export default function Painel() {
   const { signOut } = useAuth();
@@ -25,10 +26,13 @@ export default function Painel() {
               <h1 className="text-lg font-bold">Painel do Sistema</h1>
             </div>
           </div>
-          <Button variant="ghost" size="sm" onClick={signOut}>
-            <LogOut className="h-4 w-4 mr-2" />
-            Sair
-          </Button>
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <Button variant="ghost" size="sm" onClick={signOut}>
+              <LogOut className="h-4 w-4 mr-2" />
+              Sair
+            </Button>
+          </div>
         </div>
       </header>
 
