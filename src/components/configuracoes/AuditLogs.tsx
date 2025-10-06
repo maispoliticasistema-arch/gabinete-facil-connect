@@ -109,6 +109,7 @@ export function AuditLogs({ gabineteId }: AuditLogsProps) {
   };
 
   const fetchLogs = async () => {
+    console.log('🔄 fetchLogs CHAMADO - gabineteId:', gabineteId);
     try {
       setLoading(true);
       
@@ -151,9 +152,11 @@ export function AuditLogs({ gabineteId }: AuditLogsProps) {
 
       if (logsError) throw logsError;
       
+      console.log('📋 Logs retornados do banco:', logsData?.length, 'Total count:', count);
       setTotalCount(count || 0);
 
       if (!logsData || logsData.length === 0) {
+        console.log('✅ Nenhum log encontrado - limpando lista');
         setLogs([]);
         setLoading(false);
         return;
