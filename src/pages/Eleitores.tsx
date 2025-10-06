@@ -294,7 +294,7 @@ const Eleitores = () => {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <PermissionGuard permission="view_eleitores">
+          <PermissionGuard permission="export_eleitores">
             <ExportEleitoresDialog
               searchTerm={searchTerm}
               selectedBairro={selectedBairro}
@@ -306,10 +306,10 @@ const Eleitores = () => {
           <PermissionGuard permission="edit_eleitores">
             <GeocodeAllDialog onComplete={fetchEleitores} />
           </PermissionGuard>
-          <PermissionGuard permission="manage_settings">
+          <PermissionGuard permission="manage_tags">
             <TagsDialog />
           </PermissionGuard>
-          <PermissionGuard permission="create_eleitores">
+          <PermissionGuard permission="import_eleitores">
             <ImportEleitoresDialog onEleitoresImported={fetchEleitores} />
           </PermissionGuard>
           <PermissionGuard permission="create_eleitores">

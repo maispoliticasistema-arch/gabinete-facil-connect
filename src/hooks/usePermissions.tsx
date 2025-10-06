@@ -8,6 +8,9 @@ type Permission =
   | 'create_eleitores'
   | 'edit_eleitores'
   | 'delete_eleitores'
+  | 'import_eleitores'
+  | 'export_eleitores'
+  | 'manage_tags'
   | 'view_demandas'
   | 'create_demandas'
   | 'edit_demandas'
@@ -55,6 +58,9 @@ export function usePermissions() {
             'create_eleitores',
             'edit_eleitores',
             'delete_eleitores',
+            'import_eleitores',
+            'export_eleitores',
+            'manage_tags',
             'view_demandas',
             'create_demandas',
             'edit_demandas',

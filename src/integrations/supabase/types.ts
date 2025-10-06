@@ -1595,6 +1595,9 @@ export type Database = {
         | "manage_users"
         | "manage_settings"
         | "view_mapa"
+        | "import_eleitores"
+        | "export_eleitores"
+        | "manage_tags"
       roteiro_status: "planejado" | "em_andamento" | "concluido" | "cancelado"
       system_role: "superowner" | "support"
       user_role: "owner" | "admin" | "assessor"
@@ -1787,6 +1790,9 @@ export const Constants = {
         "manage_users",
         "manage_settings",
         "view_mapa",
+        "import_eleitores",
+        "export_eleitores",
+        "manage_tags",
       ],
       roteiro_status: ["planejado", "em_andamento", "concluido", "cancelado"],
       system_role: ["superowner", "support"],
