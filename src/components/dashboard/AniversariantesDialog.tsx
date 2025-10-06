@@ -27,6 +27,11 @@ export const AniversariantesDialog = ({ open, onOpenChange }: AniversariantesDia
   const [aniversariantes, setAniversariantes] = useState<Eleitor[]>([]);
   const [loading, setLoading] = useState(false);
 
+  const formatWhatsAppLink = (telefone: string) => {
+    const cleanNumber = telefone.replace(/\D/g, '');
+    return `https://wa.me/55${cleanNumber}`;
+  };
+
   useEffect(() => {
     if (!open || !currentGabinete) return;
 
@@ -98,10 +103,15 @@ export const AniversariantesDialog = ({ open, onOpenChange }: AniversariantesDia
                 
                 <div className="space-y-1 text-sm">
                   {eleitor.telefone && (
-                    <div className="flex items-center gap-2 text-muted-foreground">
+                    <a 
+                      href={formatWhatsAppLink(eleitor.telefone)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors"
+                    >
                       <Phone className="h-4 w-4" />
                       <span>{eleitor.telefone}</span>
-                    </div>
+                    </a>
                   )}
                   
                   {eleitor.email && (

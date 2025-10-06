@@ -67,6 +67,11 @@ export const EleitoresTable = ({ eleitores, onEleitoresUpdated, onEleitoresClick
     return format(new Date(date), 'dd/MM/yyyy', { locale: ptBR });
   };
 
+  const formatWhatsAppLink = (telefone: string) => {
+    const cleanNumber = telefone.replace(/\D/g, '');
+    return `https://wa.me/55${cleanNumber}`;
+  };
+
   return (
     <>
       <EditEleitoresDialog
@@ -123,10 +128,16 @@ export const EleitoresTable = ({ eleitores, onEleitoresUpdated, onEleitoresClick
                 <TableCell>
                   <div className="space-y-1">
                     {eleitor.telefone && (
-                      <div className="flex items-center gap-1 text-xs">
+                      <a 
+                        href={formatWhatsAppLink(eleitor.telefone)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                        className="flex items-center gap-1 text-xs hover:text-primary transition-colors"
+                      >
                         <Phone className="h-3 w-3 text-muted-foreground shrink-0" />
                         <span className="truncate">{eleitor.telefone}</span>
-                      </div>
+                      </a>
                     )}
                     {eleitor.email && (
                       <div className="flex items-center gap-1 text-xs">
