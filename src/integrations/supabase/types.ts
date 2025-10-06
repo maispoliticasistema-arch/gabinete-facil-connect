@@ -545,35 +545,47 @@ export type Database = {
       }
       gabinetes: {
         Row: {
+          bairro: string | null
           cargo: Database["public"]["Enums"]["cargo_politico"] | null
+          cep: string | null
           cidade: string | null
           created_at: string | null
           descricao: string | null
+          endereco_completo: string | null
           estado: string | null
           id: string
           nome: string
+          numero: string | null
           slogan: string | null
           updated_at: string | null
         }
         Insert: {
+          bairro?: string | null
           cargo?: Database["public"]["Enums"]["cargo_politico"] | null
+          cep?: string | null
           cidade?: string | null
           created_at?: string | null
           descricao?: string | null
+          endereco_completo?: string | null
           estado?: string | null
           id?: string
           nome: string
+          numero?: string | null
           slogan?: string | null
           updated_at?: string | null
         }
         Update: {
+          bairro?: string | null
           cargo?: Database["public"]["Enums"]["cargo_politico"] | null
+          cep?: string | null
           cidade?: string | null
           created_at?: string | null
           descricao?: string | null
+          endereco_completo?: string | null
           estado?: string | null
           id?: string
           nome?: string
+          numero?: string | null
           slogan?: string | null
           updated_at?: string | null
         }

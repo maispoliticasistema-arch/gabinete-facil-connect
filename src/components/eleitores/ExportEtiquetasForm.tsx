@@ -14,9 +14,11 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, FileText, Printer } from 'lucide-react';
+import { Loader2, FileText, Printer, Users, Building2 } from 'lucide-react';
 import jsPDF from 'jspdf';
 import { logAudit } from '@/lib/auditLog';
+import { ExportEtiquetasGabineteForm } from './ExportEtiquetasGabineteForm';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface ExportEtiquetasFormProps {
   searchTerm: string;
@@ -455,7 +457,20 @@ export function ExportEtiquetasForm({
   const modeloAtual = modelosEtiquetas.find((m) => m.id === modeloSelecionado);
 
   return (
-    <div className="space-y-6">
+    <Tabs defaultValue="eleitores" className="w-full">
+      <TabsList className="grid w-full grid-cols-2 mb-6">
+        <TabsTrigger value="eleitores" className="flex items-center gap-2">
+          <Users className="h-4 w-4" />
+          Dados dos Eleitores
+        </TabsTrigger>
+        <TabsTrigger value="gabinete" className="flex items-center gap-2">
+          <Building2 className="h-4 w-4" />
+          Dados do Gabinete
+        </TabsTrigger>
+      </TabsList>
+
+      <TabsContent value="eleitores">
+        <div className="space-y-6">
       {/* Opções de Conteúdo */}
       <Card>
         <CardHeader>
@@ -706,5 +721,11 @@ export function ExportEtiquetasForm({
         </Card>
       )}
     </div>
+  </TabsContent>
+
+  <TabsContent value="gabinete">
+    <ExportEtiquetasGabineteForm onClose={onClose} />
+  </TabsContent>
+</Tabs>
   );
 }
