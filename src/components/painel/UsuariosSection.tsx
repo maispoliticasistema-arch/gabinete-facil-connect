@@ -10,6 +10,8 @@ interface Usuario {
   id: string;
   nome_completo: string;
   created_at: string;
+  email?: string;
+  telefone?: string;
   gabinetes: Array<{
     nome: string;
     role: string;
@@ -24,6 +26,10 @@ export function UsuariosSection() {
   useEffect(() => {
     async function loadUsuarios() {
       try {
+        // Buscar todos os usuários do auth.users via metadata
+        const { data: authUsers } = await supabase.auth.admin.listUsers();
+        
+        // Buscar todos os profiles
         const { data: profiles, error } = await supabase
           .from('profiles')
           .select('*')
@@ -31,9 +37,14 @@ export function UsuariosSection() {
 
         if (error) throw error;
 
-        // Para cada usuário, buscar seus gabinetes
-        const usuariosComGabinetes = await Promise.all(
-          (profiles || []).map(async (profile) => {
+        // Criar mapa de profiles por ID
+        const profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
+
+        // Para cada usuário do auth, buscar seus gabinetes e combinar com profile
+        const usuariosCompletos = await Promise.all(
+          (authUsers?.users || []).map(async (authUser) => {
+            const profile = profileMap.get(authUser.id);
+            
             const { data: userGabs } = await supabase
               .from('user_gabinetes')
               .select(`
@@ -42,10 +53,14 @@ export function UsuariosSection() {
                 gabinete_id,
                 gabinetes (nome)
               `)
-              .eq('user_id', profile.id);
+              .eq('user_id', authUser.id);
 
             return {
-              ...profile,
+              id: authUser.id,
+              nome_completo: profile?.nome_completo || authUser.email || 'Sem nome',
+              email: authUser.email,
+              telefone: profile?.telefone,
+              created_at: authUser.created_at,
               gabinetes: (userGabs || []).map((ug: any) => ({
                 nome: ug.gabinetes?.nome || 'Desconhecido',
                 role: ug.role,
@@ -55,7 +70,7 @@ export function UsuariosSection() {
           })
         );
 
-        setUsuarios(usuariosComGabinetes);
+        setUsuarios(usuariosCompletos);
       } catch (error) {
         console.error('Erro ao carregar usuários:', error);
       } finally {
@@ -99,6 +114,8 @@ export function UsuariosSection() {
           <TableHeader>
             <TableRow>
               <TableHead>Nome</TableHead>
+              <TableHead>Email</TableHead>
+              <TableHead>Telefone</TableHead>
               <TableHead>Gabinetes</TableHead>
               <TableHead>Cadastro</TableHead>
             </TableRow>
@@ -107,6 +124,8 @@ export function UsuariosSection() {
             {usuarios.map((user) => (
               <TableRow key={user.id}>
                 <TableCell className="font-medium">{user.nome_completo}</TableCell>
+                <TableCell className="text-sm">{user.email || '-'}</TableCell>
+                <TableCell className="text-sm">{user.telefone || '-'}</TableCell>
                 <TableCell>
                   <div className="flex flex-col gap-1">
                     {user.gabinetes.length > 0 ? (
