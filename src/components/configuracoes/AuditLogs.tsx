@@ -517,7 +517,7 @@ export function AuditLogs({ gabineteId }: AuditLogsProps) {
           </Button>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Select value={filterAction} onValueChange={setFilterAction}>
             <SelectTrigger>
               <SelectValue placeholder="Ação" />
@@ -560,20 +560,30 @@ export function AuditLogs({ gabineteId }: AuditLogsProps) {
               ))}
             </SelectContent>
           </Select>
+        </div>
 
-          <Input
-            type="date"
-            value={startDate}
-            onChange={(e) => setStartDate(e.target.value)}
-            placeholder="Data inicial"
-          />
-
-          <Input
-            type="date"
-            value={endDate}
-            onChange={(e) => setEndDate(e.target.value)}
-            placeholder="Data final"
-          />
+        <div className="border rounded-lg p-4 bg-muted/30">
+          <div className="text-sm font-medium mb-3">Período</div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="space-y-2">
+              <label className="text-xs text-muted-foreground">De:</label>
+              <Input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                placeholder="Data inicial"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-xs text-muted-foreground">Até:</label>
+              <Input
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                placeholder="Data final"
+              />
+            </div>
+          </div>
         </div>
       </div>
 
