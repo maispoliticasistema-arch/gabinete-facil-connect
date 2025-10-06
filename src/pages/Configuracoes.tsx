@@ -2,13 +2,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
 import { InfoGabinete } from "@/components/configuracoes/InfoGabinete";
 import { UsuariosPermissoes } from "@/components/configuracoes/UsuariosPermissoes";
-import { Integracoes } from "@/components/configuracoes/Integracoes";
-import { Notificacoes } from "@/components/configuracoes/Notificacoes";
 import { Seguranca } from "@/components/configuracoes/Seguranca";
 import { useGabinete } from "@/contexts/GabineteContext";
 import { usePermissions } from "@/hooks/usePermissions";
 import { NoPermissionMessage } from "@/components/PermissionGuard";
-import { Building2, Users, Plug, Bell, Shield } from "lucide-react";
+import { Building2, Users, Shield } from "lucide-react";
 
 export default function Configuracoes() {
   const { currentGabinete } = useGabinete();
@@ -37,7 +35,7 @@ export default function Configuracoes() {
       </div>
 
       <Tabs defaultValue="info" className="space-y-4 md:space-y-6">
-        <TabsList className="grid w-full grid-cols-5 h-auto">
+        <TabsList className="grid w-full grid-cols-3 h-auto">
           <TabsTrigger value="info" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 py-2 text-xs sm:text-sm">
             <Building2 className="h-3 w-3 sm:h-4 sm:w-4" />
             <span className="truncate">Gabinete</span>
@@ -45,16 +43,6 @@ export default function Configuracoes() {
           <TabsTrigger value="usuarios" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 py-2 text-xs sm:text-sm">
             <Users className="h-3 w-3 sm:h-4 sm:w-4" />
             <span className="truncate">Usuários</span>
-          </TabsTrigger>
-          <TabsTrigger value="integracoes" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 py-2 text-xs sm:text-sm">
-            <Plug className="h-3 w-3 sm:h-4 sm:w-4" />
-            <span className="hidden lg:inline truncate">Integrações</span>
-            <span className="lg:hidden truncate">Integr.</span>
-          </TabsTrigger>
-          <TabsTrigger value="notificacoes" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 py-2 text-xs sm:text-sm">
-            <Bell className="h-3 w-3 sm:h-4 sm:w-4" />
-            <span className="hidden lg:inline truncate">Notificações</span>
-            <span className="lg:hidden truncate">Notif.</span>
           </TabsTrigger>
           <TabsTrigger value="seguranca" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 py-2 text-xs sm:text-sm">
             <Shield className="h-3 w-3 sm:h-4 sm:w-4" />
@@ -72,18 +60,6 @@ export default function Configuracoes() {
         <TabsContent value="usuarios">
           <Card className="p-3 sm:p-6">
             <UsuariosPermissoes gabineteId={currentGabinete.gabinete_id} />
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="integracoes">
-          <Card className="p-3 sm:p-6">
-            <Integracoes gabineteId={currentGabinete.gabinete_id} />
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="notificacoes">
-          <Card className="p-3 sm:p-6">
-            <Notificacoes gabineteId={currentGabinete.gabinete_id} />
           </Card>
         </TabsContent>
 
