@@ -29,11 +29,13 @@ export function OverviewSection() {
           .from('gabinetes')
           .select('*', { count: 'exact', head: true });
 
-        // Usuários ativos (com acesso a algum gabinete)
-        const { count: usuarios } = await supabase
+        // Usuários únicos ativos (usando distinct no user_id)
+        const { data: usuariosUnicos } = await supabase
           .from('user_gabinetes')
-          .select('*', { count: 'exact', head: true })
+          .select('user_id')
           .eq('ativo', true);
+        
+        const usuarios = new Set(usuariosUnicos?.map(u => u.user_id)).size;
 
         // Demandas criadas hoje
         const hoje = new Date().toISOString().split('T')[0];

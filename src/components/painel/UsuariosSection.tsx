@@ -26,51 +26,11 @@ export function UsuariosSection() {
   useEffect(() => {
     async function loadUsuarios() {
       try {
-        // Buscar todos os usuários do auth.users via metadata
-        const { data: authUsers } = await supabase.auth.admin.listUsers();
-        
-        // Buscar todos os profiles
-        const { data: profiles, error } = await supabase
-          .from('profiles')
-          .select('*')
-          .order('created_at', { ascending: false });
+        const { data, error } = await supabase.functions.invoke('list-all-users');
 
         if (error) throw error;
 
-        // Criar mapa de profiles por ID
-        const profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
-
-        // Para cada usuário do auth, buscar seus gabinetes e combinar com profile
-        const usuariosCompletos = await Promise.all(
-          (authUsers?.users || []).map(async (authUser) => {
-            const profile = profileMap.get(authUser.id);
-            
-            const { data: userGabs } = await supabase
-              .from('user_gabinetes')
-              .select(`
-                role,
-                ativo,
-                gabinete_id,
-                gabinetes (nome)
-              `)
-              .eq('user_id', authUser.id);
-
-            return {
-              id: authUser.id,
-              nome_completo: profile?.nome_completo || authUser.email || 'Sem nome',
-              email: authUser.email,
-              telefone: profile?.telefone,
-              created_at: authUser.created_at,
-              gabinetes: (userGabs || []).map((ug: any) => ({
-                nome: ug.gabinetes?.nome || 'Desconhecido',
-                role: ug.role,
-                ativo: ug.ativo
-              }))
-            };
-          })
-        );
-
-        setUsuarios(usuariosCompletos);
+        setUsuarios(data?.users || []);
       } catch (error) {
         console.error('Erro ao carregar usuários:', error);
       } finally {

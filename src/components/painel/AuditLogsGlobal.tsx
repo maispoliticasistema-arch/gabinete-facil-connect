@@ -33,46 +33,34 @@ export function AuditLogsGlobal() {
 
   const fetchLogs = async () => {
     try {
+      // Buscar TODOS os logs sem limit
       const { data, error } = await supabase
         .from('audit_logs')
-        .select(`
-          id,
-          created_at,
-          action,
-          entity_type,
-          entity_id,
-          details,
-          ip_address,
-          user_agent,
-          gabinete_id,
-          user_id
-        `)
+        .select('*')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
 
-      // Buscar nomes de usuários e gabinetes
-      const logsComNomes = await Promise.all(
-        (data || []).map(async (log) => {
-          const { data: gabinete } = await supabase
-            .from('gabinetes')
-            .select('nome')
-            .eq('id', log.gabinete_id)
-            .single();
+      console.log(`📊 Total de logs carregados: ${data?.length || 0}`);
 
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('nome_completo')
-            .eq('id', log.user_id)
-            .single();
+      // Buscar todos os gabinetes e profiles de uma vez
+      const { data: gabinetes } = await supabase
+        .from('gabinetes')
+        .select('id, nome');
 
-          return {
-            ...log,
-            gabinete_nome: gabinete?.nome || 'Desconhecido',
-            user_nome: profile?.nome_completo || 'Sistema'
-          };
-        })
-      );
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, nome_completo');
+
+      const gabineteMap = new Map(gabinetes?.map(g => [g.id, g.nome]) || []);
+      const profileMap = new Map(profiles?.map(p => [p.id, p.nome_completo]) || []);
+
+      // Mapear os logs com nomes
+      const logsComNomes = (data || []).map((log) => ({
+        ...log,
+        gabinete_nome: gabineteMap.get(log.gabinete_id) || 'Desconhecido',
+        user_nome: profileMap.get(log.user_id) || 'Sistema'
+      }));
 
       setLogs(logsComNomes);
     } catch (error) {
