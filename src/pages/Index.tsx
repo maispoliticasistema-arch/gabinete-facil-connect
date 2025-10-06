@@ -117,12 +117,14 @@ const Index = () => {
       });
 
       // Buscar dados de cadastros dos últimos 6 meses
-      const { data: eleitores } = await supabase
+      const { data: eleitores, count: totalEleitoresCount } = await supabase
         .from('eleitores')
-        .select('created_at')
+        .select('created_at', { count: 'exact' })
         .eq('gabinete_id', currentGabinete.gabinete_id)
-        .order('created_at', { ascending: true })
-        .range(0, 50000);
+        .order('created_at', { ascending: true });
+      
+      console.log('📊 Total de eleitores no DB:', totalEleitoresCount);
+      console.log('📊 Eleitores retornados para o gráfico:', eleitores?.length);
 
       // Processar dados para o gráfico
       const chartData: CadastrosChart[] = [];
