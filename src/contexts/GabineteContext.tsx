@@ -56,6 +56,12 @@ export const GabineteProvider = ({ children }: { children: React.ReactNode }) =>
       .eq('user_id', user.id)
       .eq('ativo', true);
 
+    console.log('🔍 GabineteContext: Dados retornados do banco:', {
+      userId: user.id,
+      gabinetes: data,
+      error: error
+    });
+
     if (error) {
       console.error('Erro ao buscar gabinetes:', error);
       setLoading(false);
@@ -63,12 +69,26 @@ export const GabineteProvider = ({ children }: { children: React.ReactNode }) =>
     }
 
     const gabinetesList = data || [];
+    console.log('🔍 GabineteContext: Lista de gabinetes processada:', gabinetesList.map(g => ({
+      gabinete_id: g.gabinete_id,
+      role: g.role,
+      nome: g.gabinetes?.nome
+    })));
+    
     setGabinetes(gabinetesList);
     
     if (gabinetesList.length > 0) {
       setCurrentGabinete(prev => {
         const currentExists = prev && gabinetesList.some(g => g.gabinete_id === prev.gabinete_id);
-        return currentExists ? prev : gabinetesList[0];
+        const newCurrent = currentExists ? prev : gabinetesList[0];
+        
+        console.log('🔍 GabineteContext: Gabinete atual selecionado:', {
+          gabinete_id: newCurrent.gabinete_id,
+          role: newCurrent.role,
+          nome: newCurrent.gabinetes?.nome
+        });
+        
+        return newCurrent;
       });
     } else {
       setCurrentGabinete(null);
