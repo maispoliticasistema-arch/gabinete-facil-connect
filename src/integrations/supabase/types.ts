@@ -1475,6 +1475,8 @@ export type Database = {
         | "user_created"
         | "user_disabled"
         | "user_deleted"
+        | "export_report"
+        | "import_data"
       audit_entity:
         | "eleitor"
         | "demanda"
@@ -1484,6 +1486,7 @@ export type Database = {
         | "user"
         | "gabinete"
         | "permission"
+        | "relatorio"
       cargo_politico:
         | "vereador"
         | "prefeito"
@@ -1660,6 +1663,8 @@ export const Constants = {
         "user_created",
         "user_disabled",
         "user_deleted",
+        "export_report",
+        "import_data",
       ],
       audit_entity: [
         "eleitor",
@@ -1670,6 +1675,7 @@ export const Constants = {
         "user",
         "gabinete",
         "permission",
+        "relatorio",
       ],
       cargo_politico: [
         "vereador",

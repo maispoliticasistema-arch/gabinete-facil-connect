@@ -6,6 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useGabinete } from '@/contexts/GabineteContext';
 import { isPermissionError, getPermissionErrorMessage } from '@/lib/permissionErrors';
+import { logAudit } from '@/lib/auditLog';
 import {
   Dialog,
   DialogContent,
@@ -250,6 +251,17 @@ export const EditEleitoresDialog = ({
           console.error('Geocode error:', geocodeError);
           // Não bloquear a atualização se a geocodificação falhar
         }
+      }
+
+      // Registrar log de auditoria
+      if (currentGabinete) {
+        await logAudit({
+          gabineteId: currentGabinete.gabinete_id,
+          action: 'update',
+          entityType: 'eleitor',
+          entityId: eleitor.id,
+          details: { nome: data.nome_completo }
+        });
       }
 
       toast({

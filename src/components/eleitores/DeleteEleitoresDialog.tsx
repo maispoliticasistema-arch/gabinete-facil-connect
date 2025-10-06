@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useGabinete } from '@/contexts/GabineteContext';
 import { isPermissionError, getPermissionErrorMessage } from '@/lib/permissionErrors';
+import { logAudit } from '@/lib/auditLog';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -34,9 +36,10 @@ export const DeleteEleitoresDialog = ({
 }: DeleteEleitoresDialogProps) => {
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
+  const { currentGabinete } = useGabinete();
 
   const handleDelete = async () => {
-    if (!eleitor) return;
+    if (!eleitor || !currentGabinete) return;
 
     setLoading(true);
     try {
@@ -59,6 +62,15 @@ export const DeleteEleitoresDialog = ({
         }
         throw error;
       }
+
+      // Registrar log de auditoria
+      await logAudit({
+        gabineteId: currentGabinete.gabinete_id,
+        action: 'delete',
+        entityType: 'eleitor',
+        entityId: eleitor.id,
+        details: { nome: eleitor.nome_completo }
+      });
 
       toast({
         title: 'Eleitor excluído!',

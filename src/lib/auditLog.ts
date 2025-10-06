@@ -42,8 +42,8 @@ export async function logAudit({
   try {
     const { error } = await supabase.rpc('log_audit_action', {
       _gabinete_id: gabineteId,
-      _action: action,
-      _entity_type: entityType || null,
+      _action: action as any,
+      _entity_type: (entityType || null) as any,
       _entity_id: entityId || null,
       _details: details || null
     });
