@@ -43,10 +43,15 @@ export const DeleteEleitoresDialog = ({
 
     setLoading(true);
     try {
-      const { error } = await supabase
+      console.log('🗑️ Deletando eleitor:', eleitor.id);
+      
+      const { data, error } = await supabase
         .from('eleitores')
         .update({ deleted_at: new Date().toISOString() })
-        .eq('id', eleitor.id);
+        .eq('id', eleitor.id)
+        .select();
+
+      console.log('✅ Resultado delete:', { data, error });
 
       if (error) {
         // Verificar se é erro de permissão (RLS)
@@ -72,14 +77,18 @@ export const DeleteEleitoresDialog = ({
         details: { nome: eleitor.nome_completo }
       });
 
+      console.log('📋 Log de auditoria criado');
+
       toast({
         title: 'Eleitor excluído!',
         description: 'O eleitor foi removido com sucesso.',
       });
 
       onOpenChange(false);
+      console.log('🔄 Chamando onEleitoresDeleted...');
       onEleitoresDeleted();
     } catch (error: any) {
+      console.error('❌ Erro ao excluir:', error);
       // Verificar se é erro de permissão
       if (isPermissionError(error)) {
         const errorMsg = getPermissionErrorMessage('delete');

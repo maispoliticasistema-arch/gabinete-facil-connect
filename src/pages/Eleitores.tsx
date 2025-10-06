@@ -100,13 +100,16 @@ const Eleitores = () => {
 
     setLoading(true);
     try {
+      console.log('🔍 Buscando eleitores...');
+      
       const from = (currentPage - 1) * ITEMS_PER_PAGE;
       const to = from + ITEMS_PER_PAGE - 1;
 
       let query = supabase
         .from('eleitores')
         .select('*', { count: 'exact' })
-        .eq('gabinete_id', currentGabinete.gabinete_id);
+        .eq('gabinete_id', currentGabinete.gabinete_id)
+        .is('deleted_at', null); // EXPLICITAMENTE filtrar deleted_at
 
       // Aplicar filtro de busca
       if (searchTerm.trim()) {
@@ -152,6 +155,8 @@ const Eleitores = () => {
         .range(from, to);
 
       if (error) throw error;
+
+      console.log('📊 Eleitores encontrados:', data?.length, 'Total:', count);
 
       setEleitores((data || []) as unknown as Eleitor[]);
       setTotalCount(count || 0);
