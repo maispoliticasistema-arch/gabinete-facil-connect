@@ -44,6 +44,11 @@ interface Tag {
   cor: string;
 }
 
+interface Assessor {
+  id: string;
+  nome_completo: string;
+}
+
 interface Eleitor {
   id: string;
   nome_completo: string;
@@ -61,6 +66,7 @@ interface Eleitor {
   profissao: string | null;
   observacoes: string | null;
   created_at: string;
+  cadastrado_por: string | null;
 }
 
 const Eleitores = () => {
@@ -72,9 +78,11 @@ const Eleitores = () => {
   const [bairros, setBairros] = useState<string[]>([]);
   const [cidades, setCidades] = useState<string[]>([]);
   const [tags, setTags] = useState<Tag[]>([]);
+  const [assessores, setAssessores] = useState<Assessor[]>([]);
   const [selectedBairro, setSelectedBairro] = useState<string>('');
   const [selectedCidade, setSelectedCidade] = useState<string>('');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [selectedAssessor, setSelectedAssessor] = useState<string>('');
   const [selectedEleitor, setSelectedEleitor] = useState<Eleitor | null>(null);
   const [eleitorSheetOpen, setEleitorSheetOpen] = useState(false);
   const [addEleitorOpen, setAddEleitorOpen] = useState(false);
@@ -85,7 +93,7 @@ const Eleitores = () => {
   const ITEMS_PER_PAGE = 20;
   const totalPages = Math.ceil(totalCount / ITEMS_PER_PAGE);
 
-  const hasActiveFilters = selectedBairro || selectedCidade || selectedTags.length > 0;
+  const hasActiveFilters = selectedBairro || selectedCidade || selectedTags.length > 0 || selectedAssessor;
 
   const fetchEleitores = async () => {
     if (!currentGabinete) return;
@@ -132,6 +140,11 @@ const Eleitores = () => {
           setLoading(false);
           return;
         }
+      }
+
+      // Aplicar filtro de assessor
+      if (selectedAssessor) {
+        query = query.eq('cadastrado_por', selectedAssessor);
       }
 
       const { data, error, count } = await query
@@ -187,6 +200,25 @@ const Eleitores = () => {
         .order('nome');
 
       setTags(tagsData || []);
+
+      // Buscar assessores que cadastraram eleitores
+      const { data: eleitoresData } = await supabase
+        .from('eleitores')
+        .select('cadastrado_por')
+        .eq('gabinete_id', currentGabinete.gabinete_id)
+        .not('cadastrado_por', 'is', null);
+
+      const uniqueAssessoresIds = [...new Set(eleitoresData?.map((e) => e.cadastrado_por).filter(Boolean) || [])];
+
+      if (uniqueAssessoresIds.length > 0) {
+        const { data: profilesData } = await supabase
+          .from('profiles')
+          .select('id, nome_completo')
+          .in('id', uniqueAssessoresIds)
+          .order('nome_completo');
+
+        setAssessores(profilesData || []);
+      }
     } catch (error: any) {
       console.error('Erro ao carregar opções de filtro:', error);
     }
@@ -194,7 +226,7 @@ const Eleitores = () => {
 
   useEffect(() => {
     fetchEleitores();
-  }, [currentGabinete, currentPage, searchTerm, selectedBairro, selectedCidade, selectedTags]);
+  }, [currentGabinete, currentPage, searchTerm, selectedBairro, selectedCidade, selectedTags, selectedAssessor]);
 
   useEffect(() => {
     if (currentGabinete) {
@@ -217,6 +249,7 @@ const Eleitores = () => {
     setSelectedBairro('');
     setSelectedCidade('');
     setSelectedTags([]);
+    setSelectedAssessor('');
     setCurrentPage(1);
   };
 
@@ -392,6 +425,29 @@ const Eleitores = () => {
                             </div>
                           ))}
                         </div>
+                      </div>
+                    )}
+
+                    {/* Filtro de Assessor */}
+                    {assessores.length > 0 && (
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">Cadastrado por</label>
+                        <Select value={selectedAssessor || "__all__"} onValueChange={(value) => {
+                          setSelectedAssessor(value === "__all__" ? '' : value);
+                          setCurrentPage(1);
+                        }}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Todos os assessores" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="__all__">Todos os assessores</SelectItem>
+                            {assessores.map((assessor) => (
+                              <SelectItem key={assessor.id} value={assessor.id}>
+                                {assessor.nome_completo}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </div>
                     )}
                   </div>

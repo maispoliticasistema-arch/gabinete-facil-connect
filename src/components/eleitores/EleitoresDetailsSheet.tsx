@@ -33,6 +33,7 @@ interface Eleitor {
   profissao: string | null;
   observacoes: string | null;
   created_at: string;
+  cadastrado_por: string | null;
 }
 
 interface Demanda {
@@ -85,14 +86,37 @@ export const EleitoresDetailsSheet = ({
   const [loadingRoteiros, setLoadingRoteiros] = useState(false);
   const [selectedDemanda, setSelectedDemanda] = useState<Demanda | null>(null);
   const [demandaSheetOpen, setDemandaSheetOpen] = useState(false);
+  const [cadastradoPorNome, setCadastradoPorNome] = useState<string>('');
   const { toast } = useToast();
 
   useEffect(() => {
     if (open && eleitor) {
       fetchDemandas();
       fetchRoteiros();
+      fetchCadastradoPor();
     }
   }, [open, eleitor]);
+
+  const fetchCadastradoPor = async () => {
+    if (!eleitor?.cadastrado_por) {
+      setCadastradoPorNome('');
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('nome_completo')
+        .eq('id', eleitor.cadastrado_por)
+        .single();
+
+      if (error) throw error;
+      setCadastradoPorNome(data?.nome_completo || '');
+    } catch (error: any) {
+      console.error('Erro ao buscar quem cadastrou:', error);
+      setCadastradoPorNome('');
+    }
+  };
 
   const fetchDemandas = async () => {
     if (!eleitor) return;
@@ -358,6 +382,28 @@ export const EleitoresDetailsSheet = ({
                 <div className="space-y-4">
                   <h3 className="text-sm font-semibold">Observações</h3>
                   <p className="text-sm text-muted-foreground">{eleitor.observacoes}</p>
+                </div>
+              </>
+            )}
+
+            {/* Cadastrado por */}
+            {cadastradoPorNome && (
+              <>
+                <Separator />
+                <div className="space-y-4">
+                  <h3 className="text-sm font-semibold">Informações de Cadastro</h3>
+                  <div className="grid gap-2 text-sm">
+                    <div className="flex items-center gap-2">
+                      <User className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-muted-foreground">Cadastrado por:</span>
+                      <span className="font-medium">{cadastradoPorNome}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Clock className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-muted-foreground">Data do cadastro:</span>
+                      <span>{formatDate(eleitor.created_at)}</span>
+                    </div>
+                  </div>
                 </div>
               </>
             )}
