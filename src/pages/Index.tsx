@@ -172,7 +172,7 @@ const Index = () => {
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold">Dashboard</h1>
           <p className="text-sm sm:text-base text-muted-foreground">
-            Bem-vindo ao painel de controle do {currentGabinete?.gabinetes.nome}
+            Bem-vindo ao painel de controle{currentGabinete?.gabinetes?.nome ? ` do ${currentGabinete.gabinetes.nome}` : ''}
           </p>
         </div>
         <div className="flex gap-2">
