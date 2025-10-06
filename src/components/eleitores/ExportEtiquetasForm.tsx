@@ -153,20 +153,6 @@ const modelosEtiquetas = [
     espacamentoVerticalMm: 0,
     observacao: '16 etiquetas por folha',
   },
-  {
-    id: '16-por-folha',
-    nome: '16 por folha',
-    etiquetasPorFolha: 16,
-    colunas: 2,
-    linhas: 8,
-    larguraMm: 99,
-    alturaMm: 34,
-    margemSuperiorMm: 12.7,
-    margemEsquerdaMm: 6.35,
-    espacamentoHorizontalMm: 3.2,
-    espacamentoVerticalMm: 0,
-    observacao: '16 etiquetas por folha',
-  },
 ];
 
 export function ExportEtiquetasForm({
