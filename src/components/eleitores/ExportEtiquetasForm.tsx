@@ -543,40 +543,39 @@ export function ExportEtiquetasForm({
           <RadioGroup value={modeloSelecionado} onValueChange={setModeloSelecionado}>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {modelosEtiquetas.map((modelo) => {
-                // Escala para preview (1mm = 0.5px para caber no card)
-                const escala = 0.5;
+                // Escala ajustada para melhor visualização
+                const escala = 0.4;
                 const a4LarguraMm = 210;
                 const a4AlturaMm = 297;
                 
                 return (
                   <div
                     key={modelo.id}
-                    className={`relative border rounded-lg p-4 cursor-pointer transition-all ${
+                    className={`relative rounded-lg overflow-hidden cursor-pointer transition-all ${
                       modeloSelecionado === modelo.id
-                        ? 'border-primary bg-primary/5'
-                        : 'border-border hover:border-primary/50'
+                        ? 'ring-2 ring-primary'
+                        : 'ring-1 ring-border hover:ring-primary/50'
                     }`}
                     onClick={() => setModeloSelecionado(modelo.id)}
                   >
-                    <div className="flex flex-col space-y-3">
-                      <div className="flex items-start space-x-3">
-                        <RadioGroupItem value={modelo.id} id={modelo.id} />
-                        <Label htmlFor={modelo.id} className="cursor-pointer font-semibold text-sm">
+                    <div className="bg-gradient-to-br from-slate-800 to-slate-900 p-4 space-y-3">
+                      <div className="flex items-center space-x-3">
+                        <RadioGroupItem value={modelo.id} id={modelo.id} className="border-white" />
+                        <Label htmlFor={modelo.id} className="cursor-pointer font-semibold text-sm text-white">
                           {modelo.nome}
                         </Label>
                       </div>
                       
-                      {/* Preview FIEL da folha A4 com etiquetas */}
-                      <div className="bg-white border-2 border-muted rounded shadow-sm p-1 flex items-center justify-center">
+                      {/* Preview FIEL da folha A4 */}
+                      <div className="bg-white rounded shadow-lg p-2 flex items-center justify-center">
                         <div
-                          className="relative bg-white"
+                          className="relative bg-white border border-gray-300"
                           style={{
                             width: `${a4LarguraMm * escala}px`,
                             height: `${a4AlturaMm * escala}px`,
-                            border: '1px solid #e5e7eb',
                           }}
                         >
-                          {/* Renderizar cada etiqueta na posição EXATA */}
+                          {/* Renderizar etiquetas nas posições EXATAS com as margens corretas */}
                           {Array.from({ length: modelo.linhas }).map((_, linha) =>
                             Array.from({ length: modelo.colunas }).map((_, coluna) => {
                               const index = linha * modelo.colunas + coluna;
@@ -588,7 +587,7 @@ export function ExportEtiquetasForm({
                               return (
                                 <div
                                   key={`${linha}-${coluna}`}
-                                  className="absolute border border-primary/40 bg-primary/10"
+                                  className="absolute border-2 border-blue-500/60 bg-blue-500/10 rounded-[1px]"
                                   style={{
                                     left: `${x * escala}px`,
                                     top: `${y * escala}px`,
@@ -602,12 +601,12 @@ export function ExportEtiquetasForm({
                         </div>
                       </div>
 
-                      <div className="text-xs text-muted-foreground space-y-1 pt-2 border-t">
-                        <p className="font-medium text-foreground">{modelo.etiquetasPorFolha} etiquetas</p>
-                        <p>
+                      <div className="space-y-1 text-white">
+                        <p className="text-sm font-semibold">{modelo.etiquetasPorFolha} etiquetas</p>
+                        <p className="text-xs text-blue-300">
                           {modelo.larguraMm}×{modelo.alturaMm}mm
                         </p>
-                        <p className="text-primary font-medium">{modelo.observacao}</p>
+                        <p className="text-xs text-blue-400 font-medium">{modelo.observacao}</p>
                       </div>
                     </div>
                   </div>
