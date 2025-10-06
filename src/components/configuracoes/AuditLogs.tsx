@@ -328,7 +328,7 @@ export function AuditLogs({ gabineteId }: AuditLogsProps) {
   };
 
   const handleDeleteLogs = async () => {
-    console.log('🗑️ Iniciando exclusão/arquivamento de logs...');
+    console.log('🗑️ Iniciando EXCLUSÃO PERMANENTE de logs...');
     console.log('📝 Texto de confirmação:', deleteConfirmText);
     
     if (deleteConfirmText !== "excluir") {
@@ -344,52 +344,25 @@ export function AuditLogs({ gabineteId }: AuditLogsProps) {
     console.log('✅ Confirmação correta, iniciando processo...');
     setDeletingLogs(true);
     try {
-      // 1. Buscar TODOS os logs do gabinete para arquivar
-      console.log('🔍 Buscando logs do gabinete:', gabineteId);
-      const { data: allLogs, error: fetchError } = await supabase
+      // 1. Buscar logs de delete para remover as entidades soft-deleted
+      console.log('🔍 Buscando logs de delete do gabinete:', gabineteId);
+      const { data: deleteLogs, error: fetchError } = await supabase
         .from("audit_logs")
-        .select("*")
-        .eq("gabinete_id", gabineteId);
+        .select("entity_type, entity_id")
+        .eq("gabinete_id", gabineteId)
+        .eq("action", "delete")
+        .not("entity_id", "is", null);
 
-      console.log('📊 Logs encontrados:', allLogs?.length, 'Erro:', fetchError);
+      console.log('📊 Logs de delete encontrados:', deleteLogs?.length, 'Erro:', fetchError);
       
       if (fetchError) throw fetchError;
 
-      // 2. Mover logs para a tabela de arquivamento
-      if (allLogs && allLogs.length > 0) {
-        console.log('📦 Preparando', allLogs.length, 'logs para arquivamento');
-        const archivedLogs = allLogs.map(log => ({
-          original_log_id: log.id,
-          gabinete_id: log.gabinete_id,
-          user_id: log.user_id,
-          action: log.action,
-          entity_type: log.entity_type,
-          entity_id: log.entity_id,
-          details: log.details,
-          ip_address: log.ip_address,
-          user_agent: log.user_agent,
-          original_created_at: log.created_at
-        }));
-
-        console.log('💾 Inserindo logs no arquivo...');
-        const { error: archiveError } = await supabase
-          .from("archived_audit_logs")
-          .insert(archivedLogs);
-
-        console.log('📥 Resultado do arquivamento:', archiveError ? 'ERRO' : 'SUCESSO');
-        if (archiveError) {
-          console.error('❌ Erro ao arquivar:', archiveError);
-          throw archiveError;
-        }
-      }
-
-      // 3. Hard delete das entidades soft-deleted
-      const deleteLogs = allLogs?.filter(log => 
-        log.action === 'delete' && log.entity_id && log.entity_type
-      ) || [];
-
-      if (deleteLogs.length > 0) {
+      // 2. Hard delete das entidades soft-deleted
+      if (deleteLogs && deleteLogs.length > 0) {
+        console.log('🗑️ Deletando', deleteLogs.length, 'entidades soft-deleted...');
         for (const log of deleteLogs) {
+          if (!log.entity_id || !log.entity_type) continue;
+          
           let tableName = '';
           switch (log.entity_type) {
             case 'eleitor': tableName = 'eleitores'; break;
@@ -407,10 +380,11 @@ export function AuditLogs({ gabineteId }: AuditLogsProps) {
             .eq('id', log.entity_id)
             .not('deleted_at', 'is', null);
         }
+        console.log('✅ Entidades deletadas');
       }
 
-      // 4. Remover logs da tabela principal
-      console.log('🗑️ Deletando logs da tabela principal...');
+      // 3. Deletar TODOS os logs de auditoria permanentemente
+      console.log('🔥 Deletando TODOS os logs da tabela audit_logs...');
       const { error: deleteLogsError } = await supabase
         .from("audit_logs")
         .delete()
@@ -422,10 +396,10 @@ export function AuditLogs({ gabineteId }: AuditLogsProps) {
         throw deleteLogsError;
       }
 
-      console.log('✅ Processo completo! Logs arquivados com sucesso.');
+      console.log('✅ Processo completo! Logs excluídos permanentemente.');
       toast({
-        title: "Logs arquivados",
-        description: "Todos os logs foram movidos para o arquivo com sucesso"
+        title: "Logs excluídos",
+        description: "Todos os logs foram removidos permanentemente do banco de dados"
       });
 
       setDeleteDialogOpen(false);
@@ -680,15 +654,14 @@ export function AuditLogs({ gabineteId }: AuditLogsProps) {
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Arquivar Logs de Auditoria</AlertDialogTitle>
+            <AlertDialogTitle>Excluir Logs Permanentemente</AlertDialogTitle>
             <AlertDialogDescription className="space-y-3">
               <p>
-                Esta ação irá <strong>arquivar</strong> todos os logs de auditoria
-                e remover permanentemente os dados que foram marcados como excluídos (eleitores, demandas, etc).
+                Esta ação irá <strong>excluir permanentemente</strong> todos os logs de auditoria
+                e todos os dados que foram marcados como excluídos (eleitores, demandas, etc).
               </p>
-              <p className="text-muted-foreground">
-                Os logs serão movidos para um arquivo seguro e não ficarão mais visíveis na interface,
-                mas poderão ser recuperados se necessário pelo administrador do sistema.
+              <p className="text-destructive font-semibold">
+                ⚠️ Esta ação não pode ser desfeita!
               </p>
               <p>
                 Para confirmar, digite <strong>"excluir"</strong> no campo abaixo:
@@ -710,7 +683,7 @@ export function AuditLogs({ gabineteId }: AuditLogsProps) {
               disabled={deleteConfirmText !== "excluir" || deletingLogs}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {deletingLogs ? "Arquivando..." : "Arquivar Logs"}
+              {deletingLogs ? "Excluindo..." : "Excluir Permanentemente"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
