@@ -19,6 +19,22 @@ const ACTION_LABELS: Record<string, string> = {
   user_created: "Usuário Criado",
   user_disabled: "Usuário Desativado",
   user_deleted: "Usuário Removido",
+  export_report: "Exportação de Relatório",
+  import_data: "Importação de Dados",
+};
+
+const ACTION_COLORS: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
+  create: "default", // Verde (padrão success)
+  update: "secondary", // Azul
+  delete: "destructive", // Vermelho
+  login: "default",
+  logout: "outline",
+  permission_change: "secondary",
+  user_created: "default",
+  user_disabled: "secondary",
+  user_deleted: "destructive",
+  export_report: "secondary",
+  import_data: "secondary",
 };
 
 const ENTITY_LABELS: Record<string, string> = {
@@ -139,7 +155,7 @@ export function AuditLogs({ gabineteId }: AuditLogsProps) {
                 </TableCell>
                 <TableCell>{log.user_nome || "Sistema"}</TableCell>
                 <TableCell>
-                  <Badge variant="secondary">
+                  <Badge variant={ACTION_COLORS[log.action] || "secondary"}>
                     {ACTION_LABELS[log.action] || log.action}
                   </Badge>
                 </TableCell>
