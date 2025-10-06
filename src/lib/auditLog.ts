@@ -9,7 +9,9 @@ type AuditAction =
   | 'permission_change'
   | 'user_created'
   | 'user_disabled'
-  | 'user_deleted';
+  | 'user_deleted'
+  | 'export_report'
+  | 'import_data';
 
 type AuditEntity =
   | 'eleitor'
@@ -19,7 +21,8 @@ type AuditEntity =
   | 'tag'
   | 'user'
   | 'gabinete'
-  | 'permission';
+  | 'permission'
+  | 'relatorio';
 
 interface LogAuditParams {
   gabineteId: string;
