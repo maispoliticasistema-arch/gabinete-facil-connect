@@ -219,15 +219,6 @@ export function AuditLogs({ gabineteId }: AuditLogsProps) {
                 </div>
               )}
 
-              {selectedLog.entity_id && (
-                <div>
-                  <h3 className="font-semibold text-sm text-muted-foreground">ID da Entidade</h3>
-                  <p className="mt-1 text-xs font-mono bg-muted px-2 py-1 rounded">
-                    {selectedLog.entity_id}
-                  </p>
-                </div>
-              )}
-
               {selectedLog.details && Object.keys(selectedLog.details).length > 0 && (
                 <div>
                   <h3 className="font-semibold text-sm text-muted-foreground mb-2">Detalhes</h3>
