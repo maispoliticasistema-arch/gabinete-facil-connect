@@ -10,6 +10,7 @@ import { ImportEleitoresDialog } from '@/components/eleitores/ImportEleitoresDia
 import { TagsDialog } from '@/components/eleitores/TagsDialog';
 import { EleitoresDetailsSheet } from '@/components/eleitores/EleitoresDetailsSheet';
 import { GeocodeAllDialog } from '@/components/eleitores/GeocodeAllDialog';
+import { ExportEleitoresDialog } from '@/components/eleitores/ExportEleitoresDialog';
 import { Users, Search, Filter, X, UserPlus } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -293,6 +294,15 @@ const Eleitores = () => {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
+          <PermissionGuard permission="view_eleitores">
+            <ExportEleitoresDialog
+              searchTerm={searchTerm}
+              selectedBairro={selectedBairro}
+              selectedCidade={selectedCidade}
+              selectedTags={selectedTags}
+              selectedAssessor={selectedAssessor}
+            />
+          </PermissionGuard>
           <PermissionGuard permission="edit_eleitores">
             <GeocodeAllDialog onComplete={fetchEleitores} />
           </PermissionGuard>
