@@ -121,7 +121,8 @@ const Index = () => {
         .from('eleitores')
         .select('created_at', { count: 'exact' })
         .eq('gabinete_id', currentGabinete.gabinete_id)
-        .order('created_at', { ascending: true });
+        .order('created_at', { ascending: true })
+        .range(0, 99999);
       
       console.log('📊 Total de eleitores no DB:', totalEleitoresCount);
       console.log('📊 Eleitores retornados para o gráfico:', eleitores?.length);
