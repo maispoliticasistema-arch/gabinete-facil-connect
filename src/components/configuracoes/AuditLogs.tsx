@@ -38,18 +38,44 @@ export function AuditLogs({ gabineteId }: AuditLogsProps) {
 
   const fetchLogs = async () => {
     try {
-      const { data, error } = await supabase
+      // Buscar logs
+      const { data: logsData, error: logsError } = await supabase
         .from("audit_logs")
-        .select(`
-          *,
-          profiles:user_id (nome_completo)
-        `)
+        .select("*")
         .eq("gabinete_id", gabineteId)
         .order("created_at", { ascending: false })
         .limit(50);
 
-      if (error) throw error;
-      setLogs(data || []);
+      if (logsError) throw logsError;
+
+      if (!logsData || logsData.length === 0) {
+        setLogs([]);
+        return;
+      }
+
+      // Extrair user_ids únicos
+      const userIds = [...new Set(logsData.map(log => log.user_id).filter(Boolean))];
+
+      // Buscar profiles dos usuários
+      const { data: profilesData, error: profilesError } = await supabase
+        .from("profiles")
+        .select("id, nome_completo")
+        .in("id", userIds);
+
+      if (profilesError) throw profilesError;
+
+      // Criar um map de user_id para nome_completo
+      const profilesMap = new Map(
+        (profilesData || []).map(profile => [profile.id, profile.nome_completo])
+      );
+
+      // Fazer merge dos dados
+      const logsWithProfiles = logsData.map(log => ({
+        ...log,
+        user_nome: profilesMap.get(log.user_id) || "Sistema"
+      }));
+
+      setLogs(logsWithProfiles);
     } catch (error) {
       console.error("Erro ao buscar logs:", error);
     } finally {
@@ -111,7 +137,7 @@ export function AuditLogs({ gabineteId }: AuditLogsProps) {
                 <TableCell className="text-muted-foreground">
                   {format(new Date(log.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
                 </TableCell>
-                <TableCell>{log.profiles?.nome_completo || "Sistema"}</TableCell>
+                <TableCell>{log.user_nome || "Sistema"}</TableCell>
                 <TableCell>
                   <Badge variant="secondary">
                     {ACTION_LABELS[log.action] || log.action}
