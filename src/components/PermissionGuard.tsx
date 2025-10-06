@@ -10,7 +10,6 @@ type Permission =
   | 'delete_eleitores'
   | 'import_eleitores'
   | 'export_eleitores'
-  | 'manage_tags'
   | 'view_demandas'
   | 'create_demandas'
   | 'edit_demandas'
@@ -26,7 +25,8 @@ type Permission =
   | 'view_mapa'
   | 'view_relatorios'
   | 'manage_users'
-  | 'manage_settings';
+  | 'manage_settings'
+  | 'manage_tags';
 
 interface PermissionGuardProps {
   permission: Permission | Permission[];

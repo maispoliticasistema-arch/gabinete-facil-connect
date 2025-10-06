@@ -10,7 +10,6 @@ type Permission =
   | 'delete_eleitores'
   | 'import_eleitores'
   | 'export_eleitores'
-  | 'manage_tags'
   | 'view_demandas'
   | 'create_demandas'
   | 'edit_demandas'
@@ -26,7 +25,8 @@ type Permission =
   | 'view_mapa'
   | 'view_relatorios'
   | 'manage_users'
-  | 'manage_settings';
+  | 'manage_settings'
+  | 'manage_tags';
 
 export function usePermissions() {
   const { user } = useAuth();
@@ -60,7 +60,6 @@ export function usePermissions() {
             'delete_eleitores',
             'import_eleitores',
             'export_eleitores',
-            'manage_tags',
             'view_demandas',
             'create_demandas',
             'edit_demandas',
@@ -77,6 +76,7 @@ export function usePermissions() {
             'view_relatorios',
             'manage_users',
             'manage_settings',
+            'manage_tags',
           ];
           console.log('usePermissions: Definindo todas as permissões para admin/owner:', allPermissions.length, 'permissões');
           setPermissions(allPermissions);
