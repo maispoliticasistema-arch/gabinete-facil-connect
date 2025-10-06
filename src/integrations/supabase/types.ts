@@ -415,6 +415,39 @@ export type Database = {
           },
         ]
       }
+      form_submission_rate_limits: {
+        Row: {
+          attempts: number | null
+          blocked_until: string | null
+          created_at: string | null
+          first_attempt_at: string | null
+          form_id: string
+          id: string
+          ip_address: string
+          last_attempt_at: string | null
+        }
+        Insert: {
+          attempts?: number | null
+          blocked_until?: string | null
+          created_at?: string | null
+          first_attempt_at?: string | null
+          form_id: string
+          id?: string
+          ip_address: string
+          last_attempt_at?: string | null
+        }
+        Update: {
+          attempts?: number | null
+          blocked_until?: string | null
+          created_at?: string | null
+          first_attempt_at?: string | null
+          form_id?: string
+          id?: string
+          ip_address?: string
+          last_attempt_at?: string | null
+        }
+        Relationships: []
+      }
       gabinete_integrations: {
         Row: {
           config: Json | null
@@ -748,6 +781,47 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      registration_rate_limits: {
+        Row: {
+          attempts: number | null
+          blocked_until: string | null
+          created_at: string | null
+          first_attempt_at: string | null
+          gabinete_id: string
+          id: string
+          ip_address: string
+          last_attempt_at: string | null
+        }
+        Insert: {
+          attempts?: number | null
+          blocked_until?: string | null
+          created_at?: string | null
+          first_attempt_at?: string | null
+          gabinete_id: string
+          id?: string
+          ip_address: string
+          last_attempt_at?: string | null
+        }
+        Update: {
+          attempts?: number | null
+          blocked_until?: string | null
+          created_at?: string | null
+          first_attempt_at?: string | null
+          gabinete_id?: string
+          id?: string
+          ip_address?: string
+          last_attempt_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "registration_rate_limits_gabinete_id_fkey"
+            columns: ["gabinete_id"]
+            isOneToOne: false
+            referencedRelation: "gabinetes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       roteiro_pontos: {
         Row: {
@@ -1272,6 +1346,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
+      cleanup_old_rate_limits: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       create_notification: {
         Args: {
           _entity_id?: string
@@ -1338,6 +1416,14 @@ export type Database = {
         }
         Returns: undefined
       }
+      mask_cpf: {
+        Args: { cpf: string }
+        Returns: string
+      }
+      mask_rg: {
+        Args: { rg: string }
+        Returns: string
+      }
       unaccent: {
         Args: { "": string }
         Returns: string
@@ -1367,6 +1453,14 @@ export type Database = {
       }
       user_is_gabinete_owner: {
         Args: { _gabinete_id: string; _user_id?: string }
+        Returns: boolean
+      }
+      validate_public_registration: {
+        Args: {
+          _cadastrado_por: string
+          _gabinete_id: string
+          _ip_address?: string
+        }
         Returns: boolean
       }
     }
