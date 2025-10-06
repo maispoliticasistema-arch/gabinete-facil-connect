@@ -617,24 +617,33 @@ export function ExportEtiquetasForm({
                             height: `${a4AlturaMm * escala}px`,
                           }}
                         >
-                          {/* Renderizar etiquetas nas posições exatas */}
+                          {/* Renderizar etiquetas nas posições exatas centralizadas */}
                           {Array.from({ length: modelo.linhas }).map((_, linha) =>
                             Array.from({ length: modelo.colunas }).map((_, coluna) => {
                               const index = linha * modelo.colunas + coluna;
                               if (index >= modelo.etiquetasPorFolha) return null;
 
-                              const x = modelo.margemEsquerdaMm + coluna * (modelo.larguraMm + modelo.espacamentoHorizontalMm);
-                              const y = modelo.margemSuperiorMm + linha * (modelo.alturaMm + modelo.espacamentoVerticalMm);
+                              // Calcular largura total ocupada pelas etiquetas
+                              const larguraTotalEtiquetas = modelo.colunas * modelo.larguraMm + (modelo.colunas - 1) * modelo.espacamentoHorizontalMm;
+                              const alturaTotalEtiquetas = modelo.linhas * modelo.alturaMm + (modelo.linhas - 1) * modelo.espacamentoVerticalMm;
+                              
+                              // Centralizar
+                              const offsetX = (a4LarguraMm - larguraTotalEtiquetas) / 2;
+                              const offsetY = (a4AlturaMm - alturaTotalEtiquetas) / 2;
+
+                              const x = offsetX + coluna * (modelo.larguraMm + modelo.espacamentoHorizontalMm);
+                              const y = offsetY + linha * (modelo.alturaMm + modelo.espacamentoVerticalMm);
 
                               return (
                                 <div
                                   key={`${linha}-${coluna}`}
-                                  className="absolute border border-gray-300 bg-white rounded-sm"
+                                  className="absolute border border-gray-300 bg-white"
                                   style={{
                                     left: `${x * escala}px`,
                                     top: `${y * escala}px`,
                                     width: `${modelo.larguraMm * escala}px`,
                                     height: `${modelo.alturaMm * escala}px`,
+                                    borderRadius: '1px',
                                   }}
                                 />
                               );
