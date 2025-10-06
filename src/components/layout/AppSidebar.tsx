@@ -104,7 +104,7 @@ export function AppSidebar() {
             </div>
             <div>
               <h1 className="text-lg font-bold">Gabinete Fácil</h1>
-              {currentGabinete && (
+              {currentGabinete?.gabinetes?.nome && (
                 <p className="text-xs text-muted-foreground">
                   {currentGabinete.gabinetes.nome}
                 </p>
@@ -158,7 +158,7 @@ export function AppSidebar() {
                 variant="ghost" 
                 className="mb-2 w-full justify-between bg-sidebar-accent text-sidebar-accent-foreground hover:bg-sidebar-accent/80"
               >
-                <span className="truncate">{currentGabinete?.gabinetes.nome}</span>
+                <span className="truncate">{currentGabinete?.gabinetes?.nome || 'Selecione um gabinete'}</span>
                 <ChevronDown className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
@@ -171,7 +171,7 @@ export function AppSidebar() {
                   onClick={() => setCurrentGabinete(gab)}
                 >
                   <div className="flex flex-col">
-                    <span>{gab.gabinetes.nome}</span>
+                    <span>{gab.gabinetes?.nome || 'Sem nome'}</span>
                     <span className="text-xs text-muted-foreground">
                       {gab.role === 'owner' && 'Proprietário'}
                       {gab.role === 'admin' && 'Administrador'}
