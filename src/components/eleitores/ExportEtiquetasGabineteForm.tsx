@@ -375,23 +375,93 @@ export function ExportEtiquetasGabineteForm({ onClose }: ExportEtiquetasGabinete
         <CardHeader>
           <CardTitle className="text-lg">Modelo de Etiqueta</CardTitle>
           <CardDescription>
-            Escolha o formato da folha de etiquetas
+            Selecione o modelo compatível com sua folha de etiquetas
           </CardDescription>
         </CardHeader>
         <CardContent>
           <RadioGroup value={modelo} onValueChange={(value: any) => setModelo(value)}>
-            <div className="space-y-2">
-              {Object.entries(modelosEtiquetas).map(([id, modeloInfo]) => (
-                <div key={id} className="flex items-center space-x-2 p-3 border rounded-lg hover:bg-accent cursor-pointer">
-                  <RadioGroupItem value={id} id={`modelo-${id}`} />
-                  <Label htmlFor={`modelo-${id}`} className="cursor-pointer flex-1">
-                    <div className="font-medium">{modeloInfo.nome}</div>
-                    <div className="text-xs text-muted-foreground">
-                      {modeloInfo.larguraMm}mm × {modeloInfo.alturaMm}mm
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {Object.entries(modelosEtiquetas).map(([id, modeloInfo]) => {
+                // Escala reduzida para garantir que tudo caiba
+                const escala = 0.28;
+                const a4LarguraMm = 210;
+                const a4AlturaMm = 297;
+                
+                return (
+                  <div
+                    key={id}
+                    className={`relative rounded-lg overflow-hidden cursor-pointer transition-all border-2 ${
+                      modelo === id
+                        ? 'border-primary bg-primary/5'
+                        : 'border-border hover:border-primary/50 bg-background'
+                    }`}
+                    onClick={() => setModelo(id as keyof typeof modelosEtiquetas)}
+                  >
+                    <RadioGroupItem value={id} id={`modelo-${id}`} className="sr-only" />
+                    
+                    {/* Título do modelo */}
+                    <div className="p-3 border-b bg-muted/50">
+                      <Label htmlFor={`modelo-${id}`} className="font-medium text-sm cursor-pointer">
+                        {modeloInfo.nome}
+                      </Label>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        {modeloInfo.larguraMm}mm × {modeloInfo.alturaMm}mm
+                      </p>
                     </div>
-                  </Label>
-                </div>
-              ))}
+
+                    {/* Preview da folha A4 */}
+                    <div className="p-4 bg-gray-50 flex items-center justify-center">
+                      <div
+                        className="bg-white shadow-sm relative"
+                        style={{
+                          width: `${a4LarguraMm * escala}px`,
+                          height: `${a4AlturaMm * escala}px`,
+                        }}
+                      >
+                        {/* Renderizar etiquetas nas posições exatas centralizadas */}
+                        {Array.from({ length: modeloInfo.linhas }).map((_, linha) =>
+                          Array.from({ length: modeloInfo.colunas }).map((_, coluna) => {
+                            const index = linha * modeloInfo.colunas + coluna;
+                            if (index >= modeloInfo.etiquetasPorFolha) return null;
+
+                            // Calcular largura total ocupada pelas etiquetas
+                            const larguraTotalEtiquetas = modeloInfo.colunas * modeloInfo.larguraMm + (modeloInfo.colunas - 1) * modeloInfo.espacamentoHorizontalMm;
+                            const alturaTotalEtiquetas = modeloInfo.linhas * modeloInfo.alturaMm + (modeloInfo.linhas - 1) * modeloInfo.espacamentoVerticalMm;
+                            
+                            // Centralizar
+                            const offsetX = (a4LarguraMm - larguraTotalEtiquetas) / 2;
+                            const offsetY = (a4AlturaMm - alturaTotalEtiquetas) / 2;
+
+                            const x = offsetX + coluna * (modeloInfo.larguraMm + modeloInfo.espacamentoHorizontalMm);
+                            const y = offsetY + linha * (modeloInfo.alturaMm + modeloInfo.espacamentoVerticalMm);
+
+                            return (
+                              <div
+                                key={`${linha}-${coluna}`}
+                                className="absolute border border-gray-300 bg-white"
+                                style={{
+                                  left: `${x * escala}px`,
+                                  top: `${y * escala}px`,
+                                  width: `${modeloInfo.larguraMm * escala}px`,
+                                  height: `${modeloInfo.alturaMm * escala}px`,
+                                  borderRadius: '1px',
+                                }}
+                              />
+                            );
+                          })
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Info adicional */}
+                    <div className="p-2 bg-muted/30 text-center">
+                      <p className="text-xs text-muted-foreground">
+                        {modeloInfo.etiquetasPorFolha} etiquetas/folha
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </RadioGroup>
         </CardContent>
