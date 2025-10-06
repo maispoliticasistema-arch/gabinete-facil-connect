@@ -55,6 +55,13 @@ export function OverviewSection() {
         const dbSizeBytes = metricsData?.databaseSizeBytes || 0;
         const dbSizeGB = (dbSizeBytes / (1024 ** 3)).toFixed(2);
 
+        console.log('📊 Stats do Sistema:', {
+          totalGabinetes: gabinetes,
+          usuariosAtivos: usuarios,
+          demandasHoje: demandas,
+          errosNaoResolvidos: erros
+        });
+
         setStats({
           totalGabinetes: gabinetes || 0,
           usuariosAtivos: usuarios || 0,

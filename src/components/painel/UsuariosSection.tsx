@@ -26,40 +26,52 @@ export function UsuariosSection() {
   useEffect(() => {
     async function loadUsuarios() {
       try {
-        // Buscar todos os profiles
+        // Buscar TODOS os usuários do sistema (usando service role implicitamente via RLS)
         const { data: profiles, error: profilesError } = await supabase
           .from('profiles')
           .select('*')
           .order('created_at', { ascending: false });
 
-        if (profilesError) throw profilesError;
+        if (profilesError) {
+          console.error('Erro ao buscar profiles:', profilesError);
+          throw profilesError;
+        }
 
-        // Para cada profile, buscar seus gabinetes
-        const usuariosCompletos = await Promise.all(
-          (profiles || []).map(async (profile) => {
-            const { data: userGabs } = await supabase
-              .from('user_gabinetes')
-              .select(`
-                role,
-                ativo,
-                gabinetes (nome)
-              `)
-              .eq('user_id', profile.id);
+        // Buscar TODOS os gabinetes de uma vez
+        const { data: allUserGabinetes, error: gabError } = await supabase
+          .from('user_gabinetes')
+          .select(`
+            user_id,
+            role,
+            ativo,
+            gabinetes (nome)
+          `);
 
-            return {
-              id: profile.id,
-              nome_completo: profile.nome_completo,
-              email: profile.id, // Vamos mostrar o ID como referência
-              telefone: profile.telefone,
-              created_at: profile.created_at,
-              gabinetes: (userGabs || []).map((ug: any) => ({
-                nome: ug.gabinetes?.nome || 'Desconhecido',
-                role: ug.role,
-                ativo: ug.ativo
-              }))
-            };
-          })
-        );
+        if (gabError) {
+          console.error('Erro ao buscar user_gabinetes:', gabError);
+        }
+
+        // Mapear gabinetes por user_id
+        const gabinetesPorUsuario = (allUserGabinetes || []).reduce((acc: any, ug: any) => {
+          if (!acc[ug.user_id]) {
+            acc[ug.user_id] = [];
+          }
+          acc[ug.user_id].push({
+            nome: ug.gabinetes?.nome || 'Desconhecido',
+            role: ug.role,
+            ativo: ug.ativo
+          });
+          return acc;
+        }, {});
+
+        const usuariosCompletos = profiles.map((profile) => ({
+          id: profile.id,
+          nome_completo: profile.nome_completo,
+          email: profile.id,
+          telefone: profile.telefone,
+          created_at: profile.created_at,
+          gabinetes: gabinetesPorUsuario[profile.id] || []
+        }));
 
         console.log(`📊 Total de usuários carregados: ${usuariosCompletos.length}`);
         setUsuarios(usuariosCompletos);

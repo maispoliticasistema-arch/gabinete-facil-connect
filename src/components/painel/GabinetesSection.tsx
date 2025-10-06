@@ -25,6 +25,7 @@ export function GabinetesSection() {
   useEffect(() => {
     async function loadGabinetes() {
       try {
+        // Buscar TODOS os gabinetes do sistema
         const { data: gabinetesData, error } = await supabase
           .from('gabinetes')
           .select('*')
@@ -32,34 +33,36 @@ export function GabinetesSection() {
 
         if (error) throw error;
 
-        // Para cada gabinete, buscar contagens
-        const gabinetesComContagens = await Promise.all(
-          (gabinetesData || []).map(async (gab) => {
-            const [usuarios, eleitores, demandas] = await Promise.all([
-              supabase
-                .from('user_gabinetes')
-                .select('*', { count: 'exact', head: true })
-                .eq('gabinete_id', gab.id)
-                .eq('ativo', true),
-              supabase
-                .from('eleitores')
-                .select('*', { count: 'exact', head: true })
-                .eq('gabinete_id', gab.id),
-              supabase
-                .from('demandas')
-                .select('*', { count: 'exact', head: true })
-                .eq('gabinete_id', gab.id)
-            ]);
+        console.log(`📊 Total de gabinetes no sistema: ${gabinetesData?.length || 0}`);
 
-            return {
-              ...gab,
-              usuariosCount: usuarios.count || 0,
-              eleitoresCount: eleitores.count || 0,
-              demandasCount: demandas.count || 0
-            };
-          })
-        );
+        // Buscar todas as contagens de uma vez para otimizar
+        const gabineteIds = gabinetesData?.map(g => g.id) || [];
+        
+        const [usuariosData, eleitoresData, demandasData] = await Promise.all([
+          supabase.from('user_gabinetes').select('gabinete_id').eq('ativo', true).in('gabinete_id', gabineteIds),
+          supabase.from('eleitores').select('gabinete_id').in('gabinete_id', gabineteIds),
+          supabase.from('demandas').select('gabinete_id').in('gabinete_id', gabineteIds)
+        ]);
 
+        // Contar por gabinete_id
+        const countByGabinete = (data: any[]) => 
+          data.reduce((acc, item) => {
+            acc[item.gabinete_id] = (acc[item.gabinete_id] || 0) + 1;
+            return acc;
+          }, {} as Record<string, number>);
+
+        const usuariosCounts = countByGabinete(usuariosData.data || []);
+        const eleitoresCounts = countByGabinete(eleitoresData.data || []);
+        const demandasCounts = countByGabinete(demandasData.data || []);
+
+        const gabinetesComContagens = gabinetesData.map(gab => ({
+          ...gab,
+          usuariosCount: usuariosCounts[gab.id] || 0,
+          eleitoresCount: eleitoresCounts[gab.id] || 0,
+          demandasCount: demandasCounts[gab.id] || 0
+        }));
+
+        console.log('📊 Gabinetes processados:', gabinetesComContagens.length);
         setGabinetes(gabinetesComContagens);
       } catch (error) {
         console.error('Erro ao carregar gabinetes:', error);
