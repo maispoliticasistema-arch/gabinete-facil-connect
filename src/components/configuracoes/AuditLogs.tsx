@@ -54,6 +54,8 @@ export function AuditLogs({ gabineteId }: AuditLogsProps) {
   const [loading, setLoading] = useState(true);
   const [selectedLog, setSelectedLog] = useState<any>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [entityData, setEntityData] = useState<any>(null);
+  const [loadingEntity, setLoadingEntity] = useState(false);
 
   const fetchLogs = async () => {
     try {
@@ -132,9 +134,87 @@ export function AuditLogs({ gabineteId }: AuditLogsProps) {
     return <div className="text-center py-8 text-muted-foreground">Carregando...</div>;
   }
 
-  const handleLogClick = (log: any) => {
+  const fetchEntityData = async (log: any) => {
+    if (!log.entity_id || !log.entity_type) {
+      setEntityData(null);
+      return;
+    }
+
+    setLoadingEntity(true);
+    try {
+      let data = null;
+      
+      switch (log.entity_type) {
+        case 'eleitor':
+          const { data: eleitor } = await supabase
+            .from('eleitores')
+            .select('*')
+            .eq('id', log.entity_id)
+            .maybeSingle();
+          data = eleitor;
+          break;
+          
+        case 'demanda':
+          const { data: demanda } = await supabase
+            .from('demandas')
+            .select('*, eleitores(nome_completo)')
+            .eq('id', log.entity_id)
+            .maybeSingle();
+          data = demanda;
+          break;
+          
+        case 'agenda':
+          const { data: agenda } = await supabase
+            .from('agenda')
+            .select('*')
+            .eq('id', log.entity_id)
+            .maybeSingle();
+          data = agenda;
+          break;
+          
+        case 'roteiro':
+          const { data: roteiro } = await supabase
+            .from('roteiros')
+            .select('*')
+            .eq('id', log.entity_id)
+            .maybeSingle();
+          data = roteiro;
+          break;
+          
+        case 'tag':
+          const { data: tag } = await supabase
+            .from('tags')
+            .select('*')
+            .eq('id', log.entity_id)
+            .maybeSingle();
+          data = tag;
+          break;
+      }
+      
+      setEntityData(data);
+    } catch (error) {
+      console.error('Erro ao buscar dados da entidade:', error);
+      setEntityData(null);
+    } finally {
+      setLoadingEntity(false);
+    }
+  };
+
+  const handleLogClick = async (log: any) => {
     setSelectedLog(log);
     setSheetOpen(true);
+    setEntityData(null);
+    await fetchEntityData(log);
+  };
+
+  const formatValue = (value: any): string => {
+    if (value === null || value === undefined) return 'N/A';
+    if (typeof value === 'boolean') return value ? 'Sim' : 'Não';
+    if (typeof value === 'object') {
+      if (value.nome_completo) return value.nome_completo;
+      return JSON.stringify(value, null, 2);
+    }
+    return String(value);
   };
 
   return (
@@ -221,7 +301,7 @@ export function AuditLogs({ gabineteId }: AuditLogsProps) {
 
               {selectedLog.details && Object.keys(selectedLog.details).length > 0 && (
                 <div>
-                  <h3 className="font-semibold text-sm text-muted-foreground mb-2">Detalhes</h3>
+                  <h3 className="font-semibold text-sm text-muted-foreground mb-2">Informações da Ação</h3>
                   <div className="space-y-2 bg-muted p-3 rounded-lg">
                     {Object.entries(selectedLog.details).map(([key, value]: [string, any]) => (
                       <div key={key} className="flex flex-col gap-1">
@@ -229,11 +309,45 @@ export function AuditLogs({ gabineteId }: AuditLogsProps) {
                           {key}
                         </span>
                         <span className="text-sm">
-                          {typeof value === 'object' ? JSON.stringify(value, null, 2) : String(value)}
+                          {formatValue(value)}
                         </span>
                       </div>
                     ))}
                   </div>
+                </div>
+              )}
+
+              {loadingEntity && (
+                <div className="text-center py-4 text-muted-foreground">
+                  Carregando dados completos...
+                </div>
+              )}
+
+              {!loadingEntity && entityData && (
+                <div>
+                  <h3 className="font-semibold text-sm text-muted-foreground mb-2">
+                    Dados Completos da Entidade
+                  </h3>
+                  <div className="space-y-2 bg-muted p-3 rounded-lg max-h-96 overflow-y-auto">
+                    {Object.entries(entityData)
+                      .filter(([key]) => !['id', 'gabinete_id', 'created_at', 'updated_at'].includes(key))
+                      .map(([key, value]: [string, any]) => (
+                        <div key={key} className="flex flex-col gap-1 pb-2 border-b border-border last:border-0">
+                          <span className="text-xs font-semibold uppercase text-muted-foreground">
+                            {key.replace(/_/g, ' ')}
+                          </span>
+                          <span className="text-sm break-words">
+                            {formatValue(value)}
+                          </span>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              )}
+
+              {!loadingEntity && !entityData && selectedLog.entity_id && (
+                <div className="bg-muted p-3 rounded-lg text-sm text-muted-foreground">
+                  Entidade não encontrada (pode ter sido excluída)
                 </div>
               )}
 
