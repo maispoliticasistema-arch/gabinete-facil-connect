@@ -33,6 +33,8 @@ const ConstrutorDeSites = () => {
   const [gabineteSlug, setGabineteSlug] = useState('');
   const [editingSlug, setEditingSlug] = useState(false);
   const [tempSlug, setTempSlug] = useState('');
+  const [slugAvailable, setSlugAvailable] = useState<boolean | null>(null);
+  const [checkingSlug, setCheckingSlug] = useState(false);
   
   const [formData, setFormData] = useState({
     titulo: '',
@@ -255,8 +257,58 @@ const ConstrutorDeSites = () => {
     }
   };
 
+  const checkSlugAvailability = async (slug: string) => {
+    if (!currentGabinete || !slug.trim()) {
+      setSlugAvailable(null);
+      return;
+    }
+
+    const cleanedSlug = slug.toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+    
+    if (!cleanedSlug) {
+      setSlugAvailable(null);
+      return;
+    }
+
+    // Se for o mesmo slug atual, não precisa verificar
+    if (cleanedSlug === gabineteSlug) {
+      setSlugAvailable(true);
+      return;
+    }
+
+    setCheckingSlug(true);
+    try {
+      const { data: existingGabinete } = await supabase
+        .from('portal_gabinete')
+        .select('gabinete_id')
+        .eq('slug', cleanedSlug)
+        .neq('gabinete_id', currentGabinete.gabinetes.id)
+        .maybeSingle();
+
+      setSlugAvailable(!existingGabinete);
+    } catch (error) {
+      console.error('Erro ao verificar slug:', error);
+      setSlugAvailable(null);
+    } finally {
+      setCheckingSlug(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!editingSlug) {
+      setSlugAvailable(null);
+      return;
+    }
+
+    const timeoutId = setTimeout(() => {
+      checkSlugAvailability(tempSlug);
+    }, 500);
+
+    return () => clearTimeout(timeoutId);
+  }, [tempSlug, editingSlug]);
+
   const handleUpdateSlug = async () => {
-    if (!currentGabinete || !tempSlug.trim()) return;
+    if (!currentGabinete || !tempSlug.trim() || !slugAvailable) return;
 
     const cleanedSlug = tempSlug.toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
     
@@ -275,23 +327,6 @@ const ConstrutorDeSites = () => {
     }
 
     try {
-      // Verificar se o slug já existe em outro gabinete
-      const { data: existingGabinete } = await supabase
-        .from('portal_gabinete')
-        .select('gabinete_id')
-        .eq('slug', cleanedSlug)
-        .neq('gabinete_id', currentGabinete.gabinetes.id)
-        .maybeSingle();
-
-      if (existingGabinete) {
-        toast({
-          title: 'Slug já está em uso',
-          description: 'Este slug já está sendo usado por outro gabinete.',
-          variant: 'destructive',
-        });
-        return;
-      }
-
       // Atualizar todos os sites deste gabinete com o novo slug
       const { error } = await supabase
         .from('portal_gabinete')
@@ -302,6 +337,7 @@ const ConstrutorDeSites = () => {
 
       setGabineteSlug(cleanedSlug);
       setEditingSlug(false);
+      setSlugAvailable(null);
 
       toast({
         title: 'Slug atualizado!',
@@ -397,18 +433,52 @@ const ConstrutorDeSites = () => {
                   <div className="flex-1">
                     <div className="flex gap-2 items-center">
                       <span className="text-sm text-muted-foreground">/</span>
-                      <Input
-                        value={tempSlug}
-                        onChange={(e) => setTempSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-'))}
-                        placeholder="slug-do-gabinete"
-                        className="flex-1"
-                      />
+                      <div className="flex-1 relative">
+                        <Input
+                          value={tempSlug}
+                          onChange={(e) => {
+                            setTempSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-'));
+                            setSlugAvailable(null);
+                          }}
+                          placeholder="slug-do-gabinete"
+                          className={
+                            tempSlug && tempSlug !== gabineteSlug
+                              ? slugAvailable === true
+                                ? 'pr-10 border-green-500 focus-visible:ring-green-500'
+                                : slugAvailable === false
+                                ? 'pr-10 border-red-500 focus-visible:ring-red-500'
+                                : 'pr-10'
+                              : ''
+                          }
+                        />
+                        {checkingSlug && tempSlug && (
+                          <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
+                        )}
+                        {!checkingSlug && tempSlug && tempSlug !== gabineteSlug && slugAvailable === true && (
+                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-green-600">✓</span>
+                        )}
+                        {!checkingSlug && tempSlug && tempSlug !== gabineteSlug && slugAvailable === false && (
+                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-red-600">✗</span>
+                        )}
+                      </div>
                     </div>
+                    {!checkingSlug && tempSlug && tempSlug !== gabineteSlug && (
+                      <p className={`text-xs mt-1 ${slugAvailable ? 'text-green-600' : 'text-red-600'}`}>
+                        {slugAvailable ? '✓ Slug disponível' : '✗ Este slug já está em uso'}
+                      </p>
+                    )}
                   </div>
-                  <Button variant="outline" size="sm" onClick={() => setEditingSlug(false)}>
+                  <Button variant="outline" size="sm" onClick={() => {
+                    setEditingSlug(false);
+                    setSlugAvailable(null);
+                  }}>
                     Cancelar
                   </Button>
-                  <Button size="sm" onClick={handleUpdateSlug}>
+                  <Button 
+                    size="sm" 
+                    onClick={handleUpdateSlug}
+                    disabled={!slugAvailable || checkingSlug || !tempSlug.trim() || tempSlug === gabineteSlug}
+                  >
                     Salvar
                   </Button>
                 </div>
