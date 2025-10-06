@@ -108,7 +108,8 @@ export function ExportDadosForm({
       const { data: eleitoresComTags } = await supabase
         .from('eleitor_tags')
         .select('eleitor_id')
-        .in('tag_id', selectedTags);
+        .in('tag_id', selectedTags)
+        .range(0, 999999);
 
       if (eleitoresComTags && eleitoresComTags.length > 0) {
         const eleitoresIds = eleitoresComTags.map((et) => et.eleitor_id);
@@ -122,7 +123,10 @@ export function ExportDadosForm({
       query = query.eq('cadastrado_por', selectedAssessor);
     }
 
-    const { data, error } = await query.order('nome_completo', { ascending: true });
+    // Buscar TODOS os registros sem limite
+    const { data, error } = await query
+      .order('nome_completo', { ascending: true })
+      .range(0, 999999);
 
     if (error) throw error;
     return (data || []) as Eleitor[];

@@ -202,19 +202,20 @@ export function ExportEtiquetasForm({
       query = query.eq('cidade', selectedCidade);
     }
 
-    if (selectedTags.length > 0) {
-      const { data: eleitoresComTags } = await supabase
-        .from('eleitor_tags')
-        .select('eleitor_id')
-        .in('tag_id', selectedTags);
+      if (selectedTags.length > 0) {
+        const { data: eleitoresComTags } = await supabase
+          .from('eleitor_tags')
+          .select('eleitor_id')
+          .in('tag_id', selectedTags)
+          .range(0, 999999);
 
-      if (eleitoresComTags && eleitoresComTags.length > 0) {
-        const eleitoresIds = eleitoresComTags.map((et) => et.eleitor_id);
-        query = query.in('id', eleitoresIds);
-      } else {
-        return [];
+        if (eleitoresComTags && eleitoresComTags.length > 0) {
+          const eleitoresIds = eleitoresComTags.map((et) => et.eleitor_id);
+          query = query.in('id', eleitoresIds);
+        } else {
+          return [];
+        }
       }
-    }
 
     if (selectedAssessor) {
       query = query.eq('cadastrado_por', selectedAssessor);
@@ -229,7 +230,8 @@ export function ExportEtiquetasForm({
     };
     query = query.order(orderMap[ordenarPor], { ascending: true });
 
-    const { data, error } = await query;
+    // Buscar TODOS os registros sem limite
+    const { data, error } = await query.range(0, 999999);
 
     if (error) throw error;
 
