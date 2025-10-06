@@ -1,10 +1,17 @@
 import { useState, useEffect } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { Search, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { useGabinete } from "@/contexts/GabineteContext";
 
 interface AuditLogsProps {
   gabineteId: string;
@@ -50,27 +57,103 @@ const ENTITY_LABELS: Record<string, string> = {
 };
 
 export function AuditLogs({ gabineteId }: AuditLogsProps) {
+  const { toast } = useToast();
+  const { currentGabinete } = useGabinete();
+  
   const [logs, setLogs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedLog, setSelectedLog] = useState<any>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [entityData, setEntityData] = useState<any>(null);
   const [loadingEntity, setLoadingEntity] = useState(false);
+  
+  // Filtros e paginação
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterAction, setFilterAction] = useState<string>("all");
+  const [filterEntity, setFilterEntity] = useState<string>("all");
+  const [filterUser, setFilterUser] = useState<string>("all");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const [users, setUsers] = useState<any[]>([]);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState("");
+  const [deletingLogs, setDeletingLogs] = useState(false);
+  
+  const itemsPerPage = 20;
+
+  const fetchUsers = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("user_gabinetes")
+        .select("user_id, profiles(id, nome_completo)")
+        .eq("gabinete_id", gabineteId)
+        .eq("ativo", true);
+      
+      if (error) throw error;
+      
+      const uniqueUsers = data?.map(ug => ({
+        id: ug.user_id,
+        nome_completo: (ug.profiles as any)?.nome_completo
+      })).filter((user, index, self) => 
+        index === self.findIndex(u => u.id === user.id)
+      ) || [];
+      
+      setUsers(uniqueUsers);
+    } catch (error) {
+      console.error("Erro ao buscar usuários:", error);
+    }
+  };
 
   const fetchLogs = async () => {
     try {
-      // Buscar logs
-      const { data: logsData, error: logsError } = await supabase
+      setLoading(true);
+      
+      // Construir query com filtros
+      let query = supabase
         .from("audit_logs")
-        .select("*")
-        .eq("gabinete_id", gabineteId)
+        .select("*", { count: 'exact' })
+        .eq("gabinete_id", gabineteId);
+      
+      // Aplicar filtros
+      if (filterAction !== "all") {
+        query = query.eq("action", filterAction as any);
+      }
+      
+      if (filterEntity !== "all") {
+        query = query.eq("entity_type", filterEntity as any);
+      }
+      
+      if (filterUser !== "all") {
+        query = query.eq("user_id", filterUser);
+      }
+      
+      if (startDate) {
+        query = query.gte("created_at", new Date(startDate).toISOString());
+      }
+      
+      if (endDate) {
+        const endDateTime = new Date(endDate);
+        endDateTime.setHours(23, 59, 59, 999);
+        query = query.lte("created_at", endDateTime.toISOString());
+      }
+      
+      // Buscar com paginação
+      const from = (currentPage - 1) * itemsPerPage;
+      const to = from + itemsPerPage - 1;
+      
+      const { data: logsData, error: logsError, count } = await query
         .order("created_at", { ascending: false })
-        .limit(50);
+        .range(from, to);
 
       if (logsError) throw logsError;
+      
+      setTotalCount(count || 0);
 
       if (!logsData || logsData.length === 0) {
         setLogs([]);
+        setLoading(false);
         return;
       }
 
@@ -90,11 +173,22 @@ export function AuditLogs({ gabineteId }: AuditLogsProps) {
         (profilesData || []).map(profile => [profile.id, profile.nome_completo])
       );
 
-      // Fazer merge dos dados
-      const logsWithProfiles = logsData.map(log => ({
+      // Fazer merge e aplicar busca no frontend
+      let logsWithProfiles = logsData.map(log => ({
         ...log,
         user_nome: profilesMap.get(log.user_id) || "Sistema"
       }));
+      
+      // Aplicar busca por texto
+      if (searchTerm) {
+        const search = searchTerm.toLowerCase();
+        logsWithProfiles = logsWithProfiles.filter(log => 
+          log.user_nome.toLowerCase().includes(search) ||
+          (log.action && ACTION_LABELS[log.action]?.toLowerCase().includes(search)) ||
+          (log.entity_type && ENTITY_LABELS[log.entity_type]?.toLowerCase().includes(search)) ||
+          (log.details && JSON.stringify(log.details).toLowerCase().includes(search))
+        );
+      }
 
       setLogs(logsWithProfiles);
     } catch (error) {
@@ -103,6 +197,14 @@ export function AuditLogs({ gabineteId }: AuditLogsProps) {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchUsers();
+  }, [gabineteId]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filterAction, filterEntity, filterUser, startDate, endDate, searchTerm]);
 
   useEffect(() => {
     fetchLogs();
@@ -128,7 +230,7 @@ export function AuditLogs({ gabineteId }: AuditLogsProps) {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [gabineteId]);
+  }, [gabineteId, filterAction, filterEntity, filterUser, startDate, endDate, searchTerm, currentPage]);
 
   if (loading) {
     return <div className="text-center py-8 text-muted-foreground">Carregando...</div>;
@@ -220,8 +322,166 @@ export function AuditLogs({ gabineteId }: AuditLogsProps) {
     return String(value);
   };
 
+  const handleDeleteLogs = async () => {
+    if (deleteConfirmText !== "excluir") {
+      toast({
+        title: "Confirmação incorreta",
+        description: 'Você deve digitar "excluir" para confirmar',
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setDeletingLogs(true);
+    try {
+      // 1. Buscar TODOS os logs de delete do gabinete (sem limite)
+      const { data: deleteLogs, error: fetchError } = await supabase
+        .from("audit_logs")
+        .select("entity_type, entity_id")
+        .eq("gabinete_id", gabineteId)
+        .eq("action", "delete")
+        .not("entity_id", "is", null);
+
+      if (fetchError) throw fetchError;
+
+      // 2. Hard delete das entidades soft-deleted
+      if (deleteLogs && deleteLogs.length > 0) {
+        for (const log of deleteLogs) {
+          if (!log.entity_id || !log.entity_type) continue;
+          
+          let tableName = '';
+          switch (log.entity_type) {
+            case 'eleitor': tableName = 'eleitores'; break;
+            case 'demanda': tableName = 'demandas'; break;
+            case 'agenda': tableName = 'agenda'; break;
+            case 'roteiro': tableName = 'roteiros'; break;
+            case 'tag': tableName = 'tags'; break;
+            default: continue;
+          }
+
+          // Fazer hard delete se tiver deleted_at
+          await supabase
+            .from(tableName as any)
+            .delete()
+            .eq('id', log.entity_id)
+            .not('deleted_at', 'is', null);
+        }
+      }
+
+      // 3. Deletar todos os logs de auditoria
+      const { error: deleteLogsError } = await supabase
+        .from("audit_logs")
+        .delete()
+        .eq("gabinete_id", gabineteId);
+
+      if (deleteLogsError) throw deleteLogsError;
+
+      toast({
+        title: "Logs excluídos",
+        description: "Todos os logs e dados excluídos foram removidos permanentemente"
+      });
+
+      setDeleteDialogOpen(false);
+      setDeleteConfirmText("");
+      fetchLogs();
+    } catch (error: any) {
+      console.error("Erro ao excluir logs:", error);
+      toast({
+        title: "Erro ao excluir logs",
+        description: error.message,
+        variant: "destructive"
+      });
+    } finally {
+      setDeletingLogs(false);
+    }
+  };
+
+  const totalPages = Math.ceil(totalCount / itemsPerPage);
+
   return (
     <>
+      {/* Filtros e Busca */}
+      <div className="space-y-4 mb-4">
+        <div className="flex items-center gap-2">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Buscar nos logs..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-9"
+            />
+          </div>
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={() => setDeleteDialogOpen(true)}
+          >
+            <Trash2 className="h-4 w-4 mr-2" />
+            Excluir Logs
+          </Button>
+        </div>
+
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+          <Select value={filterAction} onValueChange={setFilterAction}>
+            <SelectTrigger>
+              <SelectValue placeholder="Ação" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todas as ações</SelectItem>
+              <SelectItem value="create">Criação</SelectItem>
+              <SelectItem value="update">Atualização</SelectItem>
+              <SelectItem value="delete">Exclusão</SelectItem>
+              <SelectItem value="login">Login</SelectItem>
+              <SelectItem value="logout">Logout</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Select value={filterEntity} onValueChange={setFilterEntity}>
+            <SelectTrigger>
+              <SelectValue placeholder="Entidade" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todas as entidades</SelectItem>
+              <SelectItem value="eleitor">Eleitor</SelectItem>
+              <SelectItem value="demanda">Demanda</SelectItem>
+              <SelectItem value="agenda">Agenda</SelectItem>
+              <SelectItem value="roteiro">Roteiro</SelectItem>
+              <SelectItem value="tag">Tag</SelectItem>
+              <SelectItem value="user">Usuário</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Select value={filterUser} onValueChange={setFilterUser}>
+            <SelectTrigger>
+              <SelectValue placeholder="Usuário" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos os usuários</SelectItem>
+              {users.map(user => (
+                <SelectItem key={user.id} value={user.id}>
+                  {user.nome_completo}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Input
+            type="date"
+            value={startDate}
+            onChange={(e) => setStartDate(e.target.value)}
+            placeholder="Data inicial"
+          />
+
+          <Input
+            type="date"
+            value={endDate}
+            onChange={(e) => setEndDate(e.target.value)}
+            placeholder="Data final"
+          />
+        </div>
+      </div>
+
       <div className="border rounded-lg">
         <Table>
           <TableHeader>
@@ -264,6 +524,75 @@ export function AuditLogs({ gabineteId }: AuditLogsProps) {
           </TableBody>
         </Table>
       </div>
+
+      {/* Paginação */}
+      {totalCount > itemsPerPage && (
+        <div className="flex items-center justify-between mt-4">
+          <div className="text-sm text-muted-foreground">
+            Mostrando {((currentPage - 1) * itemsPerPage) + 1} a {Math.min(currentPage * itemsPerPage, totalCount)} de {totalCount} logs
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+              disabled={currentPage === 1 || loading}
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <span className="text-sm">
+              Página {currentPage} de {totalPages}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages || loading}
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de confirmação de exclusão */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir Logs Permanentemente</AlertDialogTitle>
+            <AlertDialogDescription className="space-y-3">
+              <p>
+                Esta ação irá excluir <strong>permanentemente</strong> todos os logs de auditoria
+                e todos os dados que foram marcados como excluídos (eleitores, demandas, etc).
+              </p>
+              <p className="text-destructive font-semibold">
+                ⚠️ Esta ação não pode ser desfeita!
+              </p>
+              <p>
+                Para confirmar, digite <strong>"excluir"</strong> no campo abaixo:
+              </p>
+              <Input
+                value={deleteConfirmText}
+                onChange={(e) => setDeleteConfirmText(e.target.value)}
+                placeholder="Digite 'excluir' para confirmar"
+                className="mt-2"
+              />
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setDeleteConfirmText("")}>
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteLogs}
+              disabled={deleteConfirmText !== "excluir" || deletingLogs}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deletingLogs ? "Excluindo..." : "Excluir Permanentemente"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
         <SheetContent className="overflow-y-auto">
