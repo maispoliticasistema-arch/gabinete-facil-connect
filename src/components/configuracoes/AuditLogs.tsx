@@ -144,6 +144,9 @@ export function AuditLogs({ gabineteId }: AuditLogsProps) {
     try {
       let data = null;
       
+      // Para registros deletados, precisamos buscar incluindo os soft-deleted
+      // As policies especiais "Auditoria pode ver X deletadas" permitem isso
+      
       switch (log.entity_type) {
         case 'eleitor':
           const { data: eleitor } = await supabase
