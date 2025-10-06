@@ -11,6 +11,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ExportEtiquetasForm } from './ExportEtiquetasForm';
+import { ExportDadosForm } from './ExportDadosForm';
 
 interface ExportEleitoresDialogProps {
   searchTerm: string;
@@ -45,11 +46,23 @@ export function ExportEleitoresDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <Tabs defaultValue="etiquetas" className="w-full">
-          <TabsList className="grid w-full grid-cols-1">
+        <Tabs defaultValue="dados" className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="dados">Dados dos Eleitores</TabsTrigger>
             <TabsTrigger value="etiquetas">Etiquetas de Correspondência</TabsTrigger>
           </TabsList>
           
+          <TabsContent value="dados" className="space-y-4 mt-4">
+            <ExportDadosForm
+              searchTerm={searchTerm}
+              selectedBairro={selectedBairro}
+              selectedCidade={selectedCidade}
+              selectedTags={selectedTags}
+              selectedAssessor={selectedAssessor}
+              onClose={() => setOpen(false)}
+            />
+          </TabsContent>
+
           <TabsContent value="etiquetas" className="space-y-4 mt-4">
             <ExportEtiquetasForm
               searchTerm={searchTerm}
