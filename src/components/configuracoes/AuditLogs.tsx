@@ -336,21 +336,43 @@ export function AuditLogs({ gabineteId }: AuditLogsProps) {
 
     setDeletingLogs(true);
     try {
-      // 1. Buscar TODOS os logs de delete do gabinete (sem limite)
-      const { data: deleteLogs, error: fetchError } = await supabase
+      // 1. Buscar TODOS os logs do gabinete para arquivar
+      const { data: allLogs, error: fetchError } = await supabase
         .from("audit_logs")
-        .select("entity_type, entity_id")
-        .eq("gabinete_id", gabineteId)
-        .eq("action", "delete")
-        .not("entity_id", "is", null);
+        .select("*")
+        .eq("gabinete_id", gabineteId);
 
       if (fetchError) throw fetchError;
 
-      // 2. Hard delete das entidades soft-deleted
-      if (deleteLogs && deleteLogs.length > 0) {
+      // 2. Mover logs para a tabela de arquivamento
+      if (allLogs && allLogs.length > 0) {
+        const archivedLogs = allLogs.map(log => ({
+          original_log_id: log.id,
+          gabinete_id: log.gabinete_id,
+          user_id: log.user_id,
+          action: log.action,
+          entity_type: log.entity_type,
+          entity_id: log.entity_id,
+          details: log.details,
+          ip_address: log.ip_address,
+          user_agent: log.user_agent,
+          original_created_at: log.created_at
+        }));
+
+        const { error: archiveError } = await supabase
+          .from("archived_audit_logs")
+          .insert(archivedLogs);
+
+        if (archiveError) throw archiveError;
+      }
+
+      // 3. Hard delete das entidades soft-deleted
+      const deleteLogs = allLogs?.filter(log => 
+        log.action === 'delete' && log.entity_id && log.entity_type
+      ) || [];
+
+      if (deleteLogs.length > 0) {
         for (const log of deleteLogs) {
-          if (!log.entity_id || !log.entity_type) continue;
-          
           let tableName = '';
           switch (log.entity_type) {
             case 'eleitor': tableName = 'eleitores'; break;
@@ -370,7 +392,7 @@ export function AuditLogs({ gabineteId }: AuditLogsProps) {
         }
       }
 
-      // 3. Deletar todos os logs de auditoria
+      // 4. Remover logs da tabela principal
       const { error: deleteLogsError } = await supabase
         .from("audit_logs")
         .delete()
@@ -379,17 +401,17 @@ export function AuditLogs({ gabineteId }: AuditLogsProps) {
       if (deleteLogsError) throw deleteLogsError;
 
       toast({
-        title: "Logs excluídos",
-        description: "Todos os logs e dados excluídos foram removidos permanentemente"
+        title: "Logs arquivados",
+        description: "Todos os logs foram movidos para o arquivo com sucesso"
       });
 
       setDeleteDialogOpen(false);
       setDeleteConfirmText("");
       fetchLogs();
     } catch (error: any) {
-      console.error("Erro ao excluir logs:", error);
+      console.error("Erro ao arquivar logs:", error);
       toast({
-        title: "Erro ao excluir logs",
+        title: "Erro ao arquivar logs",
         description: error.message,
         variant: "destructive"
       });
@@ -630,14 +652,15 @@ export function AuditLogs({ gabineteId }: AuditLogsProps) {
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Excluir Logs Permanentemente</AlertDialogTitle>
+            <AlertDialogTitle>Arquivar Logs de Auditoria</AlertDialogTitle>
             <AlertDialogDescription className="space-y-3">
               <p>
-                Esta ação irá excluir <strong>permanentemente</strong> todos os logs de auditoria
-                e todos os dados que foram marcados como excluídos (eleitores, demandas, etc).
+                Esta ação irá <strong>arquivar</strong> todos os logs de auditoria
+                e remover permanentemente os dados que foram marcados como excluídos (eleitores, demandas, etc).
               </p>
-              <p className="text-destructive font-semibold">
-                ⚠️ Esta ação não pode ser desfeita!
+              <p className="text-muted-foreground">
+                Os logs serão movidos para um arquivo seguro e não ficarão mais visíveis na interface,
+                mas poderão ser recuperados se necessário pelo administrador do sistema.
               </p>
               <p>
                 Para confirmar, digite <strong>"excluir"</strong> no campo abaixo:
@@ -659,7 +682,7 @@ export function AuditLogs({ gabineteId }: AuditLogsProps) {
               disabled={deleteConfirmText !== "excluir" || deletingLogs}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {deletingLogs ? "Excluindo..." : "Excluir Permanentemente"}
+              {deletingLogs ? "Arquivando..." : "Arquivar Logs"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

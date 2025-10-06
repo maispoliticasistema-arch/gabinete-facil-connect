@@ -141,6 +141,51 @@ export type Database = {
           },
         ]
       }
+      archived_audit_logs: {
+        Row: {
+          action: Database["public"]["Enums"]["audit_action"]
+          archived_at: string
+          details: Json | null
+          entity_id: string | null
+          entity_type: Database["public"]["Enums"]["audit_entity"] | null
+          gabinete_id: string
+          id: string
+          ip_address: string | null
+          original_created_at: string
+          original_log_id: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          action: Database["public"]["Enums"]["audit_action"]
+          archived_at?: string
+          details?: Json | null
+          entity_id?: string | null
+          entity_type?: Database["public"]["Enums"]["audit_entity"] | null
+          gabinete_id: string
+          id?: string
+          ip_address?: string | null
+          original_created_at: string
+          original_log_id: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          action?: Database["public"]["Enums"]["audit_action"]
+          archived_at?: string
+          details?: Json | null
+          entity_id?: string | null
+          entity_type?: Database["public"]["Enums"]["audit_entity"] | null
+          gabinete_id?: string
+          id?: string
+          ip_address?: string | null
+          original_created_at?: string
+          original_log_id?: string
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       audit_logs: {
         Row: {
           action: Database["public"]["Enums"]["audit_action"]
