@@ -5,6 +5,8 @@ import { toast } from "sonner";
 import { Plus } from "lucide-react";
 import { AddUserDialog } from "./AddUserDialog";
 import { UsersTable } from "./UsersTable";
+import { PermissionTemplateManager } from "./PermissionTemplateManager";
+import { Separator } from "@/components/ui/separator";
 
 interface UsuariosPermissoesProps {
   gabineteId: string;
@@ -49,33 +51,39 @@ export function UsuariosPermissoes({ gabineteId }: UsuariosPermissoesProps) {
   }, [gabineteId]);
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-semibold">Usuários e Permissões</h2>
-          <p className="text-muted-foreground mt-1">
-            Gerencie os membros da equipe e suas permissões
-          </p>
+    <div className="space-y-8">
+      <PermissionTemplateManager gabineteId={gabineteId} />
+      
+      <Separator />
+
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-semibold">Usuários e Permissões</h2>
+            <p className="text-muted-foreground mt-1">
+              Gerencie os membros da equipe e suas permissões
+            </p>
+          </div>
+          <Button onClick={() => setAddDialogOpen(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            Novo Usuário
+          </Button>
         </div>
-        <Button onClick={() => setAddDialogOpen(true)}>
-          <Plus className="h-4 w-4 mr-2" />
-          Novo Usuário
-        </Button>
+
+        <UsersTable 
+          users={users} 
+          loading={loading} 
+          onRefresh={fetchUsers}
+          gabineteId={gabineteId}
+        />
+
+        <AddUserDialog
+          open={addDialogOpen}
+          onOpenChange={setAddDialogOpen}
+          gabineteId={gabineteId}
+          onSuccess={fetchUsers}
+        />
       </div>
-
-      <UsersTable 
-        users={users} 
-        loading={loading} 
-        onRefresh={fetchUsers}
-        gabineteId={gabineteId}
-      />
-
-      <AddUserDialog
-        open={addDialogOpen}
-        onOpenChange={setAddDialogOpen}
-        gabineteId={gabineteId}
-        onSuccess={fetchUsers}
-      />
     </div>
   );
 }

@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { Badge } from "@/components/ui/badge";
 
 interface EditUserDialogProps {
   open: boolean;
@@ -54,12 +55,49 @@ export function EditUserDialog({
   const [telefone, setTelefone] = useState("");
   const [role, setRole] = useState<"owner" | "admin" | "assessor">("assessor");
   const [selectedPermissions, setSelectedPermissions] = useState<string[]>([]);
+  const [templates, setTemplates] = useState<any[]>([]);
+  const [selectedTemplate, setSelectedTemplate] = useState<string>("");
 
   useEffect(() => {
     if (open) {
       loadUserData();
+      fetchTemplates();
     }
   }, [open, userId, userGabineteId]);
+
+  const fetchTemplates = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("permission_templates")
+        .select(`
+          id,
+          nome,
+          permission_template_permissions (
+            permission
+          )
+        `)
+        .eq("gabinete_id", gabineteId);
+
+      if (error) throw error;
+      setTemplates(data || []);
+    } catch (error) {
+      console.error("Erro ao buscar templates:", error);
+    }
+  };
+
+  const handleTemplateSelect = (templateId: string) => {
+    setSelectedTemplate(templateId);
+    if (templateId === "custom") {
+      return;
+    }
+    
+    const template = templates.find((t) => t.id === templateId);
+    if (template) {
+      setSelectedPermissions(
+        template.permission_template_permissions.map((p: any) => p.permission)
+      );
+    }
+  };
 
   const loadUserData = async () => {
     try {
@@ -224,24 +262,49 @@ export function EditUserDialog({
           </div>
 
           {role === "assessor" && (
-            <div className="space-y-3">
-              <Label>Permissões</Label>
-              <div className="border rounded-lg p-4 space-y-3 max-h-60 overflow-y-auto">
-                {PERMISSIONS.map((perm) => (
-                  <div key={perm.id} className="flex items-center space-x-2">
-                    <Checkbox
-                      id={perm.id}
-                      checked={selectedPermissions.includes(perm.id)}
-                      onCheckedChange={() => togglePermission(perm.id)}
-                    />
-                    <label
-                      htmlFor={perm.id}
-                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
-                    >
-                      {perm.label}
-                    </label>
-                  </div>
-                ))}
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="template">Template de Permissões</Label>
+                <Select value={selectedTemplate} onValueChange={handleTemplateSelect}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione um template ou personalize" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="custom">Personalizar Permissões</SelectItem>
+                    {templates.map((template) => (
+                      <SelectItem key={template.id} value={template.id}>
+                        {template.nome}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <Label>Permissões Selecionadas</Label>
+                  {selectedTemplate && selectedTemplate !== "custom" && (
+                    <Badge variant="secondary">Template Aplicado</Badge>
+                  )}
+                </div>
+                <div className="border rounded-lg p-4 space-y-3 max-h-60 overflow-y-auto">
+                  {PERMISSIONS.map((perm) => (
+                    <div key={perm.id} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={perm.id}
+                        checked={selectedPermissions.includes(perm.id)}
+                        onCheckedChange={() => togglePermission(perm.id)}
+                        disabled={selectedTemplate !== "custom" && selectedTemplate !== ""}
+                      />
+                      <label
+                        htmlFor={perm.id}
+                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                      >
+                        {perm.label}
+                      </label>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           )}
