@@ -430,7 +430,10 @@ export function AuditLogs({ gabineteId }: AuditLogsProps) {
 
       setDeleteDialogOpen(false);
       setDeleteConfirmText("");
-      fetchLogs();
+      
+      console.log('🔄 Chamando fetchLogs...');
+      await fetchLogs();
+      console.log('✅ fetchLogs concluído');
     } catch (error: any) {
       console.error("💥 ERRO GERAL ao arquivar logs:", error);
       console.error("Detalhes do erro:", JSON.stringify(error, null, 2));
