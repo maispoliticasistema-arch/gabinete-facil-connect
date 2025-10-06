@@ -116,34 +116,28 @@ const Index = () => {
         eventosHoje: eventosHoje || 0
       });
 
-      // Buscar dados de cadastros dos últimos 6 meses
-      const { data: eleitores, count: totalEleitoresCount } = await supabase
-        .from('eleitores')
-        .select('created_at', { count: 'exact' })
-        .eq('gabinete_id', currentGabinete.gabinete_id)
-        .order('created_at', { ascending: true })
-        .range(0, 99999);
-      
-      console.log('📊 Total de eleitores no DB:', totalEleitoresCount);
-      console.log('📊 Eleitores retornados para o gráfico:', eleitores?.length);
-
-      // Processar dados para o gráfico
+      // Buscar dados de cadastros dos últimos 6 meses usando COUNT por mês
       const chartData: CadastrosChart[] = [];
+      
       for (let i = 5; i >= 0; i--) {
         const monthDate = subMonths(new Date(), i);
         const start = startOfMonth(monthDate);
         const end = endOfMonth(monthDate);
         
-        const count = eleitores?.filter(e => {
-          const createdAt = new Date(e.created_at);
-          return createdAt >= start && createdAt <= end;
-        }).length || 0;
+        const { count } = await supabase
+          .from('eleitores')
+          .select('*', { count: 'exact', head: true })
+          .eq('gabinete_id', currentGabinete.gabinete_id)
+          .gte('created_at', start.toISOString())
+          .lte('created_at', end.toISOString());
 
         chartData.push({
           mes: format(monthDate, 'MMM/yy', { locale: ptBR }),
-          total: count
+          total: count || 0
         });
       }
+      
+      console.log('📊 Dados do gráfico:', chartData);
 
       setCadastrosData(chartData);
 
