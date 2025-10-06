@@ -812,7 +812,7 @@ export type Database = {
           {
             foreignKeyName: "portal_gabinete_gabinete_id_fkey"
             columns: ["gabinete_id"]
-            isOneToOne: true
+            isOneToOne: false
             referencedRelation: "gabinetes"
             referencedColumns: ["id"]
           },
