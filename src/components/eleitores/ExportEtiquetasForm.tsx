@@ -554,10 +554,35 @@ export function ExportEtiquetasForm({
                 >
                   <div className="flex items-start space-x-3">
                     <RadioGroupItem value={modelo.id} id={modelo.id} />
-                    <div className="flex-1 space-y-2">
+                    <div className="flex-1 space-y-3">
                       <Label htmlFor={modelo.id} className="cursor-pointer font-semibold">
                         {modelo.nome}
                       </Label>
+                      
+                      {/* Preview visual do formato */}
+                      <div className="bg-background border rounded p-2 flex items-center justify-center min-h-[80px]">
+                        <div
+                          className="grid gap-[2px]"
+                          style={{
+                            gridTemplateColumns: `repeat(${modelo.colunas}, 1fr)`,
+                            gridTemplateRows: `repeat(${modelo.linhas}, 1fr)`,
+                            width: '100%',
+                            maxWidth: '120px',
+                            aspectRatio: '210/297', // A4 ratio
+                          }}
+                        >
+                          {Array.from({ length: modelo.etiquetasPorFolha }).map((_, idx) => (
+                            <div
+                              key={idx}
+                              className="border border-primary/30 bg-primary/5 rounded-sm"
+                              style={{
+                                aspectRatio: `${modelo.larguraMm}/${modelo.alturaMm}`,
+                              }}
+                            />
+                          ))}
+                        </div>
+                      </div>
+
                       <div className="text-xs text-muted-foreground space-y-1">
                         <p>{modelo.etiquetasPorFolha} etiquetas por folha</p>
                         <p>
