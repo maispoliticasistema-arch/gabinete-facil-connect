@@ -256,6 +256,12 @@ export function ImportEleitoresDialog({ onEleitoresImported }: ImportEleitoresDi
           const tagMap = new Map(allTags?.map(t => [t.nome, t.id]) || []);
           const criadorMap = new Map(allCriadores?.map(c => [c.nome_externo, c.id]) || []);
 
+          // Validação de email
+          const isValidEmail = (email: string): boolean => {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            return emailRegex.test(email);
+          };
+
           // Processar eleitores
           const eleitores = jsonData.map((row: any, index: number) => {
             const eleitor: any = { gabinete_id: currentGabinete.gabinete_id };
@@ -265,7 +271,15 @@ export function ImportEleitoresDialog({ onEleitoresImported }: ImportEleitoresDi
               if (campo && campo !== 'ignore' && campo !== 'tags' && campo !== 'criador_externo' && row[header]) {
                 let valor = row[header];
                 
-                if (campo === 'data_nascimento' && valor) {
+                // Validar email antes de processar
+                if (campo === 'email' && valor) {
+                  const emailStr = String(valor).trim().toLowerCase();
+                  if (!isValidEmail(emailStr)) {
+                    valor = null; // Ignorar emails inválidos
+                  } else {
+                    valor = emailStr;
+                  }
+                } else if (campo === 'data_nascimento' && valor) {
                   try {
                     // Se for número (serial date do Excel)
                     if (typeof valor === 'number') {
