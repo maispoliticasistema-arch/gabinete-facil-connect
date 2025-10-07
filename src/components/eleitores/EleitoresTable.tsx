@@ -15,6 +15,7 @@ import { Mail, Phone, MapPin, Calendar, Pencil, Trash2 } from 'lucide-react';
 import { EditEleitoresDialog } from './EditEleitoresDialog';
 import { DeleteEleitoresDialog } from './DeleteEleitoresDialog';
 import { EleitoresTagsSelect } from './EleitoresTagsSelect';
+import { EleitoresNivelSelect } from './EleitoresNivelSelect';
 import { usePermissions } from '@/hooks/usePermissions';
 
 interface Eleitor {
@@ -30,6 +31,7 @@ interface Eleitor {
   estado: string | null;
   cep: string | null;
   created_at: string;
+  nivel_envolvimento_id: string | null;
 }
 
 interface EleitoresTableProps {
@@ -95,6 +97,7 @@ export const EleitoresTable = ({ eleitores, onEleitoresUpdated, onEleitoresClick
               <TableHead className="min-w-[180px]">Eleitor</TableHead>
               <TableHead className="min-w-[150px]">Contato</TableHead>
               <TableHead className="min-w-[150px] hidden lg:table-cell">Tags</TableHead>
+              <TableHead className="min-w-[140px] hidden xl:table-cell">Nível</TableHead>
               <TableHead className="min-w-[150px] hidden md:table-cell">Localização</TableHead>
               <TableHead className="min-w-[120px] hidden lg:table-cell">Data Nasc.</TableHead>
               <TableHead className="min-w-[100px] hidden xl:table-cell">Cadastro</TableHead>
@@ -104,7 +107,7 @@ export const EleitoresTable = ({ eleitores, onEleitoresUpdated, onEleitoresClick
           <TableBody>
             {eleitores.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+                <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
                   Nenhum eleitor cadastrado ainda
                 </TableCell>
               </TableRow>
@@ -156,6 +159,13 @@ export const EleitoresTable = ({ eleitores, onEleitoresUpdated, onEleitoresClick
                   <EleitoresTagsSelect 
                     eleitorId={eleitor.id} 
                     onTagsChange={onEleitoresUpdated}
+                  />
+                </TableCell>
+                <TableCell className="hidden xl:table-cell" onClick={(e) => e.stopPropagation()}>
+                  <EleitoresNivelSelect 
+                    eleitorId={eleitor.id}
+                    currentNivelId={eleitor.nivel_envolvimento_id}
+                    onNivelChange={onEleitoresUpdated}
                   />
                 </TableCell>
                 <TableCell className="hidden md:table-cell">

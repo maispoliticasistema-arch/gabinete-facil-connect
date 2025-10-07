@@ -115,6 +115,7 @@ export function ImportEleitoresDialog({ onEleitoresImported }: ImportEleitoresDi
           else if (normalized.includes('profissao') || normalized.includes('profissão')) autoMapping[header] = 'profissao';
           else if (normalized.includes('observa')) autoMapping[header] = 'observacoes';
           else if (normalized.includes('tag') || normalized.includes('etiqueta')) autoMapping[header] = 'tags';
+          else if (normalized.includes('nivel') || normalized.includes('nível') || normalized.includes('envolvimento')) autoMapping[header] = 'nivel_envolvimento';
           else if (normalized.includes('criador') || normalized.includes('responsavel') || normalized.includes('responsável') || normalized.includes('cadastrado')) autoMapping[header] = 'criador_externo';
           else autoMapping[header] = 'ignore';
         });
@@ -169,14 +170,17 @@ export function ImportEleitoresDialog({ onEleitoresImported }: ImportEleitoresDi
           const worksheet = workbook.Sheets[workbook.SheetNames[0]];
           const jsonData = XLSX.utils.sheet_to_json(worksheet);
 
-          // Coletar tags e criadores únicos
+          // Coletar tags, níveis e criadores únicos
           const tagsSet = new Set<string>();
+          const niveisSet = new Set<string>();
           const criadoresSet = new Set<string>();
           const tagsByRow: string[][] = [];
+          const nivelByRow: string[] = [];
           const criadorByRow: string[] = [];
 
           jsonData.forEach((row: any) => {
             let rowTags: string[] = [];
+            let rowNivel = '';
             let rowCriador = '';
             
             headers.forEach((header) => {
@@ -188,6 +192,10 @@ export function ImportEleitoresDialog({ onEleitoresImported }: ImportEleitoresDi
                   .filter(t => t.length > 0);
                 rowTags.forEach(t => tagsSet.add(t));
               }
+              if (campo === 'nivel_envolvimento' && row[header]) {
+                rowNivel = String(row[header]).trim();
+                if (rowNivel) niveisSet.add(rowNivel);
+              }
               if (campo === 'criador_externo' && row[header]) {
                 rowCriador = String(row[header]).trim();
                 if (rowCriador) criadoresSet.add(rowCriador);
@@ -195,6 +203,7 @@ export function ImportEleitoresDialog({ onEleitoresImported }: ImportEleitoresDi
             });
             
             tagsByRow.push(rowTags);
+            nivelByRow.push(rowNivel);
             criadorByRow.push(rowCriador);
           });
 
@@ -216,6 +225,16 @@ export function ImportEleitoresDialog({ onEleitoresImported }: ImportEleitoresDi
 
           const existingCriadorNames = new Set(existingCriadores?.map(c => c.nome_externo) || []);
           const criadoresToCreate = Array.from(criadoresSet).filter(c => !existingCriadorNames.has(c));
+
+          // Buscar níveis de envolvimento existentes
+          const { data: existingNiveis } = await supabase
+            .from('niveis_envolvimento')
+            .select('nome')
+            .eq('gabinete_id', currentGabinete.gabinete_id)
+            .is('deleted_at', null);
+
+          const existingNivelNames = new Set(existingNiveis?.map(n => n.nome) || []);
+          const niveisToCreate = Array.from(niveisSet).filter(n => !existingNivelNames.has(n));
 
           setNewTags(tagsToCreate);
           setNewCriadores(criadoresToCreate);
@@ -241,9 +260,28 @@ export function ImportEleitoresDialog({ onEleitoresImported }: ImportEleitoresDi
             );
           }
 
-          // Buscar todas as tags e criadores (incluindo os recém-criados)
+          // Criar novos níveis de envolvimento
+          if (niveisToCreate.length > 0) {
+            const maxOrdem = existingNiveis && existingNiveis.length > 0 ? existingNiveis.length : 0;
+            await supabase.from('niveis_envolvimento').insert(
+              niveisToCreate.map((nome, index) => ({
+                gabinete_id: currentGabinete.gabinete_id,
+                nome,
+                cor: '#6366f1',
+                ordem: maxOrdem + index
+              }))
+            );
+          }
+
+          // Buscar todas as tags, níveis e criadores (incluindo os recém-criados)
           const { data: allTags } = await supabase
             .from('tags')
+            .select('id, nome')
+            .eq('gabinete_id', currentGabinete.gabinete_id)
+            .is('deleted_at', null);
+
+          const { data: allNiveis } = await supabase
+            .from('niveis_envolvimento')
             .select('id, nome')
             .eq('gabinete_id', currentGabinete.gabinete_id)
             .is('deleted_at', null);
@@ -254,6 +292,7 @@ export function ImportEleitoresDialog({ onEleitoresImported }: ImportEleitoresDi
             .eq('gabinete_id', currentGabinete.gabinete_id);
 
           const tagMap = new Map(allTags?.map(t => [t.nome, t.id]) || []);
+          const nivelMap = new Map(allNiveis?.map(n => [n.nome, n.id]) || []);
           const criadorMap = new Map(allCriadores?.map(c => [c.nome_externo, c.id]) || []);
 
           // Validação de email
@@ -268,7 +307,7 @@ export function ImportEleitoresDialog({ onEleitoresImported }: ImportEleitoresDi
 
             headers.forEach((header) => {
               const campo = columnMapping[header];
-              if (campo && campo !== 'ignore' && campo !== 'tags' && campo !== 'criador_externo' && row[header]) {
+              if (campo && campo !== 'ignore' && campo !== 'tags' && campo !== 'criador_externo' && campo !== 'nivel_envolvimento' && row[header]) {
                 let valor = row[header];
                 
                 // Validar email antes de processar
@@ -383,6 +422,11 @@ export function ImportEleitoresDialog({ onEleitoresImported }: ImportEleitoresDi
               eleitor.criador_externo_id = criadorMap.get(criadorNome);
             }
 
+            const nivelNome = nivelByRow[index];
+            if (nivelNome && nivelMap.has(nivelNome)) {
+              eleitor.nivel_envolvimento_id = nivelMap.get(nivelNome);
+            }
+
             return { eleitor, tags: tagsByRow[index] };
           }).filter((e: any) => e.eleitor.nome_completo);
 
@@ -423,6 +467,7 @@ export function ImportEleitoresDialog({ onEleitoresImported }: ImportEleitoresDi
 
           let message = `${eleitores.length} eleitor(es) importado(s)`;
           if (tagsToCreate.length > 0) message += `, ${tagsToCreate.length} tag(s) criada(s)`;
+          if (niveisToCreate.length > 0) message += `, ${niveisToCreate.length} nível(is) criado(s)`;
           if (criadoresToCreate.length > 0) message += `, ${criadoresToCreate.length} criador(es) externo(s) detectado(s)`;
 
           toast({

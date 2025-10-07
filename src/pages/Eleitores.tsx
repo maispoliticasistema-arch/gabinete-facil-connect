@@ -8,6 +8,7 @@ import { EleitoresTable } from '@/components/eleitores/EleitoresTable';
 import { AddEleitoresDialog } from '@/components/eleitores/AddEleitoresDialog';
 import { ImportEleitoresDialog } from '@/components/eleitores/ImportEleitoresDialog';
 import { TagsDialog } from '@/components/eleitores/TagsDialog';
+import { NiveisEnvolvimentoDialog } from '@/components/eleitores/NiveisEnvolvimentoDialog';
 import { EleitoresDetailsSheet } from '@/components/eleitores/EleitoresDetailsSheet';
 import { GeocodeAllDialog } from '@/components/eleitores/GeocodeAllDialog';
 import { ExportEleitoresDialog } from '@/components/eleitores/ExportEleitoresDialog';
@@ -66,6 +67,7 @@ interface Eleitor {
   rg: string | null;
   profissao: string | null;
   observacoes: string | null;
+  nivel_envolvimento_id: string | null;
   created_at: string;
   cadastrado_por: string | null;
 }
@@ -308,6 +310,9 @@ const Eleitores = () => {
           </PermissionGuard>
           <PermissionGuard permission="manage_tags">
             <TagsDialog />
+          </PermissionGuard>
+          <PermissionGuard permission="manage_tags">
+            <NiveisEnvolvimentoDialog />
           </PermissionGuard>
           <PermissionGuard permission="import_eleitores">
             <ImportEleitoresDialog onEleitoresImported={fetchEleitores} />

@@ -36,6 +36,12 @@ interface Tag {
   cor: string;
 }
 
+interface NivelEnvolvimento {
+  id: string;
+  nome: string;
+  cor: string;
+}
+
 const eleitoresSchema = z.object({
   nome_completo: z.string().trim().min(1, 'Nome completo é obrigatório').max(200, 'Nome muito longo'),
   telefone: z.string().trim().max(20, 'Telefone muito longo').optional(),
@@ -71,6 +77,8 @@ export const AddEleitoresDialog = ({
   const [loading, setLoading] = useState(false);
   const [tags, setTags] = useState<Tag[]>([]);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [niveis, setNiveis] = useState<NivelEnvolvimento[]>([]);
+  const [selectedNivel, setSelectedNivel] = useState<string>('');
   const { toast } = useToast();
   const { currentGabinete } = useGabinete();
   const { user } = useAuth();
@@ -96,6 +104,7 @@ export const AddEleitoresDialog = ({
   useEffect(() => {
     if (open && currentGabinete) {
       fetchTags();
+      fetchNiveis();
     }
   }, [open, currentGabinete]);
 
@@ -113,6 +122,24 @@ export const AddEleitoresDialog = ({
       setTags(data || []);
     } catch (error: any) {
       console.error('Erro ao carregar tags:', error);
+    }
+  };
+
+  const fetchNiveis = async () => {
+    if (!currentGabinete) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('niveis_envolvimento')
+        .select('*')
+        .eq('gabinete_id', currentGabinete.gabinete_id)
+        .is('deleted_at', null)
+        .order('ordem');
+
+      if (error) throw error;
+      setNiveis(data || []);
+    } catch (error: any) {
+      console.error('Erro ao carregar níveis:', error);
     }
   };
 
@@ -153,6 +180,7 @@ export const AddEleitoresDialog = ({
           cep: data.cep || null,
           gabinete_id: currentGabinete.gabinete_id,
           cadastrado_por: user.id,
+          nivel_envolvimento_id: selectedNivel || null,
         })
         .select()
         .single();
@@ -201,6 +229,7 @@ export const AddEleitoresDialog = ({
 
       form.reset();
       setSelectedTags([]);
+      setSelectedNivel('');
       setOpen(false);
       onEleitoresAdded();
     } catch (error: any) {
@@ -438,6 +467,33 @@ export const AddEleitoresDialog = ({
                     </div>
                   ))}
                 </div>
+              </div>
+            )}
+
+            {niveis.length > 0 && (
+              <div className="space-y-3">
+                <FormLabel>Nível de Envolvimento</FormLabel>
+                <Select value={selectedNivel} onValueChange={setSelectedNivel}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione um nível" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Nenhum</SelectItem>
+                    {niveis.map((nivel) => (
+                      <SelectItem key={nivel.id} value={nivel.id}>
+                        <Badge
+                          style={{
+                            backgroundColor: nivel.cor,
+                            color: '#fff',
+                          }}
+                          className="font-medium"
+                        >
+                          {nivel.nome}
+                        </Badge>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             )}
 
