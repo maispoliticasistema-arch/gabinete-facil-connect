@@ -1731,6 +1731,7 @@ export type Database = {
         | "deputado_estadual"
         | "deputado_federal"
         | "senador"
+        | "vice_prefeito"
       demanda_prioridade: "baixa" | "media" | "alta" | "urgente"
       demanda_status: "aberta" | "em_andamento" | "concluida" | "cancelada"
       notification_type:
@@ -1924,6 +1925,7 @@ export const Constants = {
         "deputado_estadual",
         "deputado_federal",
         "senador",
+        "vice_prefeito",
       ],
       demanda_prioridade: ["baixa", "media", "alta", "urgente"],
       demanda_status: ["aberta", "em_andamento", "concluida", "cancelada"],

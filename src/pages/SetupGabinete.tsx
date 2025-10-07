@@ -55,7 +55,7 @@ const SetupGabinete = () => {
         .from('gabinetes')
         .insert([{
           nome: formData.nomePolitico,
-          cargo: formData.cargo as 'vereador' | 'prefeito' | 'vice_prefeito' | 'deputado_estadual' | 'deputado_federal' | 'senador',
+          cargo: formData.cargo as any,
           cidade: formData.cidade,
           estado: formData.estado,
         }])
