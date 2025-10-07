@@ -115,7 +115,7 @@ export const TagsDialog = () => {
           <Tag className="h-4 w-4" />
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle>Gerenciar Tags</DialogTitle>
           <DialogDescription>
@@ -123,12 +123,12 @@ export const TagsDialog = () => {
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-6">
+        <div className="space-y-6 overflow-y-auto pr-2">
           {/* Criar nova tag */}
           <div className="space-y-4 border-b pb-4">
             <h3 className="text-sm font-semibold">Nova Tag</h3>
-            <div className="flex gap-2">
-              <div className="flex-1">
+            <div className="grid grid-cols-[1fr_80px] gap-2">
+              <div>
                 <Label htmlFor="tag-name">Nome</Label>
                 <Input
                   id="tag-name"
@@ -142,15 +142,17 @@ export const TagsDialog = () => {
                   }}
                 />
               </div>
-              <div className="w-24">
-                <Label htmlFor="tag-color">Cor</Label>
-                <Input
-                  id="tag-color"
-                  type="color"
-                  value={newTagColor}
-                  onChange={(e) => setNewTagColor(e.target.value)}
-                  className="h-10 p-1 cursor-pointer"
-                />
+              <div>
+                <Label htmlFor="tag-color" className="text-xs">Cor</Label>
+                <div className="relative">
+                  <Input
+                    id="tag-color"
+                    type="color"
+                    value={newTagColor}
+                    onChange={(e) => setNewTagColor(e.target.value)}
+                    className="h-10 w-full p-1 cursor-pointer"
+                  />
+                </div>
               </div>
             </div>
             <Button onClick={handleCreateTag} disabled={loading || !newTagName.trim()} className="w-full">
@@ -160,14 +162,14 @@ export const TagsDialog = () => {
           </div>
 
           {/* Lista de tags */}
-          <div className="space-y-3">
+          <div className="space-y-3 pb-4">
             <h3 className="text-sm font-semibold">Tags Existentes</h3>
             {tags.length === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-4">
                 Nenhuma tag criada ainda
               </p>
             ) : (
-              <div className="space-y-2 max-h-[300px] overflow-y-auto">
+              <div className="space-y-2 max-h-[250px] overflow-y-auto pr-1">
                 {tags.map((tag) => (
                   <div
                     key={tag.id}
@@ -185,7 +187,7 @@ export const TagsDialog = () => {
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-8 w-8 text-destructive hover:text-destructive"
+                      className="h-8 w-8 text-destructive hover:text-destructive shrink-0"
                       onClick={() => handleDeleteTag(tag.id)}
                     >
                       <Trash2 className="h-4 w-4" />
