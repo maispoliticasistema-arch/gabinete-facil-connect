@@ -233,6 +233,41 @@ export type Database = {
           },
         ]
       }
+      criadores_externos: {
+        Row: {
+          created_at: string
+          gabinete_id: string
+          id: string
+          nome_externo: string
+          updated_at: string
+          user_id_mapeado: string | null
+        }
+        Insert: {
+          created_at?: string
+          gabinete_id: string
+          id?: string
+          nome_externo: string
+          updated_at?: string
+          user_id_mapeado?: string | null
+        }
+        Update: {
+          created_at?: string
+          gabinete_id?: string
+          id?: string
+          nome_externo?: string
+          updated_at?: string
+          user_id_mapeado?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "criadores_externos_gabinete_id_fkey"
+            columns: ["gabinete_id"]
+            isOneToOne: false
+            referencedRelation: "gabinetes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       demanda_comentarios: {
         Row: {
           comentario: string
@@ -385,6 +420,7 @@ export type Database = {
           complemento: string | null
           cpf: string | null
           created_at: string | null
+          criador_externo_id: string | null
           data_nascimento: string | null
           deleted_at: string | null
           email: string | null
@@ -412,6 +448,7 @@ export type Database = {
           complemento?: string | null
           cpf?: string | null
           created_at?: string | null
+          criador_externo_id?: string | null
           data_nascimento?: string | null
           deleted_at?: string | null
           email?: string | null
@@ -439,6 +476,7 @@ export type Database = {
           complemento?: string | null
           cpf?: string | null
           created_at?: string | null
+          criador_externo_id?: string | null
           data_nascimento?: string | null
           deleted_at?: string | null
           email?: string | null
@@ -464,6 +502,13 @@ export type Database = {
             columns: ["cadastrado_por"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "eleitores_criador_externo_id_fkey"
+            columns: ["criador_externo_id"]
+            isOneToOne: false
+            referencedRelation: "criadores_externos"
             referencedColumns: ["id"]
           },
           {

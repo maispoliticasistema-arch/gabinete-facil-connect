@@ -30,6 +30,8 @@ const CAMPOS_ELEITOR = [
   { value: 'cep', label: 'CEP' },
   { value: 'profissao', label: 'Profissão' },
   { value: 'observacoes', label: 'Observações' },
+  { value: 'tags', label: 'Tags/Etiquetas (separadas por vírgula)' },
+  { value: 'criador_externo', label: 'Criador/Responsável Externo' },
   { value: 'ignore', label: '--- Ignorar ---' },
 ];
 
@@ -40,6 +42,8 @@ export function ImportEleitoresDialog({ onEleitoresImported }: ImportEleitoresDi
   const [headers, setHeaders] = useState<string[]>([]);
   const [columnMapping, setColumnMapping] = useState<Record<string, string>>({});
   const [importing, setImporting] = useState(false);
+  const [newTags, setNewTags] = useState<string[]>([]);
+  const [newCriadores, setNewCriadores] = useState<string[]>([]);
   const { currentGabinete } = useGabinete();
   const { toast } = useToast();
 
@@ -106,6 +110,8 @@ export function ImportEleitoresDialog({ onEleitoresImported }: ImportEleitoresDi
           else if (normalized.includes('cep')) autoMapping[header] = 'cep';
           else if (normalized.includes('profissao') || normalized.includes('profissão')) autoMapping[header] = 'profissao';
           else if (normalized.includes('observa')) autoMapping[header] = 'observacoes';
+          else if (normalized.includes('tag') || normalized.includes('etiqueta')) autoMapping[header] = 'tags';
+          else if (normalized.includes('criador') || normalized.includes('responsavel') || normalized.includes('responsável') || normalized.includes('cadastrado')) autoMapping[header] = 'criador_externo';
           else autoMapping[header] = 'ignore';
         });
 
@@ -127,7 +133,6 @@ export function ImportEleitoresDialog({ onEleitoresImported }: ImportEleitoresDi
       return;
     }
 
-    // Validar que ao menos nome_completo foi mapeado
     const hasNomeCompleto = Object.values(columnMapping).includes('nome_completo');
     if (!hasNomeCompleto) {
       toast({
@@ -140,6 +145,245 @@ export function ImportEleitoresDialog({ onEleitoresImported }: ImportEleitoresDi
 
     setImporting(true);
     console.log('Starting import...');
+
+    try {
+      const reader = new FileReader();
+      
+      reader.onerror = () => {
+        toast({
+          title: 'Erro ao ler arquivo',
+          description: 'Não foi possível ler o arquivo',
+          variant: 'destructive',
+        });
+        setImporting(false);
+      };
+
+      reader.onload = async (e) => {
+        try {
+          const data = e.target?.result;
+          const workbook = XLSX.read(data, { type: 'binary' });
+          const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+          const jsonData = XLSX.utils.sheet_to_json(worksheet);
+
+          // Coletar tags e criadores únicos
+          const tagsSet = new Set<string>();
+          const criadoresSet = new Set<string>();
+          const tagsByRow: string[][] = [];
+          const criadorByRow: string[] = [];
+
+          jsonData.forEach((row: any) => {
+            let rowTags: string[] = [];
+            let rowCriador = '';
+            
+            headers.forEach((header) => {
+              const campo = columnMapping[header];
+              if (campo === 'tags' && row[header]) {
+                rowTags = String(row[header])
+                  .split(',')
+                  .map(t => t.trim())
+                  .filter(t => t.length > 0);
+                rowTags.forEach(t => tagsSet.add(t));
+              }
+              if (campo === 'criador_externo' && row[header]) {
+                rowCriador = String(row[header]).trim();
+                if (rowCriador) criadoresSet.add(rowCriador);
+              }
+            });
+            
+            tagsByRow.push(rowTags);
+            criadorByRow.push(rowCriador);
+          });
+
+          // Buscar tags existentes
+          const { data: existingTags } = await supabase
+            .from('tags')
+            .select('nome')
+            .eq('gabinete_id', currentGabinete.gabinete_id)
+            .is('deleted_at', null);
+
+          const existingTagNames = new Set(existingTags?.map(t => t.nome) || []);
+          const tagsToCreate = Array.from(tagsSet).filter(t => !existingTagNames.has(t));
+          
+          // Buscar criadores externos existentes
+          const { data: existingCriadores } = await supabase
+            .from('criadores_externos')
+            .select('nome_externo')
+            .eq('gabinete_id', currentGabinete.gabinete_id);
+
+          const existingCriadorNames = new Set(existingCriadores?.map(c => c.nome_externo) || []);
+          const criadoresToCreate = Array.from(criadoresSet).filter(c => !existingCriadorNames.has(c));
+
+          setNewTags(tagsToCreate);
+          setNewCriadores(criadoresToCreate);
+
+          // Criar novas tags
+          if (tagsToCreate.length > 0) {
+            await supabase.from('tags').insert(
+              tagsToCreate.map(nome => ({
+                gabinete_id: currentGabinete.gabinete_id,
+                nome,
+                cor: '#6366f1'
+              }))
+            );
+          }
+
+          // Criar novos criadores externos
+          if (criadoresToCreate.length > 0) {
+            await supabase.from('criadores_externos').insert(
+              criadoresToCreate.map(nome_externo => ({
+                gabinete_id: currentGabinete.gabinete_id,
+                nome_externo
+              }))
+            );
+          }
+
+          // Buscar todas as tags e criadores (incluindo os recém-criados)
+          const { data: allTags } = await supabase
+            .from('tags')
+            .select('id, nome')
+            .eq('gabinete_id', currentGabinete.gabinete_id)
+            .is('deleted_at', null);
+
+          const { data: allCriadores } = await supabase
+            .from('criadores_externos')
+            .select('id, nome_externo')
+            .eq('gabinete_id', currentGabinete.gabinete_id);
+
+          const tagMap = new Map(allTags?.map(t => [t.nome, t.id]) || []);
+          const criadorMap = new Map(allCriadores?.map(c => [c.nome_externo, c.id]) || []);
+
+          // Processar eleitores
+          const eleitores = jsonData.map((row: any, index: number) => {
+            const eleitor: any = { gabinete_id: currentGabinete.gabinete_id };
+
+            headers.forEach((header) => {
+              const campo = columnMapping[header];
+              if (campo && campo !== 'ignore' && campo !== 'tags' && campo !== 'criador_externo' && row[header]) {
+                let valor = row[header];
+                
+                if (campo === 'data_nascimento' && valor) {
+                  try {
+                    if (typeof valor === 'number') {
+                      const excelEpoch = new Date(1900, 0, 1);
+                      const msPerDay = 24 * 60 * 60 * 1000;
+                      const daysOffset = valor > 59 ? valor - 2 : valor - 1;
+                      const date = new Date(excelEpoch.getTime() + daysOffset * msPerDay);
+                      if (!isNaN(date.getTime())) {
+                        valor = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+                      } else {
+                        valor = null;
+                      }
+                    } else if (String(valor).includes('/')) {
+                      const parts = String(valor).split('/');
+                      if (parts.length === 3) {
+                        const [dia, mes, ano] = parts;
+                        const year = ano.length === 2 ? `20${ano}` : ano;
+                        valor = `${year}-${mes.padStart(2, '0')}-${dia.padStart(2, '0')}`;
+                      } else {
+                        valor = null;
+                      }
+                    } else if (typeof valor === 'string') {
+                      const date = new Date(valor.trim());
+                      if (!isNaN(date.getTime())) {
+                        valor = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+                      } else {
+                        valor = null;
+                      }
+                    } else {
+                      valor = null;
+                    }
+                  } catch (e) {
+                    valor = null;
+                  }
+                } else if (campo === 'sexo' && valor) {
+                  const sexoNormalizado = String(valor).toLowerCase().trim();
+                  if (sexoNormalizado.includes('masc') || sexoNormalizado === 'm') {
+                    valor = 'masculino';
+                  } else if (sexoNormalizado.includes('fem') || sexoNormalizado === 'f') {
+                    valor = 'feminino';
+                  } else {
+                    valor = null;
+                  }
+                } else {
+                  valor = String(valor).trim();
+                }
+                
+                if (valor) eleitor[campo] = valor;
+              }
+            });
+
+            const criadorNome = criadorByRow[index];
+            if (criadorNome && criadorMap.has(criadorNome)) {
+              eleitor.criador_externo_id = criadorMap.get(criadorNome);
+            }
+
+            return { eleitor, tags: tagsByRow[index] };
+          }).filter((e: any) => e.eleitor.nome_completo);
+
+          // Inserir eleitores
+          const { data: insertedEleitores, error } = await supabase
+            .from('eleitores')
+            .insert(eleitores.map(e => e.eleitor))
+            .select();
+
+          if (error) throw error;
+
+          // Criar relacionamentos eleitor-tag
+          if (insertedEleitores) {
+            const eleitorTagRelations: any[] = [];
+            insertedEleitores.forEach((eleitor, index) => {
+              const tags = eleitores[index].tags;
+              tags.forEach((tagNome: string) => {
+                const tagId = tagMap.get(tagNome);
+                if (tagId) {
+                  eleitorTagRelations.push({
+                    eleitor_id: eleitor.id,
+                    tag_id: tagId
+                  });
+                }
+              });
+            });
+
+            if (eleitorTagRelations.length > 0) {
+              await supabase.from('eleitor_tags').insert(eleitorTagRelations);
+            }
+          }
+
+          let message = `${eleitores.length} eleitor(es) importado(s)`;
+          if (tagsToCreate.length > 0) message += `, ${tagsToCreate.length} tag(s) criada(s)`;
+          if (criadoresToCreate.length > 0) message += `, ${criadoresToCreate.length} criador(es) externo(s) detectado(s)`;
+
+          toast({
+            title: 'Importação concluída',
+            description: message,
+          });
+
+          setOpen(false);
+          setFile(null);
+          setPreviewData([]);
+          setHeaders([]);
+          setColumnMapping({});
+          setImporting(false);
+          onEleitoresImported();
+        } catch (error: any) {
+          toast({
+            title: 'Erro ao importar',
+            description: error.message || 'Erro desconhecido',
+            variant: 'destructive',
+          });
+          setImporting(false);
+        }
+      };
+      
+      reader.readAsBinaryString(file);
+    } catch (error: any) {
+      toast({
+        title: 'Erro ao importar',
+        description: error.message,
+        variant: 'destructive',
+      });
+      setImporting(false);
+    }
 
     try {
       const reader = new FileReader();
