@@ -430,6 +430,7 @@ export type Database = {
           id: string
           latitude: number | null
           longitude: number | null
+          nivel_envolvimento_id: string | null
           nome_completo: string
           numero: string | null
           observacoes: string | null
@@ -458,6 +459,7 @@ export type Database = {
           id?: string
           latitude?: number | null
           longitude?: number | null
+          nivel_envolvimento_id?: string | null
           nome_completo: string
           numero?: string | null
           observacoes?: string | null
@@ -486,6 +488,7 @@ export type Database = {
           id?: string
           latitude?: number | null
           longitude?: number | null
+          nivel_envolvimento_id?: string | null
           nome_completo?: string
           numero?: string | null
           observacoes?: string | null
@@ -516,6 +519,13 @@ export type Database = {
             columns: ["gabinete_id"]
             isOneToOne: false
             referencedRelation: "gabinetes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "eleitores_nivel_envolvimento_id_fkey"
+            columns: ["nivel_envolvimento_id"]
+            isOneToOne: false
+            referencedRelation: "niveis_envolvimento"
             referencedColumns: ["id"]
           },
         ]
@@ -677,6 +687,47 @@ export type Database = {
           queries_per_second?: number | null
         }
         Relationships: []
+      }
+      niveis_envolvimento: {
+        Row: {
+          cor: string
+          created_at: string
+          deleted_at: string | null
+          gabinete_id: string
+          id: string
+          nome: string
+          ordem: number
+          updated_at: string
+        }
+        Insert: {
+          cor?: string
+          created_at?: string
+          deleted_at?: string | null
+          gabinete_id: string
+          id?: string
+          nome: string
+          ordem?: number
+          updated_at?: string
+        }
+        Update: {
+          cor?: string
+          created_at?: string
+          deleted_at?: string | null
+          gabinete_id?: string
+          id?: string
+          nome?: string
+          ordem?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "niveis_envolvimento_gabinete_id_fkey"
+            columns: ["gabinete_id"]
+            isOneToOne: false
+            referencedRelation: "gabinetes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       notifications: {
         Row: {
