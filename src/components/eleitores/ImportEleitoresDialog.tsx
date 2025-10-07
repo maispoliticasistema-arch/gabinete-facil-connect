@@ -28,6 +28,8 @@ const CAMPOS_ELEITOR = [
   { value: 'cidade', label: 'Cidade' },
   { value: 'estado', label: 'Estado' },
   { value: 'cep', label: 'CEP' },
+  { value: 'latitude', label: 'Latitude' },
+  { value: 'longitude', label: 'Longitude' },
   { value: 'profissao', label: 'Profissão' },
   { value: 'observacoes', label: 'Observações' },
   { value: 'tags', label: 'Tags/Etiquetas (separadas por vírgula)' },
@@ -108,6 +110,8 @@ export function ImportEleitoresDialog({ onEleitoresImported }: ImportEleitoresDi
           else if (normalized.includes('cidade')) autoMapping[header] = 'cidade';
           else if (normalized.includes('estado') || normalized.includes('uf')) autoMapping[header] = 'estado';
           else if (normalized.includes('cep')) autoMapping[header] = 'cep';
+          else if (normalized.includes('latit')) autoMapping[header] = 'latitude';
+          else if (normalized.includes('longit')) autoMapping[header] = 'longitude';
           else if (normalized.includes('profissao') || normalized.includes('profissão')) autoMapping[header] = 'profissao';
           else if (normalized.includes('observa')) autoMapping[header] = 'observacoes';
           else if (normalized.includes('tag') || normalized.includes('etiqueta')) autoMapping[header] = 'tags';
@@ -263,36 +267,63 @@ export function ImportEleitoresDialog({ onEleitoresImported }: ImportEleitoresDi
                 
                 if (campo === 'data_nascimento' && valor) {
                   try {
+                    // Se for número (serial date do Excel)
                     if (typeof valor === 'number') {
                       const excelEpoch = new Date(1900, 0, 1);
                       const msPerDay = 24 * 60 * 60 * 1000;
                       const daysOffset = valor > 59 ? valor - 2 : valor - 1;
                       const date = new Date(excelEpoch.getTime() + daysOffset * msPerDay);
                       if (!isNaN(date.getTime())) {
-                        valor = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+                        const year = date.getFullYear();
+                        const month = String(date.getMonth() + 1).padStart(2, '0');
+                        const day = String(date.getDate()).padStart(2, '0');
+                        valor = `${year}-${month}-${day}`;
                       } else {
                         valor = null;
                       }
-                    } else if (String(valor).includes('/')) {
-                      const parts = String(valor).split('/');
+                    } 
+                    // Se for string com barra (DD/MM/AAAA ou DD/MM/AA)
+                    else if (String(valor).includes('/')) {
+                      const valorStr = String(valor).trim();
+                      const parts = valorStr.split('/');
                       if (parts.length === 3) {
-                        const [dia, mes, ano] = parts;
-                        const year = ano.length === 2 ? `20${ano}` : ano;
-                        valor = `${year}-${mes.padStart(2, '0')}-${dia.padStart(2, '0')}`;
+                        let [dia, mes, ano] = parts;
+                        // Normalizar ano de 2 dígitos para 4
+                        if (ano.length === 2) {
+                          const anoNum = parseInt(ano);
+                          ano = anoNum > 30 ? `19${ano}` : `20${ano}`;
+                        }
+                        valor = `${ano}-${mes.padStart(2, '0')}-${dia.padStart(2, '0')}`;
                       } else {
                         valor = null;
                       }
-                    } else if (typeof valor === 'string') {
-                      const date = new Date(valor.trim());
+                    }
+                    // Se for string (pode ser ISO, timestamp, ou outro formato)
+                    else if (typeof valor === 'string') {
+                      const valorStr = valor.trim();
+                      // Remover qualquer hora/minuto/segundo e manter só a data
+                      const datePart = valorStr.split(' ')[0].split('T')[0];
+                      
+                      // Tentar criar date e extrair componentes
+                      const date = new Date(datePart);
                       if (!isNaN(date.getTime())) {
-                        valor = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+                        const year = date.getFullYear();
+                        const month = String(date.getMonth() + 1).padStart(2, '0');
+                        const day = String(date.getDate()).padStart(2, '0');
+                        valor = `${year}-${month}-${day}`;
                       } else {
-                        valor = null;
+                        // Tentar formato YYYY-MM-DD diretamente
+                        if (/^\d{4}-\d{2}-\d{2}$/.test(datePart)) {
+                          valor = datePart;
+                        } else {
+                          valor = null;
+                        }
                       }
                     } else {
                       valor = null;
                     }
                   } catch (e) {
+                    console.error('Erro ao converter data:', e, 'Valor original:', valor);
                     valor = null;
                   }
                 } else if (campo === 'sexo' && valor) {
@@ -304,11 +335,15 @@ export function ImportEleitoresDialog({ onEleitoresImported }: ImportEleitoresDi
                   } else {
                     valor = null;
                   }
+                } else if (campo === 'latitude' || campo === 'longitude') {
+                  // Converter para número
+                  const numero = parseFloat(String(valor).replace(',', '.'));
+                  valor = isNaN(numero) ? null : numero;
                 } else {
                   valor = String(valor).trim();
                 }
                 
-                if (valor) eleitor[campo] = valor;
+                if (valor !== null && valor !== '') eleitor[campo] = valor;
               }
             });
 
@@ -380,176 +415,6 @@ export function ImportEleitoresDialog({ onEleitoresImported }: ImportEleitoresDi
       toast({
         title: 'Erro ao importar',
         description: error.message,
-        variant: 'destructive',
-      });
-      setImporting(false);
-    }
-
-    try {
-      const reader = new FileReader();
-      
-      reader.onerror = () => {
-        console.error('FileReader error');
-        toast({
-          title: 'Erro ao ler arquivo',
-          description: 'Não foi possível ler o arquivo',
-          variant: 'destructive',
-        });
-        setImporting(false);
-      };
-
-      reader.onload = async (e) => {
-        try {
-          const data = e.target?.result;
-          console.log('File loaded, parsing...');
-          
-          const workbook = XLSX.read(data, { type: 'binary' });
-          const sheetName = workbook.SheetNames[0];
-          const worksheet = workbook.Sheets[sheetName];
-          const jsonData = XLSX.utils.sheet_to_json(worksheet);
-
-          console.log('Parsed rows:', jsonData.length);
-
-          const eleitores = jsonData.map((row: any) => {
-            const eleitor: any = {
-              gabinete_id: currentGabinete.gabinete_id,
-            };
-
-            headers.forEach((header) => {
-              const campo = columnMapping[header];
-              if (campo && campo !== 'ignore' && row[header]) {
-                let valor = row[header];
-                
-                // Convert data_nascimento to YYYY-MM-DD format
-                if (campo === 'data_nascimento' && valor) {
-                  try {
-                    // Se for um número (serial do Excel), converte
-                    if (typeof valor === 'number') {
-                      // Excel serial date: dias desde 1900-01-01
-                      const excelEpoch = new Date(1900, 0, 1);
-                      const msPerDay = 24 * 60 * 60 * 1000;
-                      // Excel tem um bug: considera 1900 como ano bissexto
-                      const daysOffset = valor > 59 ? valor - 2 : valor - 1;
-                      const date = new Date(excelEpoch.getTime() + daysOffset * msPerDay);
-                      
-                      if (!isNaN(date.getTime())) {
-                        const year = date.getFullYear();
-                        const month = String(date.getMonth() + 1).padStart(2, '0');
-                        const day = String(date.getDate()).padStart(2, '0');
-                        valor = `${year}-${month}-${day}`;
-                      } else {
-                        valor = null; // Data inválida
-                      }
-                    } 
-                    // Se for string com barra (DD/MM/AAAA)
-                    else if (String(valor).includes('/')) {
-                      const parts = String(valor).split('/');
-                      if (parts.length === 3) {
-                        const [dia, mes, ano] = parts;
-                        const year = ano.length === 2 ? `20${ano}` : ano;
-                        valor = `${year}-${mes.padStart(2, '0')}-${dia.padStart(2, '0')}`;
-                      } else {
-                        valor = null;
-                      }
-                    }
-                    // Se for string de data ISO ou timestamp
-                    else if (typeof valor === 'string') {
-                      const valorStr = valor.trim();
-                      // Tenta criar uma data e extrair apenas YYYY-MM-DD
-                      const date = new Date(valorStr);
-                      if (!isNaN(date.getTime())) {
-                        const year = date.getFullYear();
-                        const month = String(date.getMonth() + 1).padStart(2, '0');
-                        const day = String(date.getDate()).padStart(2, '0');
-                        valor = `${year}-${month}-${day}`;
-                      } else {
-                        valor = null;
-                      }
-                    } else {
-                      valor = null;
-                    }
-                  } catch (e) {
-                    console.error('Erro ao converter data:', e);
-                    valor = null; // Ignora datas com erro
-                  }
-                }
-                // Normalizar valores de sexo
-                else if (campo === 'sexo' && valor) {
-                  const sexoNormalizado = String(valor).toLowerCase().trim();
-                  if (sexoNormalizado.includes('masc') || sexoNormalizado === 'm') {
-                    valor = 'masculino';
-                  } else if (sexoNormalizado.includes('fem') || sexoNormalizado === 'f') {
-                    valor = 'feminino';
-                  } else {
-                    valor = null; // Ignora valores inválidos
-                  }
-                } else {
-                  valor = String(valor).trim();
-                }
-                
-                if (valor) {
-                  eleitor[campo] = valor;
-                }
-              }
-            });
-
-            return eleitor;
-          }).filter((e: any) => e.nome_completo); // Apenas registros com nome
-
-          console.log('Eleitores to import:', eleitores.length);
-
-          if (eleitores.length === 0) {
-            toast({
-              title: 'Nenhum eleitor para importar',
-              description: 'Não foram encontrados registros válidos',
-              variant: 'destructive',
-            });
-            setImporting(false);
-            return;
-          }
-
-          console.log('Inserting into database...');
-          const { data: insertedData, error } = await supabase
-            .from('eleitores')
-            .insert(eleitores)
-            .select();
-
-          if (error) {
-            console.error('Database error:', error);
-            throw error;
-          }
-
-          console.log('Import successful:', insertedData?.length);
-
-          toast({
-            title: 'Importação concluída',
-            description: `${eleitores.length} eleitor(es) importado(s) com sucesso`,
-          });
-
-          setOpen(false);
-          setFile(null);
-          setPreviewData([]);
-          setHeaders([]);
-          setColumnMapping({});
-          setImporting(false);
-          onEleitoresImported();
-        } catch (error: any) {
-          console.error('Error in onload:', error);
-          toast({
-            title: 'Erro ao importar',
-            description: error.message || 'Erro desconhecido',
-            variant: 'destructive',
-          });
-          setImporting(false);
-        }
-      };
-      
-      reader.readAsBinaryString(file);
-    } catch (error: any) {
-      console.error('Error in handleImport:', error);
-      toast({
-        title: 'Erro ao importar',
-        description: error.message || 'Erro desconhecido',
         variant: 'destructive',
       });
       setImporting(false);
