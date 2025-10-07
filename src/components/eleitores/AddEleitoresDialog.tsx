@@ -27,6 +27,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2, UserPlus } from 'lucide-react';
 
 interface Tag {
@@ -40,8 +41,10 @@ const eleitoresSchema = z.object({
   telefone: z.string().trim().max(20, 'Telefone muito longo').optional(),
   email: z.string().trim().email('E-mail inválido').max(255, 'E-mail muito longo').optional().or(z.literal('')),
   data_nascimento: z.string().regex(/^(\d{2}\/\d{2}\/\d{4})?$/, 'Formato deve ser DD/MM/AAAA').optional(),
+  sexo: z.enum(['masculino', 'feminino', '']).optional(),
   endereco: z.string().trim().max(300, 'Endereço muito longo').optional(),
   numero: z.string().trim().max(20, 'Número muito longo').optional(),
+  complemento: z.string().trim().max(100, 'Complemento muito longo').optional(),
   bairro: z.string().trim().max(100, 'Bairro muito longo').optional(),
   cidade: z.string().trim().max(100, 'Cidade muito longa').optional(),
   estado: z.string().trim().max(2, 'Estado deve ter 2 caracteres').optional(),
@@ -79,8 +82,10 @@ export const AddEleitoresDialog = ({
       telefone: '',
       email: '',
       data_nascimento: '',
+      sexo: '',
       endereco: '',
       numero: '',
+      complemento: '',
       bairro: '',
       cidade: '',
       estado: '',
@@ -138,8 +143,10 @@ export const AddEleitoresDialog = ({
           telefone: data.telefone || null,
           email: data.email || null,
           data_nascimento: dataNascimento,
+          sexo: data.sexo || null,
           endereco: data.endereco || null,
           numero: data.numero || null,
+          complemento: data.complemento || null,
           bairro: data.bairro || null,
           cidade: data.cidade || null,
           estado: data.estado || null,
@@ -262,19 +269,43 @@ export const AddEleitoresDialog = ({
               />
             </div>
 
-            <FormField
-              control={form.control}
-              name="email"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>E-mail</FormLabel>
-                  <FormControl>
-                    <Input type="email" placeholder="joao@exemplo.com" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>E-mail</FormLabel>
+                    <FormControl>
+                      <Input type="email" placeholder="joao@exemplo.com" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="sexo"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Sexo</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="masculino">Masculino</SelectItem>
+                        <SelectItem value="feminino">Feminino</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
 
             <div className="grid grid-cols-3 gap-4">
               <FormField
@@ -305,6 +336,20 @@ export const AddEleitoresDialog = ({
                 )}
               />
             </div>
+
+            <FormField
+              control={form.control}
+              name="complemento"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Complemento</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Apto, bloco, etc." {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             <div className="grid grid-cols-2 gap-4">
               <FormField

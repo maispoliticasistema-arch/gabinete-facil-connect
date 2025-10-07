@@ -382,6 +382,7 @@ export type Database = {
           cadastrado_por: string | null
           cep: string | null
           cidade: string | null
+          complemento: string | null
           cpf: string | null
           created_at: string | null
           data_nascimento: string | null
@@ -398,6 +399,7 @@ export type Database = {
           observacoes: string | null
           profissao: string | null
           rg: string | null
+          sexo: string | null
           telefone: string | null
           updated_at: string | null
           via_link_indicacao: boolean | null
@@ -407,6 +409,7 @@ export type Database = {
           cadastrado_por?: string | null
           cep?: string | null
           cidade?: string | null
+          complemento?: string | null
           cpf?: string | null
           created_at?: string | null
           data_nascimento?: string | null
@@ -423,6 +426,7 @@ export type Database = {
           observacoes?: string | null
           profissao?: string | null
           rg?: string | null
+          sexo?: string | null
           telefone?: string | null
           updated_at?: string | null
           via_link_indicacao?: boolean | null
@@ -432,6 +436,7 @@ export type Database = {
           cadastrado_por?: string | null
           cep?: string | null
           cidade?: string | null
+          complemento?: string | null
           cpf?: string | null
           created_at?: string | null
           data_nascimento?: string | null
@@ -448,6 +453,7 @@ export type Database = {
           observacoes?: string | null
           profissao?: string | null
           rg?: string | null
+          sexo?: string | null
           telefone?: string | null
           updated_at?: string | null
           via_link_indicacao?: boolean | null

@@ -20,8 +20,10 @@ const CAMPOS_ELEITOR = [
   { value: 'telefone', label: 'Telefone' },
   { value: 'email', label: 'Email' },
   { value: 'data_nascimento', label: 'Data de Nascimento' },
+  { value: 'sexo', label: 'Sexo' },
   { value: 'endereco', label: 'Endereço' },
   { value: 'numero', label: 'Número' },
+  { value: 'complemento', label: 'Complemento' },
   { value: 'bairro', label: 'Bairro' },
   { value: 'cidade', label: 'Cidade' },
   { value: 'estado', label: 'Estado' },
@@ -94,8 +96,10 @@ export function ImportEleitoresDialog({ onEleitoresImported }: ImportEleitoresDi
           else if (normalized.includes('telefone') || normalized.includes('celular')) autoMapping[header] = 'telefone';
           else if (normalized.includes('email') || normalized.includes('e-mail')) autoMapping[header] = 'email';
           else if (normalized.includes('nascimento') || normalized.includes('data')) autoMapping[header] = 'data_nascimento';
+          else if (normalized.includes('sexo') || normalized.includes('gênero') || normalized.includes('genero')) autoMapping[header] = 'sexo';
           else if (normalized.includes('endereco') || normalized.includes('endereço')) autoMapping[header] = 'endereco';
           else if (normalized.includes('numero') || normalized.includes('número') || normalized === 'nro' || normalized === 'nº') autoMapping[header] = 'numero';
+          else if (normalized.includes('complemento') || normalized.includes('compl')) autoMapping[header] = 'complemento';
           else if (normalized.includes('bairro')) autoMapping[header] = 'bairro';
           else if (normalized.includes('cidade')) autoMapping[header] = 'cidade';
           else if (normalized.includes('estado') || normalized.includes('uf')) autoMapping[header] = 'estado';
@@ -209,6 +213,17 @@ export function ImportEleitoresDialog({ onEleitoresImported }: ImportEleitoresDi
                   } catch (e) {
                     console.error('Erro ao converter data:', e);
                     valor = null; // Ignora datas com erro
+                  }
+                }
+                // Normalizar valores de sexo
+                else if (campo === 'sexo' && valor) {
+                  const sexoNormalizado = String(valor).toLowerCase().trim();
+                  if (sexoNormalizado.includes('masc') || sexoNormalizado === 'm') {
+                    valor = 'masculino';
+                  } else if (sexoNormalizado.includes('fem') || sexoNormalizado === 'f') {
+                    valor = 'feminino';
+                  } else {
+                    valor = null; // Ignora valores inválidos
                   }
                 } else {
                   valor = String(valor).trim();
