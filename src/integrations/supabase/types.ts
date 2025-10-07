@@ -194,8 +194,11 @@ export type Database = {
           entity_id: string | null
           entity_type: Database["public"]["Enums"]["audit_entity"] | null
           gabinete_id: string
+          http_method: string | null
           id: string
           ip_address: string | null
+          request_body: Json | null
+          response_status: number | null
           user_agent: string | null
           user_id: string
         }
@@ -206,8 +209,11 @@ export type Database = {
           entity_id?: string | null
           entity_type?: Database["public"]["Enums"]["audit_entity"] | null
           gabinete_id: string
+          http_method?: string | null
           id?: string
           ip_address?: string | null
+          request_body?: Json | null
+          response_status?: number | null
           user_agent?: string | null
           user_id: string
         }
@@ -218,8 +224,11 @@ export type Database = {
           entity_id?: string | null
           entity_type?: Database["public"]["Enums"]["audit_entity"] | null
           gabinete_id?: string
+          http_method?: string | null
           id?: string
           ip_address?: string | null
+          request_body?: Json | null
+          response_status?: number | null
           user_agent?: string | null
           user_id?: string
         }
@@ -232,6 +241,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      auth_attempts: {
+        Row: {
+          created_at: string
+          email: string
+          error_message: string | null
+          id: string
+          ip_address: string | null
+          success: boolean
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          error_message?: string | null
+          id?: string
+          ip_address?: string | null
+          success: boolean
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          error_message?: string | null
+          id?: string
+          ip_address?: string | null
+          success?: boolean
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
       }
       criadores_externos: {
         Row: {
@@ -1631,6 +1673,10 @@ export type Database = {
         Returns: undefined
       }
       check_and_create_alerts: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
+      cleanup_old_auth_attempts: {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
