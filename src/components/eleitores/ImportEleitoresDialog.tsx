@@ -204,11 +204,25 @@ export function ImportEleitoresDialog({ onEleitoresImported }: ImportEleitoresDi
                         const [dia, mes, ano] = parts;
                         const year = ano.length === 2 ? `20${ano}` : ano;
                         valor = `${year}-${mes.padStart(2, '0')}-${dia.padStart(2, '0')}`;
+                      } else {
+                        valor = null;
                       }
                     }
-                    // Se já estiver em formato ISO ou outro formato
-                    else {
-                      valor = String(valor).trim();
+                    // Se for string de data ISO ou timestamp
+                    else if (typeof valor === 'string') {
+                      const valorStr = valor.trim();
+                      // Tenta criar uma data e extrair apenas YYYY-MM-DD
+                      const date = new Date(valorStr);
+                      if (!isNaN(date.getTime())) {
+                        const year = date.getFullYear();
+                        const month = String(date.getMonth() + 1).padStart(2, '0');
+                        const day = String(date.getDate()).padStart(2, '0');
+                        valor = `${year}-${month}-${day}`;
+                      } else {
+                        valor = null;
+                      }
+                    } else {
+                      valor = null;
                     }
                   } catch (e) {
                     console.error('Erro ao converter data:', e);
