@@ -33,6 +33,7 @@ const CAMPOS_ELEITOR = [
   { value: 'profissao', label: 'Profissão' },
   { value: 'observacoes', label: 'Observações' },
   { value: 'tags', label: 'Tags/Etiquetas (separadas por vírgula)' },
+  { value: 'nivel_envolvimento', label: 'Nível de Envolvimento' },
   { value: 'criador_externo', label: 'Criador/Responsável Externo' },
   { value: 'ignore', label: '--- Ignorar ---' },
 ];
