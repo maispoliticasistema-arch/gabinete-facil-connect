@@ -355,13 +355,19 @@ export function ImportEleitoresDialog({ onEleitoresImported }: ImportEleitoresDi
             return { eleitor, tags: tagsByRow[index] };
           }).filter((e: any) => e.eleitor.nome_completo);
 
+          console.log('Sample eleitor data:', eleitores[0]?.eleitor);
+          console.log('Eleitores to import:', eleitores.length);
+
           // Inserir eleitores
           const { data: insertedEleitores, error } = await supabase
             .from('eleitores')
             .insert(eleitores.map(e => e.eleitor))
             .select();
 
-          if (error) throw error;
+          if (error) {
+            console.error('Database error details:', error);
+            throw error;
+          }
 
           // Criar relacionamentos eleitor-tag
           if (insertedEleitores) {
