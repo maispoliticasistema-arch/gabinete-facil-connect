@@ -286,18 +286,18 @@ export function ImportEleitoresDialog({ onEleitoresImported }: ImportEleitoresDi
                     
                     // Se for número (serial date do Excel)
                     if (typeof valor === 'number') {
-                      const excelEpoch = new Date(1900, 0, 1);
+                      const excelEpoch = new Date(Date.UTC(1900, 0, 1));
                       const msPerDay = 24 * 60 * 60 * 1000;
                       const daysOffset = valor > 59 ? valor - 2 : valor - 1;
                       const date = new Date(excelEpoch.getTime() + daysOffset * msPerDay);
-                      if (!isNaN(date.getTime()) && date.getFullYear() > 1900 && date.getFullYear() < 2100) {
-                        const year = date.getFullYear();
-                        const month = String(date.getMonth() + 1).padStart(2, '0');
-                        const day = String(date.getDate()).padStart(2, '0');
+                      if (!isNaN(date.getTime()) && date.getUTCFullYear() > 1900 && date.getUTCFullYear() < 2100) {
+                        const year = date.getUTCFullYear();
+                        const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+                        const day = String(date.getUTCDate()).padStart(2, '0');
                         dataStr = `${year}-${month}-${day}`;
                         dataValida = true;
                       }
-                    } 
+                    }
                     // Se for string com barra (DD/MM/AAAA ou DD/MM/AA)
                     else if (String(valor).includes('/')) {
                       const valorStr = String(valor).trim();
@@ -316,11 +316,7 @@ export function ImportEleitoresDialog({ onEleitoresImported }: ImportEleitoresDi
                         // Validar se a data é válida
                         if (anoNum >= 1900 && anoNum <= 2100 && mesNum >= 1 && mesNum <= 12 && diaNum >= 1 && diaNum <= 31) {
                           dataStr = `${ano}-${mes.padStart(2, '0')}-${dia.padStart(2, '0')}`;
-                          // Verificar se a data é realmente válida
-                          const testDate = new Date(dataStr);
-                          if (!isNaN(testDate.getTime())) {
-                            dataValida = true;
-                          }
+                          dataValida = true;
                         }
                       }
                     }
@@ -338,19 +334,16 @@ export function ImportEleitoresDialog({ onEleitoresImported }: ImportEleitoresDi
                         const diaNum = parseInt(dia);
                         
                         if (anoNum >= 1900 && anoNum <= 2100 && mesNum >= 1 && mesNum <= 12 && diaNum >= 1 && diaNum <= 31) {
-                          const testDate = new Date(datePart);
-                          if (!isNaN(testDate.getTime())) {
-                            dataStr = datePart;
-                            dataValida = true;
-                          }
+                          dataStr = datePart;
+                          dataValida = true;
                         }
                       } else {
-                        // Tentar criar date e extrair componentes
-                        const date = new Date(datePart);
-                        if (!isNaN(date.getTime()) && date.getFullYear() >= 1900 && date.getFullYear() <= 2100) {
-                          const year = date.getFullYear();
-                          const month = String(date.getMonth() + 1).padStart(2, '0');
-                          const day = String(date.getDate()).padStart(2, '0');
+                        // Tentar criar date e extrair componentes usando UTC
+                        const date = new Date(datePart + 'T00:00:00Z');
+                        if (!isNaN(date.getTime()) && date.getUTCFullYear() >= 1900 && date.getUTCFullYear() <= 2100) {
+                          const year = date.getUTCFullYear();
+                          const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+                          const day = String(date.getUTCDate()).padStart(2, '0');
                           dataStr = `${year}-${month}-${day}`;
                           dataValida = true;
                         }
