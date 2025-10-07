@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { Building2, Lock, Mail, User } from 'lucide-react';
+import { logAuthAttempt } from '@/lib/authLogger';
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -22,18 +23,32 @@ const Auth = () => {
     e.preventDefault();
     setLoading(true);
 
-    const { error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
 
     if (error) {
+      // Registrar tentativa falhada
+      await logAuthAttempt({
+        email,
+        success: false,
+        errorMessage: error.message,
+      });
+
       toast({
         title: 'Erro ao fazer login',
         description: error.message,
         variant: 'destructive',
       });
     } else {
+      // Registrar tentativa bem-sucedida
+      await logAuthAttempt({
+        email,
+        success: true,
+        userId: data.user?.id,
+      });
+
       toast({
         title: 'Login realizado com sucesso!',
         description: 'Redirecionando...',

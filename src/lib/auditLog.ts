@@ -5,13 +5,19 @@ type AuditAction =
   | 'update' 
   | 'delete'
   | 'login'
+  | 'login_failed'
   | 'logout'
   | 'permission_change'
   | 'user_created'
   | 'user_disabled'
   | 'user_deleted'
+  | 'user_invited'
+  | 'user_approved'
+  | 'user_rejected'
   | 'export_report'
-  | 'import_data';
+  | 'import_data'
+  | 'access_denied'
+  | 'settings_changed';
 
 type AuditEntity =
   | 'eleitor'
@@ -22,7 +28,10 @@ type AuditEntity =
   | 'user'
   | 'gabinete'
   | 'permission'
-  | 'relatorio';
+  | 'relatorio'
+  | 'nivel_envolvimento'
+  | 'portal'
+  | 'access_request';
 
 interface LogAuditParams {
   gabineteId: string;

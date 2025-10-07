@@ -1849,6 +1849,8 @@ export type Database = {
         | "demanda_concluida"
         | "evento_proximo"
         | "roteiro_atribuido"
+        | "warning"
+        | "info"
       permission_type:
         | "view_eleitores"
         | "create_eleitores"
@@ -2044,6 +2046,8 @@ export const Constants = {
         "demanda_concluida",
         "evento_proximo",
         "roteiro_atribuido",
+        "warning",
+        "info",
       ],
       permission_type: [
         "view_eleitores",

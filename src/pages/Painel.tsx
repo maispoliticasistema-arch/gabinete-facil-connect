@@ -7,6 +7,7 @@ import { DesempenhoSection } from '@/components/painel/DesempenhoSection';
 import { AuditoriaGlobalSection } from '@/components/painel/AuditoriaGlobalSection';
 import { ErrosSection } from '@/components/painel/ErrosSection';
 import { MonitoramentoSection } from '@/components/painel/MonitoramentoSection';
+import { AuthAttemptsSection } from '@/components/painel/AuthAttemptsSection';
 import { Shield, LogOut } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { ThemeToggle } from '@/components/ThemeToggle';
@@ -50,6 +51,7 @@ export default function Painel() {
               <TabsTrigger value="overview">Visão Geral</TabsTrigger>
               <TabsTrigger value="monitoramento">Monitoramento</TabsTrigger>
               <TabsTrigger value="erros">Erros</TabsTrigger>
+              <TabsTrigger value="auth">Autenticação</TabsTrigger>
               <TabsTrigger value="gabinetes">Gabinetes</TabsTrigger>
               <TabsTrigger value="usuarios">Usuários</TabsTrigger>
               <TabsTrigger value="desempenho">Desempenho</TabsTrigger>
@@ -66,6 +68,10 @@ export default function Painel() {
 
             <TabsContent value="erros">
               <ErrosSection />
+            </TabsContent>
+
+            <TabsContent value="auth">
+              <AuthAttemptsSection />
             </TabsContent>
 
             <TabsContent value="gabinetes">
