@@ -170,21 +170,53 @@ export function ImportEleitoresDialog({ onEleitoresImported }: ImportEleitoresDi
             headers.forEach((header) => {
               const campo = columnMapping[header];
               if (campo && campo !== 'ignore' && row[header]) {
-                let valor = String(row[header]).trim();
+                let valor = row[header];
                 
-                // Convert data_nascimento from DD/MM/AAAA to YYYY-MM-DD
+                // Convert data_nascimento to YYYY-MM-DD format
                 if (campo === 'data_nascimento' && valor) {
-                  // Check if it's in DD/MM/AAAA format
-                  if (valor.includes('/')) {
-                    const parts = valor.split('/');
-                    if (parts.length === 3) {
-                      const [dia, mes, ano] = parts;
-                      valor = `${ano}-${mes.padStart(2, '0')}-${dia.padStart(2, '0')}`;
+                  try {
+                    // Se for um número (serial do Excel), converte
+                    if (typeof valor === 'number') {
+                      // Excel serial date: dias desde 1900-01-01
+                      const excelEpoch = new Date(1900, 0, 1);
+                      const msPerDay = 24 * 60 * 60 * 1000;
+                      // Excel tem um bug: considera 1900 como ano bissexto
+                      const daysOffset = valor > 59 ? valor - 2 : valor - 1;
+                      const date = new Date(excelEpoch.getTime() + daysOffset * msPerDay);
+                      
+                      if (!isNaN(date.getTime())) {
+                        const year = date.getFullYear();
+                        const month = String(date.getMonth() + 1).padStart(2, '0');
+                        const day = String(date.getDate()).padStart(2, '0');
+                        valor = `${year}-${month}-${day}`;
+                      } else {
+                        valor = null; // Data inválida
+                      }
+                    } 
+                    // Se for string com barra (DD/MM/AAAA)
+                    else if (String(valor).includes('/')) {
+                      const parts = String(valor).split('/');
+                      if (parts.length === 3) {
+                        const [dia, mes, ano] = parts;
+                        const year = ano.length === 2 ? `20${ano}` : ano;
+                        valor = `${year}-${mes.padStart(2, '0')}-${dia.padStart(2, '0')}`;
+                      }
                     }
+                    // Se já estiver em formato ISO ou outro formato
+                    else {
+                      valor = String(valor).trim();
+                    }
+                  } catch (e) {
+                    console.error('Erro ao converter data:', e);
+                    valor = null; // Ignora datas com erro
                   }
+                } else {
+                  valor = String(valor).trim();
                 }
                 
-                eleitor[campo] = valor;
+                if (valor) {
+                  eleitor[campo] = valor;
+                }
               }
             });
 
