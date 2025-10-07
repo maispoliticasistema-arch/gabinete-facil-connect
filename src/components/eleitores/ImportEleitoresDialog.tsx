@@ -281,19 +281,21 @@ export function ImportEleitoresDialog({ onEleitoresImported }: ImportEleitoresDi
                   }
                 } else if (campo === 'data_nascimento' && valor) {
                   try {
+                    let dataValida = false;
+                    let dataStr = '';
+                    
                     // Se for número (serial date do Excel)
                     if (typeof valor === 'number') {
                       const excelEpoch = new Date(1900, 0, 1);
                       const msPerDay = 24 * 60 * 60 * 1000;
                       const daysOffset = valor > 59 ? valor - 2 : valor - 1;
                       const date = new Date(excelEpoch.getTime() + daysOffset * msPerDay);
-                      if (!isNaN(date.getTime())) {
+                      if (!isNaN(date.getTime()) && date.getFullYear() > 1900 && date.getFullYear() < 2100) {
                         const year = date.getFullYear();
                         const month = String(date.getMonth() + 1).padStart(2, '0');
                         const day = String(date.getDate()).padStart(2, '0');
-                        valor = `${year}-${month}-${day}`;
-                      } else {
-                        valor = null;
+                        dataStr = `${year}-${month}-${day}`;
+                        dataValida = true;
                       }
                     } 
                     // Se for string com barra (DD/MM/AAAA ou DD/MM/AA)
@@ -307,9 +309,19 @@ export function ImportEleitoresDialog({ onEleitoresImported }: ImportEleitoresDi
                           const anoNum = parseInt(ano);
                           ano = anoNum > 30 ? `19${ano}` : `20${ano}`;
                         }
-                        valor = `${ano}-${mes.padStart(2, '0')}-${dia.padStart(2, '0')}`;
-                      } else {
-                        valor = null;
+                        const anoNum = parseInt(ano);
+                        const mesNum = parseInt(mes);
+                        const diaNum = parseInt(dia);
+                        
+                        // Validar se a data é válida
+                        if (anoNum >= 1900 && anoNum <= 2100 && mesNum >= 1 && mesNum <= 12 && diaNum >= 1 && diaNum <= 31) {
+                          dataStr = `${ano}-${mes.padStart(2, '0')}-${dia.padStart(2, '0')}`;
+                          // Verificar se a data é realmente válida
+                          const testDate = new Date(dataStr);
+                          if (!isNaN(testDate.getTime())) {
+                            dataValida = true;
+                          }
+                        }
                       }
                     }
                     // Se for string (pode ser ISO, timestamp, ou outro formato)
@@ -318,24 +330,36 @@ export function ImportEleitoresDialog({ onEleitoresImported }: ImportEleitoresDi
                       // Remover qualquer hora/minuto/segundo e manter só a data
                       const datePart = valorStr.split(' ')[0].split('T')[0];
                       
-                      // Tentar criar date e extrair componentes
-                      const date = new Date(datePart);
-                      if (!isNaN(date.getTime())) {
-                        const year = date.getFullYear();
-                        const month = String(date.getMonth() + 1).padStart(2, '0');
-                        const day = String(date.getDate()).padStart(2, '0');
-                        valor = `${year}-${month}-${day}`;
+                      // Verificar se é formato YYYY-MM-DD válido
+                      if (/^\d{4}-\d{2}-\d{2}$/.test(datePart)) {
+                        const [ano, mes, dia] = datePart.split('-');
+                        const anoNum = parseInt(ano);
+                        const mesNum = parseInt(mes);
+                        const diaNum = parseInt(dia);
+                        
+                        if (anoNum >= 1900 && anoNum <= 2100 && mesNum >= 1 && mesNum <= 12 && diaNum >= 1 && diaNum <= 31) {
+                          const testDate = new Date(datePart);
+                          if (!isNaN(testDate.getTime())) {
+                            dataStr = datePart;
+                            dataValida = true;
+                          }
+                        }
                       } else {
-                        // Tentar formato YYYY-MM-DD diretamente
-                        if (/^\d{4}-\d{2}-\d{2}$/.test(datePart)) {
-                          valor = datePart;
-                        } else {
-                          valor = null;
+                        // Tentar criar date e extrair componentes
+                        const date = new Date(datePart);
+                        if (!isNaN(date.getTime()) && date.getFullYear() >= 1900 && date.getFullYear() <= 2100) {
+                          const year = date.getFullYear();
+                          const month = String(date.getMonth() + 1).padStart(2, '0');
+                          const day = String(date.getDate()).padStart(2, '0');
+                          dataStr = `${year}-${month}-${day}`;
+                          dataValida = true;
                         }
                       }
-                    } else {
-                      valor = null;
                     }
+                    
+                    // Só atribuir se a data for válida, caso contrário ignorar o campo
+                    valor = dataValida ? dataStr : null;
+                    
                   } catch (e) {
                     console.error('Erro ao converter data:', e, 'Valor original:', valor);
                     valor = null;
