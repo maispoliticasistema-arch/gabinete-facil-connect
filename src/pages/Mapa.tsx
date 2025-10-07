@@ -63,6 +63,7 @@ const Mapa = () => {
   const [totalEleitores, setTotalEleitores] = useState(0);
   const [demandas, setDemandas] = useState<any[]>([]);
   const [roteiros, setRoteiros] = useState<any[]>([]);
+  const [niveisEnvolvimento, setNiveisEnvolvimento] = useState<any[]>([]);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [loadingProgress, setLoadingProgress] = useState(0);
   const [isLoadingMarkers, setIsLoadingMarkers] = useState(false);
@@ -73,6 +74,7 @@ const Mapa = () => {
   const [selectedCidade, setSelectedCidade] = useState<string>('all');
   const [selectedBairro, setSelectedBairro] = useState<string>('all');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
+  const [selectedNivel, setSelectedNivel] = useState<string>('all');
 
   // Initialize map - only if we have permission and gabinete
   useEffect(() => {
@@ -115,6 +117,19 @@ const Mapa = () => {
     
     const fetchData = async () => {
       try {
+        // Buscar níveis de envolvimento
+        const { data: niveisData, error: niveisError } = await supabase
+          .from('niveis_envolvimento')
+          .select('id, nome, cor, ordem')
+          .eq('gabinete_id', currentGabinete.gabinete_id)
+          .order('ordem', { ascending: true });
+
+        if (niveisError) {
+          console.error('Error fetching níveis:', niveisError);
+        } else {
+          setNiveisEnvolvimento(niveisData || []);
+        }
+
         const { data: eleitoresData, error: eleitoresError, count } = await supabase
           .from('eleitores')
           .select(`
@@ -217,9 +232,10 @@ const Mapa = () => {
     return eleitores.filter(e => {
       if (selectedCidade !== 'all' && e.cidade !== selectedCidade) return false;
       if (selectedBairro !== 'all' && e.bairro !== selectedBairro) return false;
+      if (selectedNivel !== 'all' && e.nivel_envolvimento_id !== selectedNivel) return false;
       return true;
     });
-  }, [eleitores, selectedCidade, selectedBairro]);
+  }, [eleitores, selectedCidade, selectedBairro, selectedNivel]);
 
   const filteredDemandas = useMemo(() => {
     return demandas.filter(d => {
@@ -534,6 +550,26 @@ const Mapa = () => {
             <Separator />
 
             <div className="space-y-3">
+              <h3 className="font-semibold text-sm">Nível de Envolvimento</h3>
+              <Select value={selectedNivel} onValueChange={setSelectedNivel}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os níveis</SelectItem>
+                  {niveisEnvolvimento.map(nivel => (
+                    <SelectItem key={nivel.id} value={nivel.id}>
+                      <div className="flex items-center gap-2">
+                        <div style={{ backgroundColor: nivel.cor }} className="w-3 h-3 rounded-full"></div>
+                        {nivel.nome}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <Separator />
+
+            <div className="space-y-3">
               <h3 className="font-semibold text-sm">Status da Demanda</h3>
               <Select value={selectedStatus} onValueChange={setSelectedStatus}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
@@ -547,13 +583,14 @@ const Mapa = () => {
               </Select>
             </div>
 
-            {(selectedCidade !== 'all' || selectedBairro !== 'all' || selectedStatus !== 'all') && (
+            {(selectedCidade !== 'all' || selectedBairro !== 'all' || selectedStatus !== 'all' || selectedNivel !== 'all') && (
               <>
                 <Separator />
                 <Button variant="outline" className="w-full" onClick={() => {
                   setSelectedCidade('all');
                   setSelectedBairro('all');
                   setSelectedStatus('all');
+                  setSelectedNivel('all');
                 }}>
                   <X className="h-4 w-4 mr-2" />
                   Limpar Filtros
@@ -566,25 +603,44 @@ const Mapa = () => {
             <div className="space-y-3">
               <h3 className="font-semibold text-sm">Legenda</h3>
               <div className="space-y-2 text-sm">
-                <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center text-white text-xs">👤</div>
-                  <span>Eleitor cadastrado</span>
-                </div>
+                <div className="font-medium text-xs text-muted-foreground mb-1">Níveis de Envolvimento</div>
+                {niveisEnvolvimento.length > 0 ? (
+                  niveisEnvolvimento.map(nivel => (
+                    <div key={nivel.id} className="flex items-center gap-2">
+                      <div 
+                        style={{ backgroundColor: nivel.cor }} 
+                        className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs"
+                      >
+                        👤
+                      </div>
+                      <span>{nivel.nome}</span>
+                    </div>
+                  ))
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <div className="w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center text-white text-xs">👤</div>
+                    <span>Eleitor (sem nível definido)</span>
+                  </div>
+                )}
+                
+                <div className="font-medium text-xs text-muted-foreground mt-3 mb-1">Demandas</div>
                 <div className="flex items-center gap-2">
                   <div className="w-6 h-6 rounded-full bg-red-500 flex items-center justify-center text-white text-xs">⚠️</div>
-                  <span>Demanda aberta/em andamento</span>
+                  <span>Aberta/Em andamento</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center text-white text-xs">✓</div>
-                  <span>Demanda concluída</span>
+                  <span>Concluída</span>
                 </div>
+                
+                <div className="font-medium text-xs text-muted-foreground mt-3 mb-1">Roteiros</div>
                 <div className="flex items-center gap-2">
                   <div className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center text-white text-xs">🚀</div>
-                  <span>Ponto de partida do roteiro</span>
+                  <span>Ponto de partida</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center text-white text-xs">🏁</div>
-                  <span>Ponto de chegada do roteiro</span>
+                  <span>Ponto de chegada</span>
                 </div>
               </div>
             </div>
