@@ -3,10 +3,12 @@ import { Card } from "@/components/ui/card";
 import { InfoGabinete } from "@/components/configuracoes/InfoGabinete";
 import { UsuariosPermissoes } from "@/components/configuracoes/UsuariosPermissoes";
 import { Seguranca } from "@/components/configuracoes/Seguranca";
+import { CodigoConvite } from "@/components/configuracoes/CodigoConvite";
+import { SolicitacoesAcesso } from "@/components/configuracoes/SolicitacoesAcesso";
 import { useGabinete } from "@/contexts/GabineteContext";
 import { usePermissions } from "@/hooks/usePermissions";
 import { NoPermissionMessage } from "@/components/PermissionGuard";
-import { Building2, Users, Shield } from "lucide-react";
+import { Building2, Users, Shield, UserPlus } from "lucide-react";
 
 export default function Configuracoes() {
   const { currentGabinete } = useGabinete();
@@ -35,7 +37,7 @@ export default function Configuracoes() {
       </div>
 
       <Tabs defaultValue="info" className="space-y-4 md:space-y-6">
-        <TabsList className="grid w-full grid-cols-3 h-auto">
+        <TabsList className="grid w-full grid-cols-4 h-auto">
           <TabsTrigger value="info" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 py-2 text-xs sm:text-sm">
             <Building2 className="h-3 w-3 sm:h-4 sm:w-4" />
             <span className="truncate">Gabinete</span>
@@ -43,6 +45,10 @@ export default function Configuracoes() {
           <TabsTrigger value="usuarios" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 py-2 text-xs sm:text-sm">
             <Users className="h-3 w-3 sm:h-4 sm:w-4" />
             <span className="truncate">Usuários</span>
+          </TabsTrigger>
+          <TabsTrigger value="acesso" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 py-2 text-xs sm:text-sm">
+            <UserPlus className="h-3 w-3 sm:h-4 sm:w-4" />
+            <span className="truncate">Acesso</span>
           </TabsTrigger>
           <TabsTrigger value="seguranca" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 py-2 text-xs sm:text-sm">
             <Shield className="h-3 w-3 sm:h-4 sm:w-4" />
@@ -61,6 +67,13 @@ export default function Configuracoes() {
           <Card className="p-3 sm:p-6">
             <UsuariosPermissoes gabineteId={currentGabinete.gabinete_id} />
           </Card>
+        </TabsContent>
+
+        <TabsContent value="acesso">
+          <div className="space-y-4">
+            <CodigoConvite />
+            <SolicitacoesAcesso />
+          </div>
         </TabsContent>
 
         <TabsContent value="seguranca">

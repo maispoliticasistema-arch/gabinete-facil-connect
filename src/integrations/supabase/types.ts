@@ -563,6 +563,50 @@ export type Database = {
         }
         Relationships: []
       }
+      gabinete_access_requests: {
+        Row: {
+          aprovado_em: string | null
+          aprovado_por: string | null
+          created_at: string
+          gabinete_id: string
+          id: string
+          mensagem: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          aprovado_em?: string | null
+          aprovado_por?: string | null
+          created_at?: string
+          gabinete_id: string
+          id?: string
+          mensagem?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          aprovado_em?: string | null
+          aprovado_por?: string | null
+          created_at?: string
+          gabinete_id?: string
+          id?: string
+          mensagem?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gabinete_access_requests_gabinete_id_fkey"
+            columns: ["gabinete_id"]
+            isOneToOne: false
+            referencedRelation: "gabinetes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       gabinete_integrations: {
         Row: {
           config: Json | null
@@ -610,6 +654,7 @@ export type Database = {
           cargo: Database["public"]["Enums"]["cargo_politico"] | null
           cep: string | null
           cidade: string | null
+          codigo_convite: string | null
           created_at: string | null
           descricao: string | null
           endereco_completo: string | null
@@ -625,6 +670,7 @@ export type Database = {
           cargo?: Database["public"]["Enums"]["cargo_politico"] | null
           cep?: string | null
           cidade?: string | null
+          codigo_convite?: string | null
           created_at?: string | null
           descricao?: string | null
           endereco_completo?: string | null
@@ -640,6 +686,7 @@ export type Database = {
           cargo?: Database["public"]["Enums"]["cargo_politico"] | null
           cep?: string | null
           cidade?: string | null
+          codigo_convite?: string | null
           created_at?: string | null
           descricao?: string | null
           endereco_completo?: string | null
@@ -1576,6 +1623,13 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
+      approve_access_request: {
+        Args: {
+          assigned_role?: Database["public"]["Enums"]["user_role"]
+          request_id: string
+        }
+        Returns: undefined
+      }
       check_and_create_alerts: {
         Args: Record<PropertyKey, never>
         Returns: undefined
@@ -1598,6 +1652,10 @@ export type Database = {
           _type: Database["public"]["Enums"]["notification_type"]
           _user_id: string
         }
+        Returns: string
+      }
+      generate_codigo_convite: {
+        Args: Record<PropertyKey, never>
         Returns: string
       }
       generate_codigo_indicacao: {
@@ -1661,6 +1719,10 @@ export type Database = {
       mask_rg: {
         Args: { rg: string }
         Returns: string
+      }
+      reject_access_request: {
+        Args: { request_id: string }
+        Returns: undefined
       }
       unaccent: {
         Args: { "": string }
