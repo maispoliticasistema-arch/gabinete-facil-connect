@@ -117,7 +117,14 @@ const Mapa = () => {
       try {
         const { data: eleitoresData, error: eleitoresError, count } = await supabase
           .from('eleitores')
-          .select('*', { count: 'exact' })
+          .select(`
+            *,
+            niveis_envolvimento (
+              id,
+              nome,
+              cor
+            )
+          `, { count: 'exact' })
           .eq('gabinete_id', currentGabinete.gabinete_id)
           .range(0, 50000);
 
@@ -274,11 +281,22 @@ const Mapa = () => {
           return;
         }
         
+        // Usar a cor do nível de envolvimento ou cor padrão
+        const nivelCor = eleitor.niveis_envolvimento?.cor || '#3b82f6';
+        const eleitorIconCustom = createCustomIcon(nivelCor, '👤');
+        
         console.log(`📍 Adicionando eleitor ${index}:`, eleitor.nome_completo, [eleitor.latitude, eleitor.longitude]);
-        const marker = L.marker([eleitor.latitude, eleitor.longitude], { icon: eleitorIcon });
+        const marker = L.marker([eleitor.latitude, eleitor.longitude], { icon: eleitorIconCustom });
         marker.bindPopup(`
           <div style="padding: 8px; min-width: 250px;">
             <h3 style="font-weight: bold; font-size: 16px; margin-bottom: 8px;">${eleitor.nome_completo}</h3>
+            ${eleitor.niveis_envolvimento ? `
+              <div style="margin-bottom: 8px;">
+                <span style="background-color: ${eleitor.niveis_envolvimento.cor}; color: white; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 500;">
+                  ${eleitor.niveis_envolvimento.nome}
+                </span>
+              </div>
+            ` : ''}
             <div style="font-size: 14px;">
               ${eleitor.telefone ? `<div>📞 ${eleitor.telefone}</div>` : ''}
               ${eleitor.email ? `<div>✉️ ${eleitor.email}</div>` : ''}
