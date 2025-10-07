@@ -473,12 +473,12 @@ export const AddEleitoresDialog = ({
             {niveis.length > 0 && (
               <div className="space-y-3">
                 <FormLabel>Nível de Envolvimento</FormLabel>
-                <Select value={selectedNivel} onValueChange={setSelectedNivel}>
+                <Select value={selectedNivel || 'none'} onValueChange={(value) => setSelectedNivel(value === 'none' ? '' : value)}>
                   <SelectTrigger>
                     <SelectValue placeholder="Selecione um nível" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Nenhum</SelectItem>
+                    <SelectItem value="none">Nenhum</SelectItem>
                     {niveis.map((nivel) => (
                       <SelectItem key={nivel.id} value={nivel.id}>
                         <Badge
