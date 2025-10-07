@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useGabinete } from '@/contexts/GabineteContext';
-import { Tag, Plus, Trash2 } from 'lucide-react';
+import { Tag, Plus, Trash2, Pencil, Check, X } from 'lucide-react';
 
 interface TagType {
   id: string;
@@ -21,6 +21,9 @@ export const TagsDialog = () => {
   const [newTagName, setNewTagName] = useState('');
   const [newTagColor, setNewTagColor] = useState('#6366f1');
   const [loading, setLoading] = useState(false);
+  const [editingTagId, setEditingTagId] = useState<string | null>(null);
+  const [editingName, setEditingName] = useState('');
+  const [editingColor, setEditingColor] = useState('');
   const { currentGabinete } = useGabinete();
   const { toast } = useToast();
 
@@ -108,6 +111,53 @@ export const TagsDialog = () => {
     }
   };
 
+  const startEditing = (tag: TagType) => {
+    setEditingTagId(tag.id);
+    setEditingName(tag.nome);
+    setEditingColor(tag.cor);
+  };
+
+  const cancelEditing = () => {
+    setEditingTagId(null);
+    setEditingName('');
+    setEditingColor('');
+  };
+
+  const handleUpdateTag = async (tagId: string) => {
+    if (!editingName.trim()) return;
+
+    setLoading(true);
+    try {
+      const { error } = await supabase
+        .from('tags')
+        .update({
+          nome: editingName.trim(),
+          cor: editingColor,
+        })
+        .eq('id', tagId);
+
+      if (error) throw error;
+
+      toast({
+        title: 'Tag atualizada!',
+        description: 'A tag foi atualizada com sucesso.',
+      });
+
+      setEditingTagId(null);
+      setEditingName('');
+      setEditingColor('');
+      fetchTags();
+    } catch (error: any) {
+      toast({
+        title: 'Erro ao atualizar tag',
+        description: error.message,
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
@@ -173,25 +223,70 @@ export const TagsDialog = () => {
                 {tags.map((tag) => (
                   <div
                     key={tag.id}
-                    className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-accent/50 transition-colors"
+                    className="flex items-center gap-2 p-3 rounded-lg border bg-card hover:bg-accent/50 transition-colors"
                   >
-                    <Badge
-                      style={{
-                        backgroundColor: tag.cor,
-                        color: '#fff',
-                      }}
-                      className="font-medium"
-                    >
-                      {tag.nome}
-                    </Badge>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-destructive hover:text-destructive shrink-0"
-                      onClick={() => handleDeleteTag(tag.id)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                    {editingTagId === tag.id ? (
+                      <>
+                        <Input
+                          value={editingName}
+                          onChange={(e) => setEditingName(e.target.value)}
+                          className="flex-1"
+                          placeholder="Nome da tag"
+                        />
+                        <Input
+                          type="color"
+                          value={editingColor}
+                          onChange={(e) => setEditingColor(e.target.value)}
+                          className="h-10 w-16 p-1 cursor-pointer"
+                        />
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-green-600 hover:text-green-700 shrink-0"
+                          onClick={() => handleUpdateTag(tag.id)}
+                          disabled={loading || !editingName.trim()}
+                        >
+                          <Check className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 shrink-0"
+                          onClick={cancelEditing}
+                          disabled={loading}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </>
+                    ) : (
+                      <>
+                        <Badge
+                          style={{
+                            backgroundColor: tag.cor,
+                            color: '#fff',
+                          }}
+                          className="font-medium flex-1"
+                        >
+                          {tag.nome}
+                        </Badge>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 shrink-0"
+                          onClick={() => startEditing(tag)}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-destructive hover:text-destructive shrink-0"
+                          onClick={() => handleDeleteTag(tag.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </>
+                    )}
                   </div>
                 ))}
               </div>
