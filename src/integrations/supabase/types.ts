@@ -1146,44 +1146,74 @@ export type Database = {
       }
       roteiro_pontos: {
         Row: {
+          atraso_minutos: number | null
+          conflito_janela: boolean | null
           created_at: string
           demanda_id: string | null
+          duracao_prevista_minutos: number | null
           eleitor_id: string
           endereco_manual: string | null
+          eta_chegada: string | null
+          eta_fim_atendimento: string | null
+          eta_inicio_atendimento: string | null
+          fixado: boolean | null
           id: string
+          janela_fim: string | null
+          janela_inicio: string | null
           latitude: number | null
           longitude: number | null
           observacoes: string | null
           ordem: number
           roteiro_id: string
+          tempo_deslocamento_minutos: number | null
           visitado: boolean | null
           visitado_em: string | null
         }
         Insert: {
+          atraso_minutos?: number | null
+          conflito_janela?: boolean | null
           created_at?: string
           demanda_id?: string | null
+          duracao_prevista_minutos?: number | null
           eleitor_id: string
           endereco_manual?: string | null
+          eta_chegada?: string | null
+          eta_fim_atendimento?: string | null
+          eta_inicio_atendimento?: string | null
+          fixado?: boolean | null
           id?: string
+          janela_fim?: string | null
+          janela_inicio?: string | null
           latitude?: number | null
           longitude?: number | null
           observacoes?: string | null
           ordem: number
           roteiro_id: string
+          tempo_deslocamento_minutos?: number | null
           visitado?: boolean | null
           visitado_em?: string | null
         }
         Update: {
+          atraso_minutos?: number | null
+          conflito_janela?: boolean | null
           created_at?: string
           demanda_id?: string | null
+          duracao_prevista_minutos?: number | null
           eleitor_id?: string
           endereco_manual?: string | null
+          eta_chegada?: string | null
+          eta_fim_atendimento?: string | null
+          eta_inicio_atendimento?: string | null
+          fixado?: boolean | null
           id?: string
+          janela_fim?: string | null
+          janela_inicio?: string | null
           latitude?: number | null
           longitude?: number | null
           observacoes?: string | null
           ordem?: number
           roteiro_id?: string
+          tempo_deslocamento_minutos?: number | null
           visitado?: boolean | null
           visitado_em?: string | null
         }
@@ -1242,6 +1272,9 @@ export type Database = {
       }
       roteiros: {
         Row: {
+          buffer_deslocamento_minutos: number | null
+          buffer_parada_minutos: number | null
+          considera_trafego: boolean | null
           created_at: string
           criado_por: string | null
           data: string
@@ -1251,6 +1284,7 @@ export type Database = {
           endereco_partida: string | null
           gabinete_id: string
           hora_inicio: string | null
+          hora_limite_retorno: string | null
           id: string
           latitude_final: number | null
           latitude_partida: number | null
@@ -1258,12 +1292,16 @@ export type Database = {
           longitude_partida: number | null
           nome: string
           objetivo: string | null
+          otimizado: boolean | null
           responsavel_id: string | null
           status: Database["public"]["Enums"]["roteiro_status"]
           tempo_estimado: number | null
           updated_at: string
         }
         Insert: {
+          buffer_deslocamento_minutos?: number | null
+          buffer_parada_minutos?: number | null
+          considera_trafego?: boolean | null
           created_at?: string
           criado_por?: string | null
           data: string
@@ -1273,6 +1311,7 @@ export type Database = {
           endereco_partida?: string | null
           gabinete_id: string
           hora_inicio?: string | null
+          hora_limite_retorno?: string | null
           id?: string
           latitude_final?: number | null
           latitude_partida?: number | null
@@ -1280,12 +1319,16 @@ export type Database = {
           longitude_partida?: number | null
           nome: string
           objetivo?: string | null
+          otimizado?: boolean | null
           responsavel_id?: string | null
           status?: Database["public"]["Enums"]["roteiro_status"]
           tempo_estimado?: number | null
           updated_at?: string
         }
         Update: {
+          buffer_deslocamento_minutos?: number | null
+          buffer_parada_minutos?: number | null
+          considera_trafego?: boolean | null
           created_at?: string
           criado_por?: string | null
           data?: string
@@ -1295,6 +1338,7 @@ export type Database = {
           endereco_partida?: string | null
           gabinete_id?: string
           hora_inicio?: string | null
+          hora_limite_retorno?: string | null
           id?: string
           latitude_final?: number | null
           latitude_partida?: number | null
@@ -1302,6 +1346,7 @@ export type Database = {
           longitude_partida?: number | null
           nome?: string
           objetivo?: string | null
+          otimizado?: boolean | null
           responsavel_id?: string | null
           status?: Database["public"]["Enums"]["roteiro_status"]
           tempo_estimado?: number | null

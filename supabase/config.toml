@@ -5,3 +5,9 @@ verify_jwt = true
 
 [functions.create-user]
 verify_jwt = true
+
+[functions.optimize-route]
+verify_jwt = true
+
+[functions.get-database-metrics]
+verify_jwt = true

@@ -24,8 +24,13 @@ import { supabase } from '@/integrations/supabase/client';
 import { useGabinete } from '@/contexts/GabineteContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Plus, X } from 'lucide-react';
+import { Loader2, Plus, X, Sparkles, AlertCircle } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useRouteOptimizer } from '@/hooks/useRouteOptimizer';
+import { RouteTimeline } from './RouteTimeline';
+import { Card } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const roteiroSchema = z.object({
   nome: z.string().min(3, 'Nome deve ter pelo menos 3 caracteres'),
@@ -88,6 +93,10 @@ export const AddRoteiroDialog = ({
   const [enderecoAlternativo, setEnderecoAlternativo] = useState('');
   const [obsAlternativo, setObsAlternativo] = useState('');
   const [searchEleitorEndereco, setSearchEleitorEndereco] = useState('');
+  const [stopDurations, setStopDurations] = useState<Record<string, number>>({});
+  const [bufferTravel, setBufferTravel] = useState(10);
+  const [bufferStop, setBufferStop] = useState(5);
+  const { optimizeRoute, isOptimizing, optimizationResult, clearOptimization } = useRouteOptimizer();
 
   const form = useForm<RoteiroFormData>({
     resolver: zodResolver(roteiroSchema),
@@ -195,6 +204,11 @@ export const AddRoteiroDialog = ({
 
   const removePontoComEndereco = (id: string) => {
     setPontosComEndereco(prev => prev.filter(p => p.id !== id));
+    setStopDurations(prev => {
+      const newDurations = { ...prev };
+      delete newDurations[`alt_${id}`];
+      return newDurations;
+    });
   };
 
   const filteredEleitoresEndereco = eleitores.filter(e =>
@@ -206,6 +220,91 @@ export const AddRoteiroDialog = ({
     e.nome_completo.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (e.endereco && e.endereco.toLowerCase().includes(searchTerm.toLowerCase()))
   );
+
+  const handleOptimize = async () => {
+    const formData = form.getValues();
+    
+    if (!formData.hora_inicio || !formData.endereco_partida) {
+      toast({
+        title: 'Atenção',
+        description: 'Preencha a hora de início e o endereço de partida para otimizar',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    if (selectedEleitores.length === 0 && pontosComEndereco.length === 0) {
+      toast({
+        title: 'Atenção',
+        description: 'Adicione pelo menos uma parada para otimizar',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    try {
+      // Geocodificar origem se necessário
+      let originLat, originLng;
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(formData.endereco_partida)}&format=json&limit=1`,
+        { headers: { 'User-Agent': 'GabineteApp/1.0' } }
+      );
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data && data.length > 0) {
+          originLat = parseFloat(data[0].lat);
+          originLng = parseFloat(data[0].lon);
+        }
+      }
+
+      if (!originLat || !originLng) {
+        toast({
+          title: 'Erro',
+          description: 'Não foi possível localizar o endereço de partida',
+          variant: 'destructive'
+        });
+        return;
+      }
+
+      // Preparar paradas
+      const stops = [
+        ...selectedEleitores.map(e => ({
+          id: e.id,
+          lat: e.latitude!,
+          lng: e.longitude!,
+          duration: stopDurations[e.id] || 30,
+          address: `${e.nome_completo} - ${e.endereco || ''}`.trim(),
+          eleitor_id: e.id
+        })),
+        ...pontosComEndereco.map(p => ({
+          id: `alt_${p.id}`,
+          lat: p.eleitor.latitude!,
+          lng: p.eleitor.longitude!,
+          duration: stopDurations[`alt_${p.id}`] || 30,
+          address: `${p.eleitor.nome_completo} - ${p.endereco_alternativo}`,
+          eleitor_id: p.eleitor.id
+        }))
+      ];
+
+      await optimizeRoute({
+        origin: {
+          lat: originLat,
+          lng: originLng,
+          address: formData.endereco_partida
+        },
+        startTime: formData.hora_inicio,
+        startDate: formData.data,
+        stops,
+        bufferTravel,
+        bufferStop,
+        returnLimit: undefined,
+        considerTraffic: true
+      });
+    } catch (error) {
+      console.error('Error optimizing:', error);
+    }
+  };
 
   const onSubmit = async (data: RoteiroFormData) => {
     if (!currentGabinete || !user) {
@@ -307,60 +406,81 @@ export const AddRoteiroDialog = ({
 
       if (roteiroError) throw roteiroError;
 
-      // Combinar pontos de eleitores (endereço normal e alternativo)
-      const pontosEleitores = selectedEleitores.map((eleitor, index) => ({
-        roteiro_id: roteiro.id,
-        ordem: index + 1,
-        eleitor_id: eleitor.id,
-        endereco_manual: null,
-        latitude: eleitor.latitude,
-        longitude: eleitor.longitude,
-        observacoes: `${eleitor.endereco || ''}, ${eleitor.bairro || ''}`
-      }));
-
-      // Geocodificar endereços alternativos
-      const pontosComEnderecoAlternativo = await Promise.all(
-        pontosComEndereco.map(async (ponto, index) => {
-          let latitude = null;
-          let longitude = null;
-
-          // Tentar geocodificar o endereço alternativo usando Nominatim
-          try {
-            const response = await fetch(
-              `https://nominatim.openstreetmap.org/search?` +
-              `q=${encodeURIComponent(ponto.endereco_alternativo)}` +
-              `&format=json&limit=1`,
-              {
-                headers: {
-                  'User-Agent': 'GabineteApp/1.0'
-                }
-              }
-            );
-
-            if (response.ok) {
-              const data = await response.json();
-              if (data && data.length > 0) {
-                latitude = parseFloat(data[0].lat);
-                longitude = parseFloat(data[0].lon);
-              }
-            }
-          } catch (error) {
-            console.error('Erro ao geocodificar endereço alternativo:', error);
-          }
-
+      // Se houver resultado de otimização, usar a ordem e ETAs otimizados
+      let todosPontos;
+      if (optimizationResult && optimizationResult.optimizedStops) {
+        todosPontos = optimizationResult.optimizedStops.map((stop, index) => {
+          const eleitorId = stop.eleitor_id;
           return {
             roteiro_id: roteiro.id,
-            ordem: selectedEleitores.length + index + 1,
-            eleitor_id: ponto.eleitor.id,
-            endereco_manual: ponto.endereco_alternativo,
-            latitude,
-            longitude,
-            observacoes: ponto.observacoes || null
+            ordem: stop.order,
+            eleitor_id: eleitorId,
+            endereco_manual: stop.address.includes(' - ') ? stop.address.split(' - ')[1] : null,
+            latitude: stop.lat,
+            longitude: stop.lng,
+            duracao_prevista_minutos: stop.duration,
+            eta_chegada: stop.etaArrival,
+            eta_inicio_atendimento: stop.etaStart,
+            eta_fim_atendimento: stop.etaEnd,
+            tempo_deslocamento_minutos: stop.travelTimeMinutes,
+            conflito_janela: stop.conflictWindow || false,
+            atraso_minutos: stop.delayMinutes || 0,
+            observacoes: null
           };
-        })
-      );
+        });
+      } else {
+        // Usar ordem manual
+        const pontosEleitores = selectedEleitores.map((eleitor, index) => ({
+          roteiro_id: roteiro.id,
+          ordem: index + 1,
+          eleitor_id: eleitor.id,
+          endereco_manual: null,
+          latitude: eleitor.latitude,
+          longitude: eleitor.longitude,
+          duracao_prevista_minutos: stopDurations[eleitor.id] || 30,
+          observacoes: `${eleitor.endereco || ''}, ${eleitor.bairro || ''}`
+        }));
 
-      const todosPontos = [...pontosEleitores, ...pontosComEnderecoAlternativo];
+        // Geocodificar endereços alternativos
+        const pontosComEnderecoAlternativo = await Promise.all(
+          pontosComEndereco.map(async (ponto, index) => {
+            let latitude = null;
+            let longitude = null;
+
+            try {
+              const response = await fetch(
+                `https://nominatim.openstreetmap.org/search?` +
+                `q=${encodeURIComponent(ponto.endereco_alternativo)}` +
+                `&format=json&limit=1`,
+                { headers: { 'User-Agent': 'GabineteApp/1.0' } }
+              );
+
+              if (response.ok) {
+                const data = await response.json();
+                if (data && data.length > 0) {
+                  latitude = parseFloat(data[0].lat);
+                  longitude = parseFloat(data[0].lon);
+                }
+              }
+            } catch (error) {
+              console.error('Erro ao geocodificar endereço alternativo:', error);
+            }
+
+            return {
+              roteiro_id: roteiro.id,
+              ordem: selectedEleitores.length + index + 1,
+              eleitor_id: ponto.eleitor.id,
+              endereco_manual: ponto.endereco_alternativo,
+              latitude,
+              longitude,
+              duracao_prevista_minutos: stopDurations[`alt_${ponto.id}`] || 30,
+              observacoes: ponto.observacoes || null
+            };
+          })
+        );
+
+        todosPontos = [...pontosEleitores, ...pontosComEnderecoAlternativo];
+      }
 
       const { error: pontosError } = await supabase
         .from('roteiro_pontos')
@@ -474,19 +594,29 @@ export const AddRoteiroDialog = ({
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="nome"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Nome do Roteiro *</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Ex: Visitas Bairro Centro" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <Tabs defaultValue="manual" className="w-full">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="manual">Criar Manualmente</TabsTrigger>
+                <TabsTrigger value="assistant">
+                  <Sparkles className="h-4 w-4 mr-2" />
+                  Assistente Inteligente
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="manual" className="space-y-4 mt-4">
+                <FormField
+                  control={form.control}
+                  name="nome"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Nome do Roteiro *</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Ex: Visitas Bairro Centro" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
             <div className="grid grid-cols-2 gap-4">
               <FormField
@@ -815,6 +945,317 @@ export const AddRoteiroDialog = ({
                 Criar Roteiro
               </Button>
             </div>
+              </TabsContent>
+
+              <TabsContent value="assistant" className="space-y-4 mt-4">
+                <Card className="p-4 bg-primary/5">
+                  <div className="flex items-start gap-2">
+                    <Sparkles className="h-5 w-5 text-primary mt-0.5" />
+                    <div>
+                      <h4 className="font-semibold mb-1">Assistente Inteligente de Roteiros</h4>
+                      <p className="text-sm text-muted-foreground">
+                        Otimiza automaticamente a ordem das visitas, calcula ETAs, respeita janelas de tempo e sugere o melhor percurso.
+                      </p>
+                    </div>
+                  </div>
+                </Card>
+
+                <FormField
+                  control={form.control}
+                  name="nome"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Nome do Roteiro *</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Ex: Visitas Bairro Centro" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="data"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Data *</FormLabel>
+                        <FormControl>
+                          <Input type="date" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="hora_inicio"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Hora de Saída *</FormLabel>
+                        <FormControl>
+                          <Input type="time" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <FormField
+                  control={form.control}
+                  name="endereco_partida"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Endereço de Partida *</FormLabel>
+                      <FormControl>
+                        <Input placeholder="De onde você vai sair" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <FormLabel>Buffer Deslocamento (min)</FormLabel>
+                    <Input
+                      type="number"
+                      value={bufferTravel}
+                      onChange={(e) => setBufferTravel(Number(e.target.value))}
+                      min="0"
+                      max="60"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Tempo extra para estacionar/trânsito
+                    </p>
+                  </div>
+                  <div className="space-y-2">
+                    <FormLabel>Buffer por Parada (min)</FormLabel>
+                    <Input
+                      type="number"
+                      value={bufferStop}
+                      onChange={(e) => setBufferStop(Number(e.target.value))}
+                      min="0"
+                      max="30"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Tempo extra entre paradas
+                    </p>
+                  </div>
+                </div>
+
+                <FormField
+                  control={form.control}
+                  name="objetivo"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Objetivo</FormLabel>
+                      <FormControl>
+                        <Textarea placeholder="Ex: Revisar demandas" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <div className="space-y-2">
+                  <FormLabel>
+                    Paradas ({selectedEleitores.length + pontosComEndereco.length})
+                  </FormLabel>
+                  
+                  {(selectedEleitores.length > 0 || pontosComEndereco.length > 0) && (
+                    <div className="space-y-2">
+                      {selectedEleitores.map((eleitor) => (
+                        <Card key={eleitor.id} className="p-3">
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex-1">
+                              <p className="font-medium text-sm">{eleitor.nome_completo}</p>
+                              <p className="text-xs text-muted-foreground">{eleitor.endereco}</p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Input
+                                type="number"
+                                className="w-20"
+                                placeholder="30"
+                                value={stopDurations[eleitor.id] || 30}
+                                onChange={(e) =>
+                                  setStopDurations(prev => ({
+                                    ...prev,
+                                    [eleitor.id]: Number(e.target.value)
+                                  }))
+                                }
+                                min="5"
+                                max="300"
+                              />
+                              <span className="text-xs text-muted-foreground">min</span>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => toggleEleitor(eleitor)}
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        </Card>
+                      ))}
+                      {pontosComEndereco.map((ponto) => (
+                        <Card key={ponto.id} className="p-3 bg-secondary/30">
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex-1">
+                              <p className="font-medium text-sm">{ponto.eleitor.nome_completo}</p>
+                              <p className="text-xs text-muted-foreground">
+                                📍 {ponto.endereco_alternativo}
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Input
+                                type="number"
+                                className="w-20"
+                                placeholder="30"
+                                value={stopDurations[`alt_${ponto.id}`] || 30}
+                                onChange={(e) =>
+                                  setStopDurations(prev => ({
+                                    ...prev,
+                                    [`alt_${ponto.id}`]: Number(e.target.value)
+                                  }))
+                                }
+                                min="5"
+                                max="300"
+                              />
+                              <span className="text-xs text-muted-foreground">min</span>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => removePontoComEndereco(ponto.id)}
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        </Card>
+                      ))}
+                    </div>
+                  )}
+
+                  <Input
+                    placeholder="Buscar eleitor por nome ou endereço..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+
+                  {searchTerm && (
+                    <div className="max-h-48 overflow-y-auto border rounded-md p-2 space-y-1">
+                      {filteredEleitores.slice(0, 20).map(eleitor => {
+                        const isSelected = selectedEleitores.find(e => e.id === eleitor.id);
+                        return (
+                          <button
+                            key={eleitor.id}
+                            type="button"
+                            onClick={() => toggleEleitor(eleitor)}
+                            className={`w-full text-left p-2 rounded-md text-sm transition-colors ${
+                              isSelected
+                                ? 'bg-primary text-primary-foreground'
+                                : 'hover:bg-muted'
+                            }`}
+                          >
+                            <div className="font-medium">{eleitor.nome_completo}</div>
+                            <div className="text-xs opacity-75">
+                              {eleitor.endereco || 'Sem endereço'} - {eleitor.bairro || ''}
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                {optimizationResult && optimizationResult.conflicts && optimizationResult.conflicts.length > 0 && (
+                  <Card className="p-3 border-destructive/50 bg-destructive/5">
+                    <div className="flex items-start gap-2">
+                      <AlertCircle className="h-4 w-4 text-destructive mt-0.5" />
+                      <div className="flex-1">
+                        <p className="text-sm font-semibold text-destructive mb-1">
+                          Conflitos Detectados
+                        </p>
+                        <ul className="text-xs space-y-1">
+                          {optimizationResult.conflicts.map((conflict, i) => (
+                            <li key={i}>• {conflict}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    </div>
+                  </Card>
+                )}
+
+                {optimizationResult && (
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h4 className="font-semibold">Timeline Otimizado</h4>
+                      <Badge>
+                        {optimizationResult.summary.totalDuration}h total
+                      </Badge>
+                    </div>
+                    <RouteTimeline
+                      startTime={form.getValues('hora_inicio')}
+                      startAddress={form.getValues('endereco_partida')}
+                      stops={optimizationResult.optimizedStops.map(s => ({
+                        id: s.id,
+                        order: s.order,
+                        address: s.address,
+                        duration: s.duration,
+                        etaArrival: s.etaArrival,
+                        etaStart: s.etaStart,
+                        etaEnd: s.etaEnd,
+                        travelTimeMinutes: s.travelTimeMinutes,
+                        conflictWindow: s.conflictWindow,
+                        delayMinutes: s.delayMinutes,
+                        eleitor_id: s.eleitor_id
+                      }))}
+                      totalDistance={optimizationResult.totalDistance}
+                    />
+                  </div>
+                )}
+
+                <div className="flex justify-between gap-2 pt-4">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      clearOptimization();
+                      onOpenChange(false);
+                    }}
+                    disabled={loading || isOptimizing}
+                  >
+                    Cancelar
+                  </Button>
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      onClick={handleOptimize}
+                      disabled={loading || isOptimizing}
+                    >
+                      {isOptimizing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                      <Sparkles className="mr-2 h-4 w-4" />
+                      Otimizar Roteiro
+                    </Button>
+                    <Button
+                      type="submit"
+                      disabled={loading || !optimizationResult}
+                    >
+                      {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                      Salvar Roteiro
+                    </Button>
+                  </div>
+                </div>
+              </TabsContent>
+            </Tabs>
           </form>
         </Form>
       </DialogContent>
