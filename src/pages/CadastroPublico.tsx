@@ -296,9 +296,20 @@ const CadastroPublico = () => {
                 <Label htmlFor="data_nascimento">Data de Nascimento</Label>
                 <Input
                   id="data_nascimento"
-                  type="date"
+                  type="text"
+                  placeholder="DD/MM/AAAA"
                   value={formData.data_nascimento}
-                  onChange={(e) => handleChange('data_nascimento', e.target.value)}
+                  onChange={(e) => {
+                    let value = e.target.value.replace(/\D/g, '');
+                    if (value.length > 8) value = value.slice(0, 8);
+                    if (value.length >= 5) {
+                      value = `${value.slice(0, 2)}/${value.slice(2, 4)}/${value.slice(4)}`;
+                    } else if (value.length >= 3) {
+                      value = `${value.slice(0, 2)}/${value.slice(2)}`;
+                    }
+                    handleChange('data_nascimento', value);
+                  }}
+                  maxLength={10}
                 />
               </div>
 
