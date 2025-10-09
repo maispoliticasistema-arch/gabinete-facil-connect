@@ -55,6 +55,7 @@ interface Eleitor {
   nome_completo: string;
   endereco: string | null;
   bairro: string | null;
+  cidade: string | null;
   latitude: number | null;
   longitude: number | null;
 }
@@ -87,6 +88,8 @@ export const AddRoteiroDialog = ({
   const [selectedAssessores, setSelectedAssessores] = useState<string[]>([]);
   const [pontosComEndereco, setPontosComEndereco] = useState<PontoComEndereco[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [searchTypeManual, setSearchTypeManual] = useState<"nome" | "cidade" | "bairro" | "endereco">("nome");
+  const [searchTypeAssistant, setSearchTypeAssistant] = useState<"nome" | "cidade" | "bairro" | "endereco">("nome");
   const [searchResponsavel, setSearchResponsavel] = useState('');
   const [showEnderecoForm, setShowEnderecoForm] = useState(false);
   const [selectedEleitorForEndereco, setSelectedEleitorForEndereco] = useState<Eleitor | null>(null);
@@ -122,7 +125,7 @@ export const AddRoteiroDialog = ({
 
     const { data, error } = await supabase
       .from('eleitores')
-      .select('id, nome_completo, endereco, bairro, latitude, longitude')
+      .select('id, nome_completo, endereco, bairro, cidade, latitude, longitude')
       .eq('gabinete_id', currentGabinete.gabinete_id)
       .not('latitude', 'is', null)
       .not('longitude', 'is', null)
@@ -216,10 +219,37 @@ export const AddRoteiroDialog = ({
     (e.endereco && e.endereco.toLowerCase().includes(searchEleitorEndereco.toLowerCase()))
   );
 
-  const filteredEleitores = eleitores.filter(e =>
-    e.nome_completo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (e.endereco && e.endereco.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
+  const filteredEleitores = eleitores.filter(e => {
+    const searchLower = searchTerm.toLowerCase();
+    switch (searchTypeManual) {
+      case "nome":
+        return e.nome_completo.toLowerCase().includes(searchLower);
+      case "cidade":
+        return e.cidade?.toLowerCase().includes(searchLower);
+      case "bairro":
+        return e.bairro?.toLowerCase().includes(searchLower);
+      case "endereco":
+        return e.endereco?.toLowerCase().includes(searchLower);
+      default:
+        return true;
+    }
+  });
+
+  const filteredEleitoresAssistant = eleitores.filter(e => {
+    const searchLower = searchTerm.toLowerCase();
+    switch (searchTypeAssistant) {
+      case "nome":
+        return e.nome_completo.toLowerCase().includes(searchLower);
+      case "cidade":
+        return e.cidade?.toLowerCase().includes(searchLower);
+      case "bairro":
+        return e.bairro?.toLowerCase().includes(searchLower);
+      case "endereco":
+        return e.endereco?.toLowerCase().includes(searchLower);
+      default:
+        return true;
+    }
+  });
 
   const handleOptimize = async () => {
     const formData = form.getValues();
@@ -901,11 +931,25 @@ export const AddRoteiroDialog = ({
                 </div>
               )}
 
-              <Input
-                placeholder="Buscar eleitor por nome ou endereço..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
+              <div className="flex gap-2">
+                <Select value={searchTypeManual} onValueChange={(value: any) => setSearchTypeManual(value)}>
+                  <SelectTrigger className="w-[140px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="nome">Nome</SelectItem>
+                    <SelectItem value="cidade">Cidade</SelectItem>
+                    <SelectItem value="bairro">Bairro</SelectItem>
+                    <SelectItem value="endereco">Rua</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Input
+                  placeholder={`Buscar por ${searchTypeManual}...`}
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="flex-1"
+                />
+              </div>
 
               <div className="max-h-48 overflow-y-auto border rounded-md p-2 space-y-1">
                 {filteredEleitores.slice(0, 20).map(eleitor => {
@@ -1143,15 +1187,29 @@ export const AddRoteiroDialog = ({
                     </div>
                   )}
 
-                  <Input
-                    placeholder="Buscar eleitor por nome ou endereço..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                  />
+                  <div className="flex gap-2">
+                    <Select value={searchTypeAssistant} onValueChange={(value: any) => setSearchTypeAssistant(value)}>
+                      <SelectTrigger className="w-[140px]">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="nome">Nome</SelectItem>
+                        <SelectItem value="cidade">Cidade</SelectItem>
+                        <SelectItem value="bairro">Bairro</SelectItem>
+                        <SelectItem value="endereco">Rua</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Input
+                      placeholder={`Buscar por ${searchTypeAssistant}...`}
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="flex-1"
+                    />
+                  </div>
 
                   {searchTerm && (
                     <div className="max-h-48 overflow-y-auto border rounded-md p-2 space-y-1">
-                      {filteredEleitores.slice(0, 20).map(eleitor => {
+                      {filteredEleitoresAssistant.slice(0, 20).map(eleitor => {
                         const isSelected = selectedEleitores.find(e => e.id === eleitor.id);
                         return (
                           <button
