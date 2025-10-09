@@ -92,10 +92,14 @@ export const AddRoteiroDialog = ({
   const [searchTypeAssistant, setSearchTypeAssistant] = useState<"nome" | "cidade" | "bairro" | "endereco">("nome");
   const [searchResponsavel, setSearchResponsavel] = useState('');
   const [showEnderecoForm, setShowEnderecoForm] = useState(false);
+  const [showEnderecoFormAssistente, setShowEnderecoFormAssistente] = useState(false);
   const [selectedEleitorForEndereco, setSelectedEleitorForEndereco] = useState<Eleitor | null>(null);
   const [enderecoAlternativo, setEnderecoAlternativo] = useState('');
+  const [enderecoAlternativoAssistente, setEnderecoAlternativoAssistente] = useState('');
   const [obsAlternativo, setObsAlternativo] = useState('');
+  const [obsAlternativoAssistente, setObsAlternativoAssistente] = useState('');
   const [searchEleitorEndereco, setSearchEleitorEndereco] = useState('');
+  const [searchEleitorEnderecoAssistente, setSearchEleitorEnderecoAssistente] = useState('');
   const [stopDurations, setStopDurations] = useState<Record<string, number>>({});
   const [bufferTravel, setBufferTravel] = useState(10);
   const [bufferStop, setBufferStop] = useState(5);
@@ -219,6 +223,11 @@ export const AddRoteiroDialog = ({
     (e.endereco && e.endereco.toLowerCase().includes(searchEleitorEndereco.toLowerCase()))
   );
 
+  const filteredEleitoresEnderecoAssistente = eleitores.filter(e =>
+    e.nome_completo.toLowerCase().includes(searchEleitorEnderecoAssistente.toLowerCase()) ||
+    (e.endereco && e.endereco.toLowerCase().includes(searchEleitorEnderecoAssistente.toLowerCase()))
+  );
+
   const filteredEleitores = eleitores.filter(e => {
     const searchLower = searchTerm.toLowerCase();
     switch (searchTypeManual) {
@@ -297,6 +306,52 @@ export const AddRoteiroDialog = ({
         return;
       }
 
+      // Geocodificar endereços alternativos
+      const pontosComCoordenadas = await Promise.all(
+        pontosComEndereco.map(async (p) => {
+          try {
+            const geoResponse = await fetch(
+              `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(p.endereco_alternativo)}&format=json&limit=1`,
+              { headers: { 'User-Agent': 'GabineteApp/1.0' } }
+            );
+            
+            if (geoResponse.ok) {
+              const geoData = await geoResponse.json();
+              if (geoData && geoData.length > 0) {
+                return {
+                  id: `alt_${p.id}`,
+                  lat: parseFloat(geoData[0].lat),
+                  lng: parseFloat(geoData[0].lon),
+                  duration: stopDurations[`alt_${p.id}`] || 30,
+                  address: `${p.eleitor.nome_completo} - ${p.endereco_alternativo}`,
+                  eleitor_id: p.eleitor.id
+                };
+              }
+            }
+            
+            // Fallback: usar coordenadas do eleitor
+            return {
+              id: `alt_${p.id}`,
+              lat: p.eleitor.latitude!,
+              lng: p.eleitor.longitude!,
+              duration: stopDurations[`alt_${p.id}`] || 30,
+              address: `${p.eleitor.nome_completo} - ${p.endereco_alternativo}`,
+              eleitor_id: p.eleitor.id
+            };
+          } catch {
+            // Em caso de erro, usar coordenadas do eleitor
+            return {
+              id: `alt_${p.id}`,
+              lat: p.eleitor.latitude!,
+              lng: p.eleitor.longitude!,
+              duration: stopDurations[`alt_${p.id}`] || 30,
+              address: `${p.eleitor.nome_completo} - ${p.endereco_alternativo}`,
+              eleitor_id: p.eleitor.id
+            };
+          }
+        })
+      );
+
       // Preparar paradas
       const stops = [
         ...selectedEleitores.map(e => ({
@@ -307,14 +362,7 @@ export const AddRoteiroDialog = ({
           address: `${e.nome_completo} - ${e.endereco || ''}`.trim(),
           eleitor_id: e.id
         })),
-        ...pontosComEndereco.map(p => ({
-          id: `alt_${p.id}`,
-          lat: p.eleitor.latitude!,
-          lng: p.eleitor.longitude!,
-          duration: stopDurations[`alt_${p.id}`] || 30,
-          address: `${p.eleitor.nome_completo} - ${p.endereco_alternativo}`,
-          eleitor_id: p.eleitor.id
-        }))
+        ...pontosComCoordenadas
       ];
 
       await optimizeRoute({
@@ -1229,11 +1277,120 @@ export const AddRoteiroDialog = ({
                           </button>
                         );
                       })}
-                    </div>
-                  )}
-                </div>
+                     </div>
+                   )}
+                 </div>
 
-                {optimizationResult && optimizationResult.conflicts && optimizationResult.conflicts.length > 0 && (
+                 <div className="space-y-2">
+                   <Button
+                     type="button"
+                     variant="outline"
+                     size="sm"
+                     onClick={() => setShowEnderecoFormAssistente(!showEnderecoFormAssistente)}
+                     className="w-full"
+                   >
+                     <Plus className="h-4 w-4 mr-2" />
+                     {showEnderecoFormAssistente ? 'Cancelar' : 'Adicionar Parada com Endereço Alternativo'}
+                   </Button>
+
+                   {showEnderecoFormAssistente && (
+                     <div className="p-3 border rounded-md space-y-3 bg-muted/30">
+                       <div className="space-y-2">
+                         <FormLabel>Selecionar Pessoa</FormLabel>
+                         <Input
+                           placeholder="Buscar por nome..."
+                           value={searchEleitorEnderecoAssistente}
+                           onChange={(e) => setSearchEleitorEnderecoAssistente(e.target.value)}
+                         />
+                         
+                         {searchEleitorEnderecoAssistente && (
+                           <div className="max-h-40 overflow-y-auto border rounded-md p-1 space-y-1 bg-background">
+                             {filteredEleitoresEnderecoAssistente.map(eleitor => {
+                               const isSelected = selectedEleitorForEndereco?.id === eleitor.id;
+                               return (
+                                 <button
+                                   key={eleitor.id}
+                                   type="button"
+                                   onClick={() => {
+                                     setSelectedEleitorForEndereco(eleitor);
+                                     setSearchEleitorEnderecoAssistente(eleitor.nome_completo);
+                                   }}
+                                   className={`w-full text-left p-2 rounded-md text-sm transition-colors ${
+                                     isSelected
+                                       ? 'bg-primary text-primary-foreground'
+                                       : 'hover:bg-muted'
+                                   }`}
+                                 >
+                                   <div className="font-medium">{eleitor.nome_completo}</div>
+                                   <div className="text-xs opacity-75">
+                                     {eleitor.endereco || 'Sem endereço cadastrado'}
+                                   </div>
+                                 </button>
+                               );
+                             })}
+                             {filteredEleitoresEnderecoAssistente.length === 0 && (
+                               <p className="text-sm text-muted-foreground text-center p-2">
+                                 Nenhum eleitor encontrado
+                               </p>
+                             )}
+                           </div>
+                         )}
+                         
+                         {selectedEleitorForEndereco && (
+                           <div className="p-2 bg-primary/10 rounded-md text-sm">
+                             <strong>Selecionado:</strong> {selectedEleitorForEndereco.nome_completo}
+                           </div>
+                         )}
+                       </div>
+
+                       <Input
+                         placeholder="Endereço onde encontrará esta pessoa"
+                         value={enderecoAlternativoAssistente}
+                         onChange={(e) => setEnderecoAlternativoAssistente(e.target.value)}
+                       />
+                       <Textarea
+                         placeholder="Observações (opcional)"
+                         value={obsAlternativoAssistente}
+                         onChange={(e) => setObsAlternativoAssistente(e.target.value)}
+                         rows={2}
+                       />
+                       <Button
+                         type="button"
+                         size="sm"
+                         onClick={() => {
+                           if (!selectedEleitorForEndereco || !enderecoAlternativoAssistente) {
+                             toast({
+                               title: 'Atenção',
+                               description: 'Selecione um eleitor e informe o endereço alternativo',
+                               variant: 'destructive'
+                             });
+                             return;
+                           }
+                           
+                           const novoPonto: PontoComEndereco = {
+                             id: Math.random().toString(),
+                             eleitor: selectedEleitorForEndereco,
+                             endereco_alternativo: enderecoAlternativoAssistente,
+                             observacoes: obsAlternativoAssistente
+                           };
+                           
+                           setPontosComEndereco(prev => [...prev, novoPonto]);
+                           setSelectedEleitorForEndereco(null);
+                           setEnderecoAlternativoAssistente('');
+                           setObsAlternativoAssistente('');
+                           setSearchEleitorEnderecoAssistente('');
+                           setShowEnderecoFormAssistente(false);
+                         }}
+                         className="w-full"
+                         disabled={!selectedEleitorForEndereco || !enderecoAlternativoAssistente}
+                       >
+                         Adicionar Parada
+                       </Button>
+                     </div>
+                   )}
+                 </div>
+
+                 {optimizationResult && optimizationResult.conflicts && optimizationResult.conflicts.length > 0 && (
                   <Card className="p-3 border-destructive/50 bg-destructive/5">
                     <div className="flex items-start gap-2">
                       <AlertCircle className="h-4 w-4 text-destructive mt-0.5" />
