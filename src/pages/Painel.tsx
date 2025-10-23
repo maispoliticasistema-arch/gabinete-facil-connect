@@ -4,6 +4,7 @@ import { OverviewSection } from '@/components/painel/OverviewSection';
 import { GabinetesSection } from '@/components/painel/GabinetesSection';
 import { UsuariosSection } from '@/components/painel/UsuariosSection';
 import { DesempenhoSection } from '@/components/painel/DesempenhoSection';
+import { TestesPerformanceSection } from '@/components/painel/TestesPerformanceSection';
 import { AuditoriaGlobalSection } from '@/components/painel/AuditoriaGlobalSection';
 import { ErrosSection } from '@/components/painel/ErrosSection';
 import { MonitoramentoSection } from '@/components/painel/MonitoramentoSection';
@@ -55,6 +56,7 @@ export default function Painel() {
               <TabsTrigger value="gabinetes">Gabinetes</TabsTrigger>
               <TabsTrigger value="usuarios">Usuários</TabsTrigger>
               <TabsTrigger value="desempenho">Desempenho</TabsTrigger>
+              <TabsTrigger value="testes">Testes & Performance</TabsTrigger>
               <TabsTrigger value="auditoria">Auditoria Global</TabsTrigger>
             </TabsList>
 
@@ -84,6 +86,10 @@ export default function Painel() {
 
             <TabsContent value="desempenho">
               <DesempenhoSection />
+            </TabsContent>
+
+            <TabsContent value="testes">
+              <TestesPerformanceSection />
             </TabsContent>
 
             <TabsContent value="auditoria">
