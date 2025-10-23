@@ -1,0 +1,3 @@
+# Dependências Python para Testes de Carga com Locust
+
+locust>=2.15.0
