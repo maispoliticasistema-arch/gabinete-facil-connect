@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { LoadTestSimulator } from './testes/LoadTestSimulator';
 import { PerformanceCharts } from './testes/PerformanceCharts';
 import { SlowQueriesView } from './testes/SlowQueriesView';
+import { ErrorsSheet } from './testes/ErrorsSheet';
 import { Activity, BarChart3, AlertCircle, ExternalLink } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
@@ -15,6 +16,15 @@ interface QuickMetrics {
   slowQueriesCount: number;
 }
 
+interface ErrorEntry {
+  id: string;
+  created_at: string;
+  endpoint: string | null;
+  status_code: number | null;
+  duration_ms: number;
+  metadata: any;
+}
+
 export function TestesPerformanceSection() {
   const [metrics, setMetrics] = useState<QuickMetrics>({
     avgLatency: 0,
@@ -23,6 +33,8 @@ export function TestesPerformanceSection() {
     slowQueriesCount: 0
   });
   const [loading, setLoading] = useState(true);
+  const [errorsSheetOpen, setErrorsSheetOpen] = useState(false);
+  const [errors, setErrors] = useState<ErrorEntry[]>([]);
 
   useEffect(() => {
     const loadQuickMetrics = async () => {
@@ -40,6 +52,19 @@ export function TestesPerformanceSection() {
           .from('slow_queries')
           .select('*', { count: 'exact', head: true })
           .gte('created_at', umDiaAtras);
+
+        // Buscar erros para o sheet
+        const { data: errorsData } = await supabase
+          .from('performance_metrics')
+          .select('id, created_at, endpoint, status_code, duration_ms, metadata')
+          .gte('created_at', umDiaAtras)
+          .or('status_code.gte.400,status_code.eq.0')
+          .order('created_at', { ascending: false })
+          .limit(100);
+
+        if (errorsData) {
+          setErrors(errorsData);
+        }
 
         if (metricsData && metricsData.length > 0) {
           const avgLatency = Math.round(
@@ -125,7 +150,10 @@ export function TestesPerformanceSection() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card 
+          className="cursor-pointer hover:bg-accent/50 transition-colors"
+          onClick={() => setErrorsSheetOpen(true)}
+        >
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Taxa de Erro</CardTitle>
             <AlertCircle className="h-4 w-4 text-muted-foreground" />
@@ -206,6 +234,12 @@ export function TestesPerformanceSection() {
           </div>
         </CardContent>
       </Card>
+
+      <ErrorsSheet 
+        open={errorsSheetOpen}
+        onOpenChange={setErrorsSheetOpen}
+        errors={errors}
+      />
     </div>
   );
 }
