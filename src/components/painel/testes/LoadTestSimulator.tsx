@@ -56,6 +56,9 @@ export function LoadTestSimulator() {
 
     const makeRequest = async () => {
       const reqStart = Date.now();
+      let statusCode = 0;
+      let errorDetails = null;
+      
       try {
         const response = await fetch(`https://vupyblqvmszzpyaddfda.supabase.co${selectedEndpoint?.path}`, {
           headers: {
@@ -66,18 +69,47 @@ export function LoadTestSimulator() {
         
         const reqEnd = Date.now();
         const latency = reqEnd - reqStart;
+        statusCode = response.status;
         
         totalRequests++;
         if (response.ok) {
           successfulRequests++;
         } else {
           failedRequests++;
+          errorDetails = {
+            statusText: response.statusText,
+            endpoint: endpoint
+          };
         }
         latencies.push(latency);
         
+        // Registrar métrica no banco
+        await supabase.from('performance_metrics').insert({
+          metric_type: 'load_test',
+          endpoint: selectedEndpoint?.path,
+          duration_ms: latency,
+          status_code: statusCode,
+          metadata: response.ok ? null : errorDetails
+        });
+        
       } catch (error) {
+        const reqEnd = Date.now();
+        const latency = reqEnd - reqStart;
+        
         totalRequests++;
         failedRequests++;
+        
+        // Registrar erro no banco
+        await supabase.from('performance_metrics').insert({
+          metric_type: 'load_test',
+          endpoint: selectedEndpoint?.path,
+          duration_ms: latency,
+          status_code: 0, // 0 indica erro de rede/timeout
+          metadata: {
+            error: error instanceof Error ? error.message : String(error),
+            endpoint: endpoint
+          }
+        });
       }
     };
 

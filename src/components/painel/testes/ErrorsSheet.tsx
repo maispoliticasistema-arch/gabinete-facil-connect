@@ -22,14 +22,14 @@ interface ErrorsSheetProps {
 
 export function ErrorsSheet({ open, onOpenChange, errors }: ErrorsSheetProps) {
   const getStatusColor = (statusCode: number | null) => {
-    if (!statusCode) return 'destructive';
+    if (!statusCode || statusCode === 0) return 'destructive';
     if (statusCode >= 500) return 'destructive';
-    if (statusCode >= 400) return 'orange';
+    if (statusCode >= 400) return 'destructive';
     return 'default';
   };
 
   const getStatusText = (statusCode: number | null) => {
-    if (!statusCode) return 'Erro Desconhecido';
+    if (!statusCode || statusCode === 0) return 'Erro de Conexão';
     if (statusCode >= 500) return 'Erro do Servidor';
     if (statusCode >= 400) return 'Erro do Cliente';
     return 'Erro';
@@ -63,7 +63,7 @@ export function ErrorsSheet({ open, onOpenChange, errors }: ErrorsSheetProps) {
                 >
                   <div className="flex items-start justify-between mb-2">
                     <div className="flex items-center gap-2">
-                      <Badge variant={getStatusColor(error.status_code) as any}>
+                      <Badge variant={getStatusColor(error.status_code) as 'default' | 'secondary' | 'destructive' | 'outline'}>
                         {error.status_code || 0}
                       </Badge>
                       <span className="text-sm font-medium">
